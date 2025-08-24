@@ -1,7 +1,5 @@
 import 'server-only'
 
-import { db } from '@/lib/db'
-import { userProgress, content } from '@/lib/db/schema'
 import { eq, and, count, sql } from 'drizzle-orm'
 import type { UserProgress, NewUserProgress, Content } from '@/lib/db/schema'
 
@@ -21,6 +19,9 @@ export class ProgressService {
    */
   async getUserProgress(userId: string, contentId: string): Promise<number> {
     try {
+      const { db } = await import('@/lib/db')
+      const { userProgress } = await import('@/lib/db/schema')
+
       const [progressData] = await db
         .select({ progress: userProgress.progress })
         .from(userProgress)
@@ -47,6 +48,9 @@ export class ProgressService {
     universeId: string
   ): Promise<Record<string, number>> {
     try {
+      const { db } = await import('@/lib/db')
+      const { userProgress } = await import('@/lib/db/schema')
+
       const progressData = await db
         .select({
           contentId: userProgress.contentId,
@@ -97,6 +101,9 @@ export class ProgressService {
       }
 
       // Check if progress entry already exists
+      const { db } = await import('@/lib/db')
+      const { userProgress } = await import('@/lib/db/schema')
+
       const [existingProgress] = await db
         .select()
         .from(userProgress)
@@ -196,6 +203,9 @@ export class ProgressService {
     completedUniverses: number
   }> {
     try {
+      const { db } = await import('@/lib/db')
+      const { userProgress } = await import('@/lib/db/schema')
+
       // Get total content progress entries for user
       const [totalContentResult] = await db
         .select({ count: count() })
@@ -242,6 +252,9 @@ export class ProgressService {
    */
   async deleteProgressForContent(contentId: string): Promise<void> {
     try {
+      const { db } = await import('@/lib/db')
+      const { userProgress } = await import('@/lib/db/schema')
+
       await db.delete(userProgress).where(eq(userProgress.contentId, contentId))
     } catch (error) {
       console.error('Error deleting progress for content:', error)
@@ -254,6 +267,9 @@ export class ProgressService {
    */
   async deleteProgressForUniverse(universeId: string): Promise<void> {
     try {
+      const { db } = await import('@/lib/db')
+      const { userProgress } = await import('@/lib/db/schema')
+
       await db
         .delete(userProgress)
         .where(eq(userProgress.universeId, universeId))
@@ -271,6 +287,9 @@ export class ProgressService {
     limit: number = 10
   ): Promise<UserProgress[]> {
     try {
+      const { db } = await import('@/lib/db')
+      const { userProgress } = await import('@/lib/db/schema')
+
       const recentProgress = await db
         .select()
         .from(userProgress)
@@ -294,6 +313,9 @@ export class ProgressService {
     averageCompletion: number
   }> {
     try {
+      const { db } = await import('@/lib/db')
+      const { content, userProgress } = await import('@/lib/db/schema')
+
       // Get total viewable content in universe
       const [totalViewableResult] = await db
         .select({ count: count() })
@@ -342,6 +364,9 @@ export class ProgressService {
    */
   async getAllUserProgress(userId: string): Promise<Record<string, number>> {
     try {
+      const { db } = await import('@/lib/db')
+      const { userProgress } = await import('@/lib/db/schema')
+
       const progressData = await db
         .select({
           contentId: userProgress.contentId,

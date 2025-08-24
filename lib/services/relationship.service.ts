@@ -1,7 +1,5 @@
 import 'server-only'
 
-import { db } from '@/lib/db'
-import { contentRelationships, content } from '@/lib/db/schema'
 import { eq, and } from 'drizzle-orm'
 import type { ContentRelationship, Content } from '@/lib/db/schema'
 
@@ -23,6 +21,9 @@ export class RelationshipService {
     universeId: string
   ): Promise<Array<{ parentId: string; childId: string }>> {
     try {
+      const { db } = await import('@/lib/db')
+      const { contentRelationships } = await import('@/lib/db/schema')
+
       const relationships = await db
         .select({
           parentId: contentRelationships.parentId,
@@ -45,6 +46,9 @@ export class RelationshipService {
     contentId: string
   ): Promise<Array<{ parentId: string; childId: string }>> {
     try {
+      const { db } = await import('@/lib/db')
+      const { contentRelationships } = await import('@/lib/db/schema')
+
       const parentRelationships = await db
         .select({
           parentId: contentRelationships.parentId,
@@ -67,6 +71,9 @@ export class RelationshipService {
     parentId: string
   ): Promise<Array<{ parentId: string; childId: string }>> {
     try {
+      const { db } = await import('@/lib/db')
+      const { contentRelationships } = await import('@/lib/db/schema')
+
       const childRelationships = await db
         .select({
           parentId: contentRelationships.parentId,
@@ -92,6 +99,9 @@ export class RelationshipService {
     userId: string
   ): Promise<ContentRelationship> {
     try {
+      const { db } = await import('@/lib/db')
+      const { contentRelationships } = await import('@/lib/db/schema')
+
       const [relationship] = await db
         .insert(contentRelationships)
         .values({
@@ -115,6 +125,9 @@ export class RelationshipService {
    */
   async delete(parentId: string, childId: string): Promise<void> {
     try {
+      const { db } = await import('@/lib/db')
+      const { contentRelationships } = await import('@/lib/db/schema')
+
       await db
         .delete(contentRelationships)
         .where(
@@ -134,6 +147,9 @@ export class RelationshipService {
    */
   async deleteAllForContent(contentId: string): Promise<void> {
     try {
+      const { db } = await import('@/lib/db')
+      const { contentRelationships } = await import('@/lib/db/schema')
+
       // Delete relationships where this content is the parent
       await db
         .delete(contentRelationships)
@@ -204,6 +220,9 @@ export class RelationshipService {
   > {
     try {
       // Get all content for the universe
+      const { db } = await import('@/lib/db')
+      const { content } = await import('@/lib/db/schema')
+
       const contentItems = await db
         .select()
         .from(content)

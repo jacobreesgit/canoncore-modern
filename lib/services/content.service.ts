@@ -1,7 +1,5 @@
 import 'server-only'
 
-import { db } from '@/lib/db'
-import { content, userProgress, contentRelationships } from '@/lib/db/schema'
 import { eq, and, desc, sql } from 'drizzle-orm'
 import type { Content, NewContent } from '@/lib/db/schema'
 
@@ -21,6 +19,9 @@ export class ContentService {
    */
   async getById(id: string): Promise<Content | null> {
     try {
+      const { db } = await import('@/lib/db')
+      const { content } = await import('@/lib/db/schema')
+
       const [contentItem] = await db
         .select()
         .from(content)
@@ -50,6 +51,9 @@ export class ContentService {
       // Get user progress for this content if it's viewable
       let progress = 0
       if (contentItem.isViewable) {
+        const { db } = await import('@/lib/db')
+        const { userProgress } = await import('@/lib/db/schema')
+
         const [progressData] = await db
           .select({ progress: userProgress.progress })
           .from(userProgress)
@@ -79,6 +83,9 @@ export class ContentService {
    */
   async create(contentData: NewContent): Promise<Content> {
     try {
+      const { db } = await import('@/lib/db')
+      const { content } = await import('@/lib/db/schema')
+
       const [newContent] = await db
         .insert(content)
         .values({
@@ -103,6 +110,9 @@ export class ContentService {
     updateData: Partial<NewContent>
   ): Promise<Content | null> {
     try {
+      const { db } = await import('@/lib/db')
+      const { content } = await import('@/lib/db/schema')
+
       const [updatedContent] = await db
         .update(content)
         .set({
@@ -124,6 +134,9 @@ export class ContentService {
    */
   async delete(id: string): Promise<void> {
     try {
+      const { db } = await import('@/lib/db')
+      const { content } = await import('@/lib/db/schema')
+
       await db.delete(content).where(eq(content.id, id))
     } catch (error) {
       console.error('Error deleting content:', error)
@@ -136,6 +149,9 @@ export class ContentService {
    */
   async getByUniverse(universeId: string): Promise<Content[]> {
     try {
+      const { db } = await import('@/lib/db')
+      const { content } = await import('@/lib/db/schema')
+
       const universeContent = await db
         .select()
         .from(content)
@@ -160,6 +176,9 @@ export class ContentService {
       const universeContent = await this.getByUniverse(universeId)
 
       // Get user progress for all content in this universe
+      const { db } = await import('@/lib/db')
+      const { userProgress } = await import('@/lib/db/schema')
+
       const progressData = await db
         .select({
           contentId: userProgress.contentId,
@@ -212,6 +231,9 @@ export class ContentService {
    */
   async getViewableByUniverse(universeId: string): Promise<Content[]> {
     try {
+      const { db } = await import('@/lib/db')
+      const { content } = await import('@/lib/db/schema')
+
       const viewableContent = await db
         .select()
         .from(content)
@@ -232,6 +254,9 @@ export class ContentService {
    */
   async getOrganisationalByUniverse(universeId: string): Promise<Content[]> {
     try {
+      const { db } = await import('@/lib/db')
+      const { content } = await import('@/lib/db/schema')
+
       const organisationalContent = await db
         .select()
         .from(content)
@@ -255,6 +280,11 @@ export class ContentService {
     userId: string
   ): Promise<number> {
     try {
+      const { db } = await import('@/lib/db')
+      const { content, userProgress, contentRelationships } = await import(
+        '@/lib/db/schema'
+      )
+
       // Get all child content IDs
       const childRelations = await db
         .select({ childId: contentRelationships.childId })
@@ -321,6 +351,9 @@ export class ContentService {
     searchTerm: string
   ): Promise<Content[]> {
     try {
+      const { db } = await import('@/lib/db')
+      const { content } = await import('@/lib/db/schema')
+
       const searchResults = await db
         .select()
         .from(content)
@@ -347,6 +380,9 @@ export class ContentService {
     mediaType: string
   ): Promise<Content[]> {
     try {
+      const { db } = await import('@/lib/db')
+      const { content } = await import('@/lib/db/schema')
+
       const contentByType = await db
         .select()
         .from(content)

@@ -2,11 +2,8 @@ import { drizzle } from 'drizzle-orm/neon-http'
 import { neon } from '@neondatabase/serverless'
 import * as schema from './schema'
 
-if (!process.env.DATABASE_URL) {
-  throw new Error(
-    'DATABASE_URL is not defined. Please check your environment variables.'
-  )
-}
-
-const sql = neon(process.env.DATABASE_URL)
+// Create database connection - use a mock connection URL during build if DATABASE_URL is missing
+const databaseUrl =
+  process.env.DATABASE_URL || 'postgresql://build:build@localhost:5432/build'
+const sql = neon(databaseUrl)
 export const db = drizzle(sql, { schema })

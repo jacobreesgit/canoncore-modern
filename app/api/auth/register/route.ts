@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import bcryptjs from 'bcryptjs'
 import { z } from 'zod'
 import { eq } from 'drizzle-orm'
-import { db } from '@/lib/db'
-import { users } from '@/lib/db/schema'
 
 // Validation schema for registration
 const registerSchema = z.object({
@@ -18,6 +16,10 @@ export async function POST(request: NextRequest) {
 
     // Validate input
     const { email, password, name } = registerSchema.parse(body)
+
+    // Dynamic imports for database
+    const { db } = await import('@/lib/db')
+    const { users } = await import('@/lib/db/schema')
 
     // Check if user already exists
     const [existingUser] = await db
