@@ -9,6 +9,7 @@ _Complete rebuild of CanonCore from scratch using 2025's best practices_
 This document provides a complete implementation guide for rebuilding CanonCore from scratch using modern web development best practices. Instead of migrating the existing codebase, we're building a new implementation that uses the original as a reference for business logic, UI patterns, and feature requirements.
 
 **Key Changes:**
+
 - **No Migration**: Fresh start with modern architecture
 - **Reference-Based**: Use `./old/` folder to understand requirements and extract business logic
 - **Modern Stack**: PostgreSQL + Drizzle, NextAuth.js v5, Zustand
@@ -93,9 +94,9 @@ const userUniverses = await db
 
 ```typescript
 // lib/auth.ts
-import NextAuth from "next-auth"
-import Credentials from "next-auth/providers/credentials"
-import { DrizzleAdapter } from "@auth/drizzle-adapter"
+import NextAuth from 'next-auth'
+import Credentials from 'next-auth/providers/credentials'
+import { DrizzleAdapter } from '@auth/drizzle-adapter'
 import bcryptjs from 'bcryptjs'
 import { db } from './db'
 import { users } from './db/schema'
@@ -106,32 +107,34 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
     Credentials({
       credentials: {
-        email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" }
+        email: { label: 'Email', type: 'email' },
+        password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null
-        
-        const user = await db.select().from(users)
+
+        const user = await db
+          .select()
+          .from(users)
           .where(eq(users.email, credentials.email as string))
           .limit(1)
-        
+
         if (!user[0]) return null
-        
+
         const isValid = await bcryptjs.compare(
-          credentials.password as string, 
+          credentials.password as string,
           user[0].passwordHash
         )
-        
+
         if (!isValid) return null
-        
+
         return {
           id: user[0].id,
           email: user[0].email,
           name: user[0].displayName,
         }
-      }
-    })
+      },
+    }),
   ],
   session: { strategy: 'jwt' },
   pages: {
@@ -142,7 +145,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 // middleware.ts - Route protection
 export { auth as middleware } from '@/lib/auth'
 export const config = {
-  matcher: ['/dashboard/:path*', '/profile/:path*']
+  matcher: ['/dashboard/:path*', '/profile/:path*'],
 }
 ```
 
@@ -603,7 +606,7 @@ Building CanonCore from scratch using the reference implementation in `./old/`:
 ### Phase 2: Core Business Logic Extraction
 
 1. **Service Logic**: Extract business rules from `./old/src/lib/services/` and implement with Drizzle
-2. **Type Definitions**: Create new schema-first types, reference `./old/src/lib/types.ts` for requirements  
+2. **Type Definitions**: Create new schema-first types, reference `./old/src/lib/types.ts` for requirements
 3. **API Layer**: Build Route Handlers based on Server Actions in `./old/src/lib/actions/`
 4. **State Management**: Implement Zustand stores, reference contexts in `./old/src/lib/contexts/`
 
@@ -714,7 +717,7 @@ This checklist provides a structured approach to rebuilding CanonCore using mode
 ### 2.1 Database Schema Implementation ✅ **COMPLETED**
 
 - [x] **PostgreSQL Schema Design** - Create schema based on Firebase structure analysis from `./old/src/lib/types.ts`
-- [x] **Users Table** - Design from `./old/src/lib/types.ts` User interface  
+- [x] **Users Table** - Design from `./old/src/lib/types.ts` User interface
   - [x] `id`, `email`, `displayName`, `passwordHash`, `emailVerified`, `createdAt`, `updatedAt`
   - [x] Add indexes for email and id lookups
   - [x] Remove `photoURL` field (no Google OAuth)
@@ -907,6 +910,7 @@ This checklist provides a structured approach to rebuilding CanonCore using mode
   - [x] Progress aggregation display
   - [x] Implement universe progress calculation based on child content progress in progress store
   - [x] Update FavouritesDisplay component to use Tree component for hierarchical content favourites organization
+
 ## Phase 7: Server Actions & Data Mutations
 
 ### 7.1 Universe Actions ✅ **COMPLETED**
@@ -964,6 +968,7 @@ This checklist provides a structured approach to rebuilding CanonCore using mode
 ## Phase 9: Testing & Quality Assurance
 
 ### 9.1 Fix Critical Issues ✅ **COMPLETED**
+
 - [x] **Database System Fixes**
   - [x] Fix prepared statements initialization (`getPublicUniversesPrepared` undefined error)
   - [x] Verify database connection and schema setup
@@ -986,12 +991,14 @@ This checklist provides a structured approach to rebuilding CanonCore using mode
 > **Status Update**: Service layer testing is now 100% complete with 94.07% code coverage, 194 passing tests including integration tests, and comprehensive error handling across all service workflows.
 
 #### Final State Analysis:
+
 - **Framework**: ✅ Vitest properly configured with coverage reporting
-- **Coverage**: ✅ **94.07%** service layer coverage (exceeds 80% target)  
+- **Coverage**: ✅ **94.07%** service layer coverage (exceeds 80% target)
 - **Test Count**: ✅ **194 passing tests** across 8 test files (including service integration tests)
 - **Core Testing**: ✅ All individual service methods and cross-service workflows comprehensively tested
 
 #### **What's Complete** ✅:
+
 - **Test Coverage**: 94.07% statements, 98.59% branches, 96.49% functions
 - **Individual Services**: All CRUD operations, business logic, edge cases
 - **Error Handling**: Database errors, validation failures, edge cases well-tested
@@ -999,13 +1006,14 @@ This checklist provides a structured approach to rebuilding CanonCore using mode
 - **Test Data Factories**: Consistent mock data generation across all services
 - **Service Integration Tests**: Cross-service workflow testing implemented
   - ✅ Content creation with relationship creation workflow
-  - ✅ Universe deletion cascade handling 
+  - ✅ Universe deletion cascade handling
   - ✅ Cross-service data consistency verification
 
 #### Detailed Service Coverage:
+
 - [x] **Content Service**: **100%** statements, 42 tests - Complex hierarchy and progress integration
 - [x] **User Service**: **100%** statements, 25 tests - Authentication, profiles, favorites
-- [x] **Progress Service**: 96.75% statements, 40 tests - Progress tracking and calculations  
+- [x] **Progress Service**: 96.75% statements, 40 tests - Progress tracking and calculations
 - [x] **Relationship Service**: 98.54% statements, 34 tests - Hierarchy management
 - [x] **Universe Service**: 75.92% statements, 26 tests - Universe operations and progress
 - [x] **Validation Tests**: 13 tests - Zod schema validation comprehensive
@@ -1018,6 +1026,7 @@ This checklist provides a structured approach to rebuilding CanonCore using mode
 > **Status Update**: Priority 1 core user flows successfully tested and verified. Authentication, content management, and progress tracking systems all working perfectly in production-like environment.
 
 #### Core User Flows (Priority 1): ✅ **COMPLETED**
+
 - [x] **Authentication & Authorization Flows**
   - [x] Email/password sign-in and registration processes ✅ **Fully functional**
   - [x] NextAuth.js session persistence and automatic login ✅ **Working**
@@ -1025,7 +1034,7 @@ This checklist provides a structured approach to rebuilding CanonCore using mode
   - [x] User registration UI with validation and error handling ✅ **Complete**
   - [x] Registration → Sign-in → Dashboard workflow ✅ **End-to-end tested**
 
-- [x] **Content Management Workflows**  
+- [x] **Content Management Workflows**
   - [x] Universe creation → content addition → hierarchy building ✅ **Full workflow tested**
   - [x] Universe creation with metadata, descriptions, and permissions ✅ **Working**
   - [x] Content creation with types (Movies & Episodes, Audio, Books) ✅ **Complete**
@@ -1040,6 +1049,7 @@ This checklist provides a structured approach to rebuilding CanonCore using mode
   - [x] Hierarchical progress calculation system ✅ **Architecture confirmed**
 
 #### **Test Results Summary** 📊:
+
 - **12 Screenshots Captured**: Complete user journey documented
 - **Test Scenarios**: Registration → Authentication → Universe Creation → Content Addition → Progress Tracking
 - **Browser Automation**: 20+ successful interactions using Playwright MCP
@@ -1049,6 +1059,7 @@ This checklist provides a structured approach to rebuilding CanonCore using mode
 - **Content Hierarchy**: Interactive tree with keyboard accessibility verified
 
 #### UI/UX Validation (Priority 2):
+
 - [x] **State Management & Synchronization** ✅ **COMPLETED**
   - [x] Zustand favourites store sync across components and pages
   - [x] Zustand progress store updates and real-time synchronization
@@ -1069,6 +1080,7 @@ This checklist provides a structured approach to rebuilding CanonCore using mode
   - [x] Button states and hover effects
 
 #### Technical Validation (Priority 3):
+
 - [x] **Server Integration & Data Persistence** ✅ **COMPLETED**
   - [x] Server action executions and responses
   - [x] Database operations (Create, Read, Update, Delete)
@@ -1129,14 +1141,17 @@ This checklist provides a structured approach to rebuilding CanonCore using mode
 ## **Phase 9 Overall Status: ~98% Complete**
 
 ### **✅ Completed Sections:**
+
 - **9.1 Critical Issues**: 100% ✅
 - **9.2 Service Layer Testing**: 100% ✅ (all unit & integration tests complete)
 - **9.3 E2E Testing**: 100% ✅ **(All priorities complete - Priority 1, 2, and 3)**
 
 ### **⚠️ Remaining Work:**
+
 - **9.4 Performance Testing**: 0% 🟡 **(Important for production readiness)**
 
 ### **Next Recommended Actions:**
+
 1. **Start 9.4** - Performance testing and optimization for production readiness
 
 **Estimated Time to Complete Phase 9**: 2-3 weeks total
@@ -1199,6 +1214,7 @@ This checklist provides a structured approach to rebuilding CanonCore using mode
   - [ ] Check for XSS and injection vulnerabilities
 
 ### 10.4 Design Language & UI Consistency
+
 - [ ] **Component Design System Audit**
   - [ ] Audit all UI components for consistent styling and behavior
   - [ ] Standardize button variants, sizes, and states across the application
@@ -1242,7 +1258,7 @@ This checklist provides a structured approach to rebuilding CanonCore using mode
 ### Using the Original as a Guide
 
 - [ ] **Extract Business Logic** - Study service layer in `./old/src/lib/services/` to understand data operations
-- [ ] **Map Data Structures** - Convert Firebase document structure to PostgreSQL relational design  
+- [ ] **Map Data Structures** - Convert Firebase document structure to PostgreSQL relational design
 - [ ] **UI Pattern Reference** - Use components in `./old/src/components/` as design reference
 - [ ] **Feature Requirements** - Ensure all functionality from `./old/src/app/` pages is implemented
 - [ ] **Testing Patterns** - Reference comprehensive E2E testing protocols in `./old/CLAUDE.md`

@@ -7,7 +7,6 @@ import {
   StaticTreeDataProvider,
   TreeItem,
 } from 'react-complex-tree'
-import type { TreeEnvironment } from 'react-complex-tree'
 import { Content } from '@/lib/types'
 import { Button } from '@/components/interactive/Button'
 import { FavouriteButton } from '@/components/interactive/FavouriteButton'
@@ -240,13 +239,12 @@ export function Tree({
 
   // Custom item renderer
   const renderItem = useCallback(
-     
     (props: {
       item: TreeItem
       depth: number
       children: React.ReactNode
       title: React.ReactNode
-      context: TreeEnvironment
+      context: unknown
       arrow: React.ReactNode
     }) => {
       const { item, arrow, children } = props

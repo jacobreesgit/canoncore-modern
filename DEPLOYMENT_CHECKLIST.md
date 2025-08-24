@@ -5,26 +5,30 @@ Use this checklist before deploying to production to ensure everything is proper
 ## Pre-Deployment Setup
 
 ### 1. Environment Variables ✅
+
 - [ ] `DATABASE_URL` - Production PostgreSQL connection string
 - [ ] `AUTH_SECRET` - Secure random 32-character string
 - [ ] `NEXTAUTH_URL` - Production domain URL
 - [ ] `VERCEL_TOKEN` - Vercel API token (GitHub Secrets)
-- [ ] `VERCEL_ORG_ID` - Vercel organization ID (GitHub Secrets)  
+- [ ] `VERCEL_ORG_ID` - Vercel organization ID (GitHub Secrets)
 - [ ] `VERCEL_PROJECT_ID` - Vercel project ID (GitHub Secrets)
 
 ### 2. Database Setup ✅
+
 - [ ] Production database created on Neon
 - [ ] Database schema migrated (`pnpm db:push`)
 - [ ] Database connection tested
 - [ ] Separate test database for CI/CD
 
 ### 3. Repository Configuration ✅
+
 - [ ] GitHub repository created and code pushed
 - [ ] GitHub Secrets configured
 - [ ] Branch protection rules set (optional)
 - [ ] Repository visibility set appropriately
 
 ### 4. Vercel Project Setup ✅
+
 - [ ] Vercel project created and linked to GitHub
 - [ ] Environment variables added to Vercel
 - [ ] Build settings configured (auto-detected)
@@ -33,6 +37,7 @@ Use this checklist before deploying to production to ensure everything is proper
 ## Build & Test Verification
 
 ### 5. Local Testing ✅
+
 - [ ] `pnpm install` - Dependencies installed
 - [ ] `pnpm lint` - No linting errors
 - [ ] `pnpm type-check` - No TypeScript errors
@@ -41,6 +46,7 @@ Use this checklist before deploying to production to ensure everything is proper
 - [ ] `pnpm start` - Production server runs locally
 
 ### 6. CI/CD Pipeline ✅
+
 - [ ] GitHub Actions workflow file exists (`.github/workflows/ci-cd.yml`)
 - [ ] Test job runs successfully
 - [ ] Build job completes without errors
@@ -49,12 +55,14 @@ Use this checklist before deploying to production to ensure everything is proper
 ## Security & Performance
 
 ### 7. Security Configuration ✅
+
 - [ ] No secrets in repository code
 - [ ] `.env.*` files in `.gitignore`
 - [ ] Security headers configured in `next.config.ts`
 - [ ] HTTPS enforced (automatic with Vercel)
 
 ### 8. Performance Optimization ✅
+
 - [ ] Image optimization configured
 - [ ] Bundle analyzer setup (`pnpm analyze`)
 - [ ] Lighthouse CI configured
@@ -62,6 +70,7 @@ Use this checklist before deploying to production to ensure everything is proper
 - [ ] Compression enabled
 
 ### 9. Monitoring Setup ✅
+
 - [ ] Health check endpoint (`/api/health`)
 - [ ] Error tracking configured
 - [ ] Performance monitoring enabled
@@ -70,6 +79,7 @@ Use this checklist before deploying to production to ensure everything is proper
 ## Deployment Process
 
 ### 10. Initial Deployment
+
 - [ ] Create production branch if needed
 - [ ] Push to `main` branch to trigger deployment
 - [ ] Monitor GitHub Actions for successful completion
@@ -77,6 +87,7 @@ Use this checklist before deploying to production to ensure everything is proper
 - [ ] Test deployed application functionality
 
 ### 11. Post-Deployment Verification
+
 - [ ] Production URL loads correctly
 - [ ] User registration/login works
 - [ ] Database operations function properly
@@ -86,6 +97,7 @@ Use this checklist before deploying to production to ensure everything is proper
 ## Ongoing Maintenance
 
 ### 12. Regular Tasks
+
 - [ ] Monitor weekly security audit results
 - [ ] Review Lighthouse performance reports
 - [ ] Check bundle size changes
@@ -93,6 +105,7 @@ Use this checklist before deploying to production to ensure everything is proper
 - [ ] Monitor error rates and logs
 
 ### 13. Backup & Recovery
+
 - [ ] Database backup strategy in place
 - [ ] Recovery procedures documented
 - [ ] Environment variable backup stored securely
@@ -100,6 +113,7 @@ Use this checklist before deploying to production to ensure everything is proper
 ## Common Issues & Solutions
 
 ### Build Failures
+
 ```bash
 # Check environment variables
 echo $DATABASE_URL
@@ -114,6 +128,7 @@ pnpm build
 ```
 
 ### Deployment Issues
+
 ```bash
 # Check Vercel logs
 vercel logs --follow
@@ -126,6 +141,7 @@ vercel --prod
 ```
 
 ### Database Connection Issues
+
 ```bash
 # Test connection locally
 node -e "console.log(process.env.DATABASE_URL)"
@@ -144,6 +160,7 @@ If critical issues are discovered after deployment:
    - Click "Promote to Production"
 
 2. **Rollback via GitHub**:
+
    ```bash
    # Revert to last working commit
    git revert HEAD
@@ -157,7 +174,7 @@ If critical issues are discovered after deployment:
 ## Support Resources
 
 - **Vercel**: [Vercel Status](https://vercel.com/status)
-- **Neon**: [Neon Status](https://neon.tech/status)  
+- **Neon**: [Neon Status](https://neon.tech/status)
 - **GitHub**: [GitHub Status](https://www.githubstatus.com/)
 - **Documentation**: See `PRODUCTION_SETUP.md` for detailed setup instructions
 

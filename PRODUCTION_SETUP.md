@@ -39,7 +39,7 @@ Add these secrets to your GitHub repository (`Settings > Secrets and variables >
 
 ```
 VERCEL_TOKEN=your_vercel_token
-VERCEL_ORG_ID=your_vercel_org_id  
+VERCEL_ORG_ID=your_vercel_org_id
 VERCEL_PROJECT_ID=your_vercel_project_id
 DATABASE_URL=your_production_database_url
 TEST_DATABASE_URL=your_test_database_url
@@ -64,7 +64,7 @@ Vercel should auto-detect these, but verify:
 # Build Command
 pnpm build
 
-# Output Directory  
+# Output Directory
 .next
 
 # Install Command
@@ -77,6 +77,7 @@ pnpm dev
 ### 3. Environment Variables in Vercel
 
 In your Vercel project dashboard:
+
 1. Go to Settings > Environment Variables
 2. Add all production environment variables
 3. Set appropriate environments (Production, Preview, Development)
@@ -106,16 +107,18 @@ Copy the Project ID and Org ID to your GitHub secrets.
 ### Production Database Setup
 
 1. **Create Production Database**:
+
    ```bash
    # Create a separate production database on Neon
    # Use a different database name from development
    ```
 
 2. **Run Migrations**:
+
    ```bash
    # Set production DATABASE_URL temporarily
    export DATABASE_URL="your_production_database_url"
-   
+
    # Generate and push schema
    pnpm db:generate
    pnpm db:push
@@ -132,21 +135,25 @@ Copy the Project ID and Org ID to your GitHub secrets.
 The GitHub Actions workflow includes:
 
 ### Testing Pipeline
+
 - ✅ ESLint checking
-- ✅ TypeScript type checking  
+- ✅ TypeScript type checking
 - ✅ Unit and integration tests
 - ✅ Test coverage reporting
 
 ### Build Pipeline
+
 - ✅ Production build generation
 - ✅ Build artifact upload
 
 ### Deployment Pipeline
+
 - ✅ Preview deployments for PRs
 - ✅ Production deployment on main branch
 - ✅ Automatic PR comments with preview URLs
 
 ### Security & Maintenance
+
 - ✅ Weekly security audits
 - ✅ Lighthouse performance audits
 - ✅ Bundle size analysis
@@ -154,6 +161,7 @@ The GitHub Actions workflow includes:
 ## Deployment Workflow
 
 ### 1. Feature Development
+
 ```bash
 # Create feature branch
 git checkout -b feature/new-feature
@@ -167,12 +175,14 @@ git push origin feature/new-feature
 ```
 
 ### 2. Pull Request Process
+
 1. GitHub Actions will run all tests
 2. A preview deployment will be created
 3. Review the preview and tests
 4. Merge when approved
 
 ### 3. Production Deployment
+
 1. Merge to `main` branch triggers production deployment
 2. GitHub Actions builds and deploys to Vercel
 3. Live site is updated automatically
@@ -180,16 +190,19 @@ git push origin feature/new-feature
 ## Monitoring & Maintenance
 
 ### 1. Performance Monitoring
+
 - Vercel Analytics (built-in)
 - Lighthouse CI reports
 - Bundle size tracking
 
 ### 2. Error Monitoring
+
 - Next.js built-in error tracking
 - Vercel runtime logs
 - Optional: Sentry integration
 
 ### 3. Security
+
 - Automated dependency audits
 - Regular security updates
 - Environment variable protection
@@ -240,6 +253,7 @@ pnpm dev
 ## Support
 
 For issues with:
+
 - **Vercel**: [Vercel Documentation](https://vercel.com/docs)
 - **Neon**: [Neon Documentation](https://neon.tech/docs)
 - **Next.js**: [Next.js Documentation](https://nextjs.org/docs)
@@ -248,6 +262,7 @@ For issues with:
 ## Next Steps
 
 After successful deployment:
+
 1. Set up custom domain in Vercel (optional)
 2. Configure additional monitoring tools
 3. Set up automated database backups

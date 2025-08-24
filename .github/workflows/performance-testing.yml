@@ -3,9 +3,9 @@ name: Performance Testing
 on:
   # Run on push to main and pull requests
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
   # Allow manual trigger
   workflow_dispatch:
     inputs:
@@ -25,7 +25,7 @@ jobs:
     name: Performance Testing
     runs-on: ubuntu-latest
     timeout-minutes: 60
-    
+
     services:
       postgres:
         image: postgres:15
@@ -78,7 +78,7 @@ jobs:
         if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
         run: pnpm bench
         env:
-          NODE_OPTIONS: "--expose-gc --max-old-space-size=4096"
+          NODE_OPTIONS: '--expose-gc --max-old-space-size=4096'
 
       - name: Run custom benchmarks
         if: github.event_name == 'workflow_dispatch'
@@ -98,36 +98,35 @@ jobs:
               ;;
           esac
         env:
-          NODE_OPTIONS: "--expose-gc --max-old-space-size=4096"
+          NODE_OPTIONS: '--expose-gc --max-old-space-size=4096'
 
       - name: Comment PR with benchmark results
         if: github.event_name == 'pull_request'
         uses: actions/github-script@v7
         with:
           script: |
-            // Simple comment about benchmark completion
             const body = `## 📊 Performance Benchmarks Completed
-            
-✅ **Database benchmarks**: CRUD operations, complex queries, service layer performance
-✅ **API benchmarks**: Service performance under load, concurrent operations  
-✅ **Memory benchmarks**: Usage patterns, leak detection, GC effectiveness
 
-Benchmarks completed successfully. Check the Actions logs for detailed results.
+            ✅ **Database benchmarks**: CRUD operations, complex queries, service layer performance
+            ✅ **API benchmarks**: Service performance under load, concurrent operations  
+            ✅ **Memory benchmarks**: Usage patterns, leak detection, GC effectiveness
 
----
-*Performance benchmarks run automatically on all PRs. See Vitest benchmark results in the Actions output.*`;
-            
+            Benchmarks completed successfully. Check the Actions logs for detailed results.
+
+            ---
+            *Performance benchmarks run automatically on all PRs. See Vitest benchmark results in the Actions output.*`;
+
             // Post or update comment on PR
             const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
             });
-            
+
             const botComment = comments.find(comment => 
               comment.user.type === 'Bot' && comment.body.includes('Performance Benchmarks Completed')
             );
-            
+
             if (botComment) {
               await github.rest.issues.updateComment({
                 owner: context.repo.owner,
@@ -149,7 +148,7 @@ Benchmarks completed successfully. Check the Actions logs for detailed results.
     runs-on: ubuntu-latest
     timeout-minutes: 15
     if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
-    
+
     services:
       postgres:
         image: postgres:15

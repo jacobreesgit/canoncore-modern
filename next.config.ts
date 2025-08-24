@@ -26,7 +26,12 @@ const nextConfig: NextConfig = {
   // Compression and headers
   compress: true,
   // Asset optimization
-  assetPrefix: process.env.NODE_ENV === 'production' ? process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : '' : '',
+  assetPrefix:
+    process.env.NODE_ENV === 'production'
+      ? process.env.VERCEL_URL
+        ? `https://${process.env.VERCEL_URL}`
+        : ''
+      : '',
   // Headers for security and caching
   headers: async () => [
     {

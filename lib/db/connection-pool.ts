@@ -56,9 +56,9 @@ class DatabasePerformanceMonitor {
 /**
  * Performance monitoring wrapper for database queries
  */
- 
+
 export function withPerformanceMonitoring<
-  T extends (...args: unknown[]) => Promise<unknown>,
+  T extends (...args: never[]) => Promise<unknown>,
 >(queryFn: T, queryName: string): T {
   return (async (...args: Parameters<T>) => {
     const start = performance.now()
@@ -126,7 +126,6 @@ export class ConnectionHealthMonitor {
  * Connection optimization utilities
  */
 export class ConnectionOptimizer {
-   
   private static connectionCache = new Map<
     string,
     { connection: unknown; timestamp: number }
@@ -144,8 +143,7 @@ export class ConnectionOptimizer {
     return null
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  static setCachedConnection(key: string, connection: any) {
+  static setCachedConnection(key: string, connection: unknown) {
     this.connectionCache.set(key, {
       connection,
       timestamp: Date.now(),
