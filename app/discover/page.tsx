@@ -1,5 +1,5 @@
 import { getCurrentUser } from '@/lib/auth-helpers'
-import { universeService, userService } from '@/lib/services'
+import { universeService, userService, Universe } from '@/lib/services'
 import { Navigation } from '@/components/layout/Navigation'
 import { PageContainer } from '@/components/layout/PageContainer'
 import { PageHeader } from '@/components/layout/PageHeader'
@@ -25,7 +25,9 @@ export default async function DiscoverPage({
             description='Explore public franchise universes created by the community'
           />
           <div className='text-center py-8'>
-            <p className='text-gray-600'>Database not available. Please check back later.</p>
+            <p className='text-gray-600'>
+              Database not available. Please check back later.
+            </p>
           </div>
         </PageContainer>
       </div>
@@ -33,9 +35,12 @@ export default async function DiscoverPage({
   }
 
   let user = null
-  let publicUniverses: any[] = []
+  let publicUniverses: Universe[] = []
   let userFavorites: string[] = []
-  let universeOwners: Record<string, { id: string; name: string | null; email: string }> = {}
+  const universeOwners: Record<
+    string,
+    { id: string; name: string | null; email: string }
+  > = {}
 
   const { q: searchQuery, sort } = await searchParams
 
@@ -62,7 +67,9 @@ export default async function DiscoverPage({
             description='Explore public franchise universes created by the community'
           />
           <div className='text-center py-8'>
-            <p className='text-gray-600'>Unable to load franchises. Please try again later.</p>
+            <p className='text-gray-600'>
+              Unable to load franchises. Please try again later.
+            </p>
           </div>
         </PageContainer>
       </div>
