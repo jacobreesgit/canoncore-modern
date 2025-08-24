@@ -196,11 +196,11 @@ This opens a local web interface to view and edit your database schema and data.
 
 ## Deployment
 
-The application is configured for deployment on Vercel:
+The application is configured for deployment on Vercel with automated CI/CD:
 
 1. Connect your repository to Vercel
-2. Set environment variables in Vercel dashboard
-3. Deploy automatically on push to main branch
+2. Configure GitHub Secrets for deployment
+3. Deploy automatically on push to main branch via GitHub Actions
 
 See the [deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
 
