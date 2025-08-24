@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server'
-import { db } from '@/lib/db'
 
 export async function GET() {
   try {
@@ -17,14 +16,19 @@ export async function GET() {
       version: process.env.npm_package_version || '1.0.0',
     }
 
-    // Test database connection
-    try {
-      await db.execute('SELECT 1')
-      health.database = 'connected'
-    } catch (error) {
-      health.database = 'disconnected'
-      health.status = 'unhealthy'
-      console.error('Database health check failed:', error)
+    // Test database connection only if DATABASE_URL is available
+    if (process.env.DATABASE_URL) {
+      try {
+        const { db } = await import('@/lib/db')
+        await db.execute('SELECT 1')
+        health.database = 'connected'
+      } catch (error) {
+        health.database = 'disconnected'
+        health.status = 'unhealthy'
+        console.error('Database health check failed:', error)
+      }
+    } else {
+      health.database = 'not_configured'
     }
 
     return NextResponse.json(health, {

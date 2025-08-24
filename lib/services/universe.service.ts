@@ -1,11 +1,7 @@
 import 'server-only'
 
-import { db } from '@/lib/db'
-import { universes, content, userProgress } from '@/lib/db/schema'
 import { eq, and, desc, count, sql } from 'drizzle-orm'
 import type { Universe, NewUniverse } from '@/lib/db/schema'
-import { OptimizedQueries } from '@/lib/db/optimized-queries'
-import { withPerformanceMonitoring } from '@/lib/db/connection-pool'
 
 /**
  * Server-side Universe Service
@@ -22,6 +18,10 @@ export class UniverseService {
    * Get universe by ID
    */
   async getById(id: string): Promise<Universe | null> {
+    const { OptimizedQueries } = await import('@/lib/db/optimized-queries')
+    const { withPerformanceMonitoring } = await import(
+      '@/lib/db/connection-pool'
+    )
     const optimizedGetById = withPerformanceMonitoring(
       OptimizedQueries.getUniverseById,
       'universe.getById'
@@ -60,6 +60,9 @@ export class UniverseService {
    */
   async create(universeData: NewUniverse): Promise<Universe> {
     try {
+      const { db } = await import('@/lib/db')
+      const { universes } = await import('@/lib/db/schema')
+
       const [newUniverse] = await db
         .insert(universes)
         .values({
@@ -84,6 +87,9 @@ export class UniverseService {
     updateData: Partial<NewUniverse>
   ): Promise<Universe | null> {
     try {
+      const { db } = await import('@/lib/db')
+      const { universes } = await import('@/lib/db/schema')
+
       const [updatedUniverse] = await db
         .update(universes)
         .set({
@@ -105,6 +111,9 @@ export class UniverseService {
    */
   async delete(id: string): Promise<void> {
     try {
+      const { db } = await import('@/lib/db')
+      const { universes } = await import('@/lib/db/schema')
+
       await db.delete(universes).where(eq(universes.id, id))
     } catch (error) {
       console.error('Error deleting universe:', error)
@@ -116,6 +125,10 @@ export class UniverseService {
    * Get universes by user ID
    */
   async getByUserId(userId: string): Promise<Universe[]> {
+    const { OptimizedQueries } = await import('@/lib/db/optimized-queries')
+    const { withPerformanceMonitoring } = await import(
+      '@/lib/db/connection-pool'
+    )
     const optimizedGetByUser = withPerformanceMonitoring(
       OptimizedQueries.getUniversesByUser,
       'universe.getByUserId'
@@ -162,6 +175,10 @@ export class UniverseService {
     sortBy?: 'newest' | 'oldest' | 'name'
   }): Promise<Universe[]> {
     const { limitCount = 20, searchQuery } = options || {}
+    const { OptimizedQueries } = await import('@/lib/db/optimized-queries')
+    const { withPerformanceMonitoring } = await import(
+      '@/lib/db/connection-pool'
+    )
 
     if (searchQuery && searchQuery.trim()) {
       const optimizedSearch = withPerformanceMonitoring(
@@ -186,6 +203,9 @@ export class UniverseService {
     userId: string
   ): Promise<number> {
     try {
+      const { db } = await import('@/lib/db')
+      const { content, userProgress } = await import('@/lib/db/schema')
+
       // Get all viewable content in this universe
       const viewableContent = await db
         .select({ id: content.id })
@@ -246,6 +266,9 @@ export class UniverseService {
         return null
       }
 
+      const { db } = await import('@/lib/db')
+      const { content } = await import('@/lib/db/schema')
+
       // Get content statistics
       const contentStats = await db
         .select({
@@ -282,6 +305,9 @@ export class UniverseService {
     limitCount: number = 20
   ): Promise<Universe[]> {
     try {
+      const { db } = await import('@/lib/db')
+      const { universes } = await import('@/lib/db/schema')
+
       const searchResults = await db
         .select()
         .from(universes)

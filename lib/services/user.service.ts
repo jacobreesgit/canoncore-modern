@@ -1,11 +1,7 @@
 import 'server-only'
 
-import { db } from '@/lib/db'
-import { users, favorites, universes } from '@/lib/db/schema'
 import { eq, and, count } from 'drizzle-orm'
 import type { User, NewUser, Favorite } from '@/lib/db/schema'
-import { OptimizedQueries } from '@/lib/db/optimized-queries'
-import { withPerformanceMonitoring } from '@/lib/db/connection-pool'
 
 /**
  * Server-side User Service
@@ -22,6 +18,10 @@ export class UserService {
    * Get user by ID
    */
   async getById(id: string): Promise<User | null> {
+    const { OptimizedQueries } = await import('@/lib/db/optimized-queries')
+    const { withPerformanceMonitoring } = await import(
+      '@/lib/db/connection-pool'
+    )
     const optimizedGetById = withPerformanceMonitoring(
       OptimizedQueries.getUserById,
       'user.getById'
@@ -34,6 +34,9 @@ export class UserService {
    */
   async create(userData: NewUser): Promise<User> {
     try {
+      const { db } = await import('@/lib/db')
+      const { users } = await import('@/lib/db/schema')
+
       const [newUser] = await db
         .insert(users)
         .values({
@@ -58,6 +61,9 @@ export class UserService {
     updateData: Partial<NewUser>
   ): Promise<User | null> {
     try {
+      const { db } = await import('@/lib/db')
+      const { users } = await import('@/lib/db/schema')
+
       const [updatedUser] = await db
         .update(users)
         .set({
@@ -81,6 +87,10 @@ export class UserService {
     userId: string
   ): Promise<{ universes: string[]; content: string[] }> {
     try {
+      const { OptimizedQueries } = await import('@/lib/db/optimized-queries')
+      const { withPerformanceMonitoring } = await import(
+        '@/lib/db/connection-pool'
+      )
       const optimizedGetFavourites = withPerformanceMonitoring(
         OptimizedQueries.getUserFavourites,
         'user.getUserFavourites'
@@ -114,6 +124,9 @@ export class UserService {
     targetType: 'universe' | 'content'
   ): Promise<Favorite> {
     try {
+      const { db } = await import('@/lib/db')
+      const { favorites } = await import('@/lib/db/schema')
+
       const [favorite] = await db
         .insert(favorites)
         .values({
@@ -140,6 +153,9 @@ export class UserService {
     targetType: 'universe' | 'content'
   ): Promise<void> {
     try {
+      const { db } = await import('@/lib/db')
+      const { favorites } = await import('@/lib/db/schema')
+
       await db
         .delete(favorites)
         .where(
@@ -164,6 +180,9 @@ export class UserService {
     targetType: 'universe' | 'content'
   ): Promise<boolean> {
     try {
+      const { db } = await import('@/lib/db')
+      const { favorites } = await import('@/lib/db/schema')
+
       const [favorite] = await db
         .select()
         .from(favorites)
@@ -188,6 +207,9 @@ export class UserService {
    */
   async getPublicUniversesCount(userId: string): Promise<number> {
     try {
+      const { db } = await import('@/lib/db')
+      const { universes } = await import('@/lib/db/schema')
+
       const result = await db
         .select({ count: universes.id })
         .from(universes)
@@ -204,6 +226,10 @@ export class UserService {
    * Get user by email
    */
   async getByEmail(email: string): Promise<User | null> {
+    const { OptimizedQueries } = await import('@/lib/db/optimized-queries')
+    const { withPerformanceMonitoring } = await import(
+      '@/lib/db/connection-pool'
+    )
     const optimizedGetByEmail = withPerformanceMonitoring(
       OptimizedQueries.getUserByEmail,
       'user.getByEmail'
@@ -220,6 +246,9 @@ export class UserService {
     favouritesCount: number
   }> {
     try {
+      const { db } = await import('@/lib/db')
+      const { universes, favorites } = await import('@/lib/db/schema')
+
       const [universesCount] = await db
         .select({ count: count() })
         .from(universes)
