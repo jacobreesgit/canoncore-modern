@@ -70,26 +70,6 @@ const nextConfig: NextConfig = {
       ],
     },
   ],
-  // Remove webpack config when using turbopack to avoid conflicts
-  ...(!process.env.NODE_ENV || process.env.NODE_ENV === 'development'
-    ? {}
-    : {
-        webpack: (config, { isServer }) => {
-          if (!isServer) {
-            // Split chunks for better caching
-            config.optimization.splitChunks.cacheGroups = {
-              ...config.optimization.splitChunks.cacheGroups,
-              vendor: {
-                test: /[\\/]node_modules[\\/]/,
-                name: 'vendors',
-                priority: 10,
-                chunks: 'all',
-              },
-            }
-          }
-          return config
-        },
-      }),
 }
 
 export default withBundleAnalyzer(nextConfig)

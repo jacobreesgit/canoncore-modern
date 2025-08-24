@@ -9,7 +9,7 @@ import {
   index,
   uniqueIndex,
 } from 'drizzle-orm/pg-core'
-import type { AdapterAccountType } from '@auth/core/adapters'
+import type { AdapterAccountType } from 'next-auth/adapters'
 
 // NextAuth.js required tables
 export const users = pgTable('user', {
