@@ -6,8 +6,8 @@ import {
   Tree as RCTree,
   StaticTreeDataProvider,
   TreeItem,
-  TreeEnvironment,
 } from 'react-complex-tree'
+import type { TreeEnvironment } from 'react-complex-tree'
 import { Content } from '@/lib/types'
 import { Button } from '@/components/interactive/Button'
 import { FavouriteButton } from '@/components/interactive/FavouriteButton'
