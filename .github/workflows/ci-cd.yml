@@ -201,15 +201,7 @@ jobs:
           url=$(vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }})
           echo "production_url=$url" >> $GITHUB_OUTPUT
 
-      - name: Create deployment status
-        uses: actions/github-script@v6
-        with:
-          script: |
-            github.rest.repos.createDeploymentStatus({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              deployment_id: context.payload.deployment?.id || 0,
-              state: 'success',
-              environment_url: '${{ steps.deploy.outputs.production_url }}',
-              description: 'Deployment succeeded'
-            })
+      - name: Output deployment URL
+        run: |
+          echo "🚀 Production deployment successful!"
+          echo "🌐 URL: ${{ steps.deploy.outputs.production_url }}"
