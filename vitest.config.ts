@@ -1,5 +1,5 @@
 import { defineConfig } from 'vitest/config'
-import path from 'path'
+import { resolve } from 'path'
 
 export default defineConfig({
   test: {
@@ -21,8 +21,8 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './'),
-      'server-only': path.resolve(__dirname, './test/mocks/server-only.ts'),
+      '@': resolve(process.cwd(), './'),
+      'server-only': resolve(process.cwd(), './test/mocks/server-only.ts'),
     },
   },
 })
