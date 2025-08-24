@@ -14,28 +14,73 @@ export default async function DiscoverPage({
 }: {
   searchParams: Promise<{ q?: string; sort?: string }>
 }) {
-  const user = await getCurrentUser()
+  // Check if database is available
+  if (!process.env.DATABASE_URL) {
+    return (
+      <div className='min-h-screen bg-gray-50'>
+        <Navigation showNavigationMenu={true} currentPage='discover' />
+        <PageContainer>
+          <PageHeader
+            title='Discover Franchises'
+            description='Explore public franchise universes created by the community'
+          />
+          <div className='text-center py-8'>
+            <p className='text-gray-600'>Database not available. Please check back later.</p>
+          </div>
+        </PageContainer>
+      </div>
+    )
+  }
+
+  let user = null
+  let publicUniverses: any[] = []
+  let userFavorites: string[] = []
+  let universeOwners: Record<string, { id: string; name: string | null; email: string }> = {}
+
   const { q: searchQuery, sort } = await searchParams
 
-  // Fetch public universes with optional search
-  const publicUniverses = await universeService.getPublicUniverses({
-    searchQuery,
-    sortBy: sort as 'newest' | 'oldest' | 'name' | undefined,
-  })
+  try {
+    user = await getCurrentUser()
+  } catch (error) {
+    console.error('Error getting current user:', error)
+  }
+
+  try {
+    // Fetch public universes with optional search
+    publicUniverses = await universeService.getPublicUniverses({
+      searchQuery,
+      sortBy: sort as 'newest' | 'oldest' | 'name' | undefined,
+    })
+  } catch (error) {
+    console.error('Error fetching public universes:', error)
+    return (
+      <div className='min-h-screen bg-gray-50'>
+        <Navigation showNavigationMenu={true} currentPage='discover' />
+        <PageContainer>
+          <PageHeader
+            title='Discover Franchises'
+            description='Explore public franchise universes created by the community'
+          />
+          <div className='text-center py-8'>
+            <p className='text-gray-600'>Unable to load franchises. Please try again later.</p>
+          </div>
+        </PageContainer>
+      </div>
+    )
+  }
 
   // Get user's favorites if authenticated
-  let userFavorites: string[] = []
   if (user && user.id) {
-    const favorites = await userService.getUserFavourites(user.id)
-    userFavorites = favorites.universes
+    try {
+      const favorites = await userService.getUserFavourites(user.id)
+      userFavorites = favorites.universes
+    } catch (error) {
+      console.error('Error fetching user favorites:', error)
+    }
   }
 
   // Fetch universe owners for display
   const uniqueUserIds = Array.from(new Set(publicUniverses.map(u => u.userId)))
-  const universeOwners: Record<
-    string,
-    { id: string; name: string | null; email: string }
-  > = {}
 
   for (const userId of uniqueUserIds) {
     try {
