@@ -204,7 +204,7 @@ export class ProgressService {
   }> {
     try {
       const { db } = await import('@/lib/db')
-      const { userProgress } = await import('@/lib/db/schema')
+      const { userProgress, content } = await import('@/lib/db/schema')
 
       // Get total content progress entries for user
       const [totalContentResult] = await db
@@ -226,6 +226,42 @@ export class ProgressService {
         .from(userProgress)
         .where(eq(userProgress.userId, userId))
 
+      // Calculate completed universes
+      let completedUniverses = 0
+      for (const { universeId } of uniqueUniverses) {
+        // Get all viewable content IDs in this universe
+        const viewableContent = await db
+          .select({ id: content.id })
+          .from(content)
+          .where(
+            and(
+              eq(content.universeId, universeId),
+              eq(content.isViewable, true)
+            )
+          )
+
+        const viewableContentIds = viewableContent.map(c => c.id)
+        
+        if (viewableContentIds.length === 0) {
+          continue // Skip universes with no viewable content
+        }
+
+        // Get count of completed viewable content by user in this universe
+        // We need to check user progress for each viewable content item
+        let completedCount = 0
+        for (const contentId of viewableContentIds) {
+          const progress = await this.getUserProgress(userId, contentId)
+          if (progress === 100) {
+            completedCount++
+          }
+        }
+
+        // Universe is completed if user has 100% progress on all viewable content
+        if (completedCount === viewableContentIds.length) {
+          completedUniverses++
+        }
+      }
+
       const totalContent = totalContentResult?.count || 0
       const completedContent = completedContentResult?.count || 0
       const totalUniverses = uniqueUniverses.length
@@ -234,7 +270,7 @@ export class ProgressService {
         totalContent,
         completedContent,
         totalUniverses,
-        completedUniverses: 0, // Would need universe-level calculation
+        completedUniverses,
       }
     } catch (error) {
       console.error('Error getting progress summary:', error)

@@ -538,13 +538,17 @@ describe('Progress Service', () => {
       const { progressService } = await import('../progress.service')
 
       // Mock database responses in sequence
-      let callCount = 0
+      let selectCallCount = 0
       mockDb.select.mockImplementation(() => {
-        callCount++
+        selectCallCount++
         return {
           from: vi.fn().mockReturnValue({
             where: vi.fn().mockResolvedValue(
-              callCount === 1 ? [{ count: 15 }] : [{ count: 8 }] // total vs completed
+              selectCallCount === 1 ? [{ count: 15 }] : 
+              selectCallCount === 2 ? [{ count: 8 }] :
+              selectCallCount === 3 ? [{ id: 'content-1' }, { id: 'content-2' }] : // universe-1 viewable content
+              selectCallCount === 4 ? [{ id: 'content-3' }] : // universe-2 viewable content  
+              [{ id: 'content-4' }, { id: 'content-5' }] // universe-3 viewable content
             ),
           }),
         }
@@ -559,13 +563,22 @@ describe('Progress Service', () => {
           { universeId: 'universe-3' },
         ])
 
+      // Mock getUserProgress to simulate completion status
+      vi.spyOn(progressService, 'getUserProgress').mockImplementation(async (userId, contentId) => {
+        // Simulate that content-1 and content-3 are completed (100%), others are not
+        if (contentId === 'content-1' || contentId === 'content-3') {
+          return 100
+        }
+        return 50 // Not completed
+      })
+
       const result = await progressService.getProgressSummary('test-user-123')
 
       expect(result).toEqual({
         totalContent: 15,
         completedContent: 8,
         totalUniverses: 3,
-        completedUniverses: 0, // Note: universe completion not implemented yet
+        completedUniverses: 1, // Only universe-2 should be completed (has 1 content, 100% complete)
       })
     })
 
