@@ -327,9 +327,8 @@ describe('Universe Service', () => {
       })
 
       expect(DatabaseQueries.getPublicUniverses).toHaveBeenCalledWith({
-        searchQuery: undefined,
-        sortBy: undefined,
         limit: 20,
+        sortBy: 'newest',
       })
       expect(result).toEqual(mockUniverses)
     })
@@ -351,7 +350,7 @@ describe('Universe Service', () => {
       expect(DatabaseQueries.getPublicUniverses).toHaveBeenCalledWith({
         searchQuery: 'test search',
         limit: 20,
-        sortBy: undefined,
+        sortBy: 'newest',
       })
       expect(result).toEqual(mockUniverses)
     })
@@ -371,9 +370,8 @@ describe('Universe Service', () => {
       })
 
       expect(DatabaseQueries.getPublicUniverses).toHaveBeenCalledWith({
-        searchQuery: '   ',
-        sortBy: undefined,
         limit: 20,
+        sortBy: 'newest',
       })
       expect(result).toEqual(mockUniverses)
     })
@@ -390,9 +388,29 @@ describe('Universe Service', () => {
       const result = await universeService.getPublicUniverses()
 
       expect(DatabaseQueries.getPublicUniverses).toHaveBeenCalledWith({
-        searchQuery: undefined,
-        sortBy: undefined,
         limit: 20,
+        sortBy: 'newest',
+      })
+      expect(result).toEqual(mockUniverses)
+    })
+
+    it('should use explicit sortBy when provided', async () => {
+      const { DatabaseQueries } = await import('@/lib/db/queries')
+      const { universeService } = await import('../universe.service')
+
+      const mockUniverses = createMockUniverses(2)
+      vi.mocked(DatabaseQueries.getPublicUniverses).mockResolvedValue(
+        mockUniverses
+      )
+
+      const result = await universeService.getPublicUniverses({
+        limitCount: 15,
+        sortBy: 'name',
+      })
+
+      expect(DatabaseQueries.getPublicUniverses).toHaveBeenCalledWith({
+        limit: 15,
+        sortBy: 'name',
       })
       expect(result).toEqual(mockUniverses)
     })

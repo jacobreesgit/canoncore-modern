@@ -184,11 +184,23 @@ export class UniverseService {
       DatabaseQueries.getPublicUniverses,
       'universe.getPublicUniverses'
     )
-    return await optimizedGetPublic({
-      searchQuery,
-      sortBy: options?.sortBy,
-      limit: limitCount,
-    })
+    const queryOptions: {
+      limit: number
+      searchQuery?: string
+      sortBy?: 'newest' | 'oldest' | 'name'
+    } = { limit: limitCount }
+
+    if (searchQuery && searchQuery.trim()) {
+      queryOptions.searchQuery = searchQuery.trim()
+    }
+
+    if (options?.sortBy) {
+      queryOptions.sortBy = options.sortBy
+    } else {
+      queryOptions.sortBy = 'newest'
+    }
+
+    return await optimizedGetPublic(queryOptions)
   }
 
   /**
