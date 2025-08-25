@@ -163,37 +163,83 @@ export async function getCurrentUserProfileAction(): Promise<{
 }
 
 /**
- * Delete user account (optional - for complete user management)
- * TODO: Implement deleteUser method in UserService
+ * Delete user account and all associated data
+ * This will permanently delete the user and cascade to delete all related data:
+ * - All universes created by the user
+ * - All content within those universes
+ * - All user progress records
+ * - All user favorites
+ * - All authentication sessions and accounts
+ * 
+ * Requires password verification for security
  */
-// export async function deleteAccountAction(): Promise<UserActionResult> {
-//   try {
-//     const session = await auth()
+export async function deleteAccountAction(
+  formData: FormData
+): Promise<UserActionResult> {
+  try {
+    const session = await auth()
 
-//     if (!session?.user?.id) {
-//       return {
-//         success: false,
-//         error: 'Authentication required',
-//       }
-//     }
+    if (!session?.user?.id) {
+      return {
+        success: false,
+        error: 'Authentication required',
+      }
+    }
 
-//     // Delete user and all associated data
-//     // This will cascade to delete universes, content, progress, and favourites
-//     await userService.deleteUser(session.user.id)
+    // Extract form data
+    const password = formData.get('password') as string
+    const confirmText = formData.get('confirmText') as string
 
-//     // Note: In a real implementation, you'd also want to:
-//     // 1. Sign out the user
-//     // 2. Clear all sessions
-//     // 3. Redirect to homepage
+    // Validate inputs
+    if (!password?.trim()) {
+      return {
+        success: false,
+        error: 'Password is required to confirm deletion',
+      }
+    }
 
-//     return {
-//       success: true,
-//     }
-//   } catch (error) {
-//     console.error('Error deleting account:', error)
-//     return {
-//       success: false,
-//       error: 'Failed to delete account. Please try again.',
-//     }
-//   }
-// }
+    if (confirmText !== 'DELETE') {
+      return {
+        success: false,
+        error: 'Please type DELETE to confirm account deletion',
+      }
+    }
+
+    // Verify password before deletion
+    const bcrypt = await import('bcryptjs')
+    const user = await userService.getById(session.user.id)
+    
+    if (!user || !user.passwordHash) {
+      return {
+        success: false,
+        error: 'Unable to verify account credentials',
+      }
+    }
+
+    const isValidPassword = await bcrypt.compare(password, user.passwordHash)
+    if (!isValidPassword) {
+      return {
+        success: false,
+        error: 'Invalid password. Please try again.',
+      }
+    }
+
+    // Delete user and all associated data
+    // This will cascade to delete universes, content, progress, and favourites
+    await userService.deleteUser(session.user.id)
+
+    return {
+      success: true,
+      data: {
+        message: 'Account deleted successfully',
+        userId: session.user.id,
+      },
+    }
+  } catch (error) {
+    console.error('Error deleting account:', error)
+    return {
+      success: false,
+      error: 'Failed to delete account. Please try again.',
+    }
+  }
+}

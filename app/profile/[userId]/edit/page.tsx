@@ -2,6 +2,7 @@ import { notFound, redirect } from 'next/navigation'
 import { requireAuth } from '@/lib/auth-helpers'
 import { userService } from '@/lib/services'
 import { ProfileEditForm } from '@/components/profile/ProfileEditForm'
+import { AccountDeletionSection } from '@/components/profile/AccountDeletionSection'
 
 interface EditProfilePageProps {
   params: Promise<{ userId: string }>
@@ -42,8 +43,12 @@ export default async function EditProfilePage({
             <p className='text-gray-600'>Update your profile information</p>
           </div>
 
-          <div className='rounded-lg bg-white p-6 shadow-sm'>
-            <ProfileEditForm user={user} />
+          <div className='space-y-6'>
+            <div className='rounded-lg bg-white p-6 shadow-sm'>
+              <ProfileEditForm user={user} />
+            </div>
+
+            <AccountDeletionSection userId={userId} />
           </div>
         </div>
       </div>

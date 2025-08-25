@@ -6,6 +6,7 @@ import { PageHeader } from '@/components/layout/PageHeader'
 import { UniverseCard } from '@/components/content/UniverseCard'
 import { FavoritesStats } from '@/components/content/FavoritesStats'
 import { ButtonLink } from '@/components/interactive/Button'
+import { AccountDeletionSuccess } from '@/components/AccountDeletionSuccess'
 import { HiPlus } from 'react-icons/hi'
 
 /**
@@ -20,6 +21,7 @@ export default async function DashboardPage() {
       <div className='min-h-screen bg-gray-50'>
         <Navigation showNavigationMenu={false} />
         <PageContainer>
+          <AccountDeletionSuccess />
           <PageHeader
             title='Welcome to CanonCore'
             description='Sign in to start organizing your favorite franchises'

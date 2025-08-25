@@ -1170,17 +1170,6 @@ This checklist provides a structured approach to rebuilding CanonCore using mode
   - [x] Deployment automation (Vercel integration with preview/production deployments)
   - [x] Repository initialization and Vercel CLI linking completed
 
-### 10.2 Monitoring & Analytics
-
-- [ ] **Application Monitoring**
-  - [ ] Error tracking (Sentry integration)
-  - [ ] Performance monitoring
-  - [ ] User analytics (privacy-focused)
-- [ ] **Database Monitoring**
-  - [ ] Query performance monitoring
-  - [ ] Connection monitoring
-  - [ ] Backup and recovery procedures
-
 ### 10.3 Code Quality Audit & Cleanup
 
 - [ ] **Code Consistency & Standards**
@@ -1191,6 +1180,7 @@ This checklist provides a structured approach to rebuilding CanonCore using mode
   - [ ] Find and clean up "implemented" or temporary development comments
   - [ ] Audit all inline comments for relevance and accuracy
   - [ ] Remove debug console.log statements and development artifacts
+  - [ ] KNIP and Format as part of pipeline
 - [ ] **Unused Code Detection & Removal**
   - [ ] Scan for unused imports, functions, and components across the codebase
   - [ ] Scan for any backend thigns frontend isnt using

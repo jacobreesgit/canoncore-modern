@@ -278,6 +278,47 @@ export class UserService {
       }
     }
   }
+
+  /**
+   * Delete user account and all associated data
+   * This will cascade delete all related records (universes, content, progress, favorites, etc.)
+   */
+  async deleteUser(userId: string): Promise<void> {
+    try {
+      const { db } = await import('@/lib/db')
+      const { users } = await import('@/lib/db/schema')
+
+      // First verify the user exists
+      const existingUser = await this.getById(userId)
+      if (!existingUser) {
+        throw new Error('User not found')
+      }
+
+      // Get stats before deletion for logging purposes
+      const stats = await this.getProfileStats(userId)
+      
+      // Delete the user - cascading deletes will handle all related data
+      const deletedRows = await db.delete(users).where(eq(users.id, userId))
+
+      if (deletedRows.rowCount === 0) {
+        throw new Error('User deletion failed - no rows affected')
+      }
+
+      // Log the deletion for audit purposes
+      console.log(`User deleted successfully:`, {
+        userId,
+        email: existingUser.email,
+        deletedData: {
+          universes: stats.totalUniverses,
+          favorites: stats.favouritesCount,
+        },
+        timestamp: new Date().toISOString(),
+      })
+    } catch (error) {
+      console.error('Error deleting user:', error)
+      throw new Error('Failed to delete user account')
+    }
+  }
 }
 
 export const userService = new UserService()
