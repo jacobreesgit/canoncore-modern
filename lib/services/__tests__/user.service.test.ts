@@ -30,7 +30,7 @@ vi.mock('@/lib/db/queries', () => ({
   DatabaseQueries: {
     getUserById: vi.fn(),
     getUserByEmail: vi.fn(),
-    getUserFavourites: vi.fn(),
+    getUserFavorites: vi.fn(),
   },
 }))
 

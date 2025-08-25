@@ -30,9 +30,8 @@ vi.mock('@/lib/db', () => ({
 vi.mock('@/lib/db/queries', () => ({
   DatabaseQueries: {
     getPublicUniverses: vi.fn(),
-    getUniversesByUser: vi.fn(),
+    getUniversesByUserId: vi.fn(),
     getUniverseById: vi.fn(),
-    searchUniverses: vi.fn(),
   },
 }))
 
@@ -327,7 +326,11 @@ describe('Universe Service', () => {
         limitCount: 20,
       })
 
-      expect(DatabaseQueries.getPublicUniverses).toHaveBeenCalledWith(20)
+      expect(DatabaseQueries.getPublicUniverses).toHaveBeenCalledWith({
+        searchQuery: undefined,
+        sortBy: undefined,
+        limit: 20,
+      })
       expect(result).toEqual(mockUniverses)
     })
 
@@ -348,7 +351,7 @@ describe('Universe Service', () => {
       expect(DatabaseQueries.getPublicUniverses).toHaveBeenCalledWith({
         searchQuery: 'test search',
         limit: 20,
-        sortBy: 'newest',
+        sortBy: undefined,
       })
       expect(result).toEqual(mockUniverses)
     })
@@ -368,8 +371,9 @@ describe('Universe Service', () => {
       })
 
       expect(DatabaseQueries.getPublicUniverses).toHaveBeenCalledWith({
+        searchQuery: '   ',
+        sortBy: undefined,
         limit: 20,
-        sortBy: 'newest',
       })
       expect(result).toEqual(mockUniverses)
     })
@@ -385,7 +389,11 @@ describe('Universe Service', () => {
 
       const result = await universeService.getPublicUniverses()
 
-      expect(DatabaseQueries.getPublicUniverses).toHaveBeenCalledWith(20)
+      expect(DatabaseQueries.getPublicUniverses).toHaveBeenCalledWith({
+        searchQuery: undefined,
+        sortBy: undefined,
+        limit: 20,
+      })
       expect(result).toEqual(mockUniverses)
     })
   })
