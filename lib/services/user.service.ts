@@ -296,7 +296,7 @@ export class UserService {
 
       // Get stats before deletion for logging purposes
       const stats = await this.getProfileStats(userId)
-      
+
       // Delete the user - cascading deletes will handle all related data
       const deletedRows = await db.delete(users).where(eq(users.id, userId))
 

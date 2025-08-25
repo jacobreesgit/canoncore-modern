@@ -3,17 +3,13 @@
 import { useState } from 'react'
 import { AccountDeletionModal } from './AccountDeletionModal'
 
-interface AccountDeletionSectionProps {
-  userId: string
-}
-
 /**
  * Account Deletion Section Component
  *
  * Dangerous action section for deleting user account
  * Includes warnings and confirmation flow
  */
-export function AccountDeletionSection({ userId }: AccountDeletionSectionProps) {
+export function AccountDeletionSection() {
   const [showModal, setShowModal] = useState(false)
 
   return (
@@ -22,7 +18,8 @@ export function AccountDeletionSection({ userId }: AccountDeletionSectionProps) 
         <div className='mb-4'>
           <h3 className='text-lg font-semibold text-red-900'>Danger Zone</h3>
           <p className='text-sm text-red-700 mt-1'>
-            Actions in this section are irreversible and will permanently delete your account.
+            Actions in this section are irreversible and will permanently delete
+            your account.
           </p>
         </div>
 
@@ -30,11 +27,12 @@ export function AccountDeletionSection({ userId }: AccountDeletionSectionProps) 
           <div>
             <h4 className='font-medium text-red-900'>Delete Account</h4>
             <p className='text-sm text-red-700 mt-1'>
-              Once you delete your account, there is no going back. This will permanently delete:
+              Once you delete your account, there is no going back. This will
+              permanently delete:
             </p>
             <ul className='text-sm text-red-700 mt-2 list-disc list-inside space-y-1'>
               <li>Your profile and account information</li>
-              <li>All universes you've created</li>
+              <li>All universes you&apos;ve created</li>
               <li>All content within your universes</li>
               <li>Your progress tracking data</li>
               <li>Your favorites and bookmarks</li>
@@ -50,10 +48,9 @@ export function AccountDeletionSection({ userId }: AccountDeletionSectionProps) 
         </div>
       </div>
 
-      <AccountDeletionModal 
+      <AccountDeletionModal
         isOpen={showModal}
         onClose={() => setShowModal(false)}
-        userId={userId}
       />
     </>
   )

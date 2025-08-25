@@ -48,7 +48,7 @@ export default async function EditProfilePage({
               <ProfileEditForm user={user} />
             </div>
 
-            <AccountDeletionSection userId={userId} />
+            <AccountDeletionSection />
           </div>
         </div>
       </div>

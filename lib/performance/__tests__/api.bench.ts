@@ -62,15 +62,8 @@ describe('API Performance Benchmarks', () => {
     for (const contentId of testContentIds) {
       await contentService.delete(contentId)
     }
-    // Then universe
-    await universeService.delete(testUniverseId)
-    // Finally user - this will cascade delete remaining references
-    // Note: User service might not have delete method, so we'll skip if needed
-    try {
-      // await userService.delete(testUserId) // Commented out as service might not have this method
-    } catch {
-      console.log('Note: Manual user cleanup may be needed')
-    }
+    // Finally user - this will cascade delete all remaining references
+    await userService.deleteUser(testUserId)
   })
 
   describe('User Service Performance', () => {

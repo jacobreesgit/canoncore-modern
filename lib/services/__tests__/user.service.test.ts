@@ -535,4 +535,77 @@ describe('User Service', () => {
       consoleSpy.mockRestore()
     })
   })
+
+  describe('deleteUser', () => {
+    it('should delete user and cascade delete related data', async () => {
+      const { userService } = await import('../user.service')
+
+      const mockUser = createMockUser()
+
+      // Mock getById method first (called to verify user exists)
+      const getByIdSpy = vi.spyOn(userService, 'getById')
+      getByIdSpy.mockResolvedValue(mockUser)
+
+      // Mock getProfileStats method
+      const getProfileStatsSpy = vi.spyOn(userService, 'getProfileStats')
+      getProfileStatsSpy.mockResolvedValue({
+        totalUniverses: 5,
+        publicUniverses: 3,
+        favouritesCount: 10,
+      })
+
+      // Mock the delete operation
+      mockDb.delete().where.mockResolvedValue({ rowCount: 1 })
+
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+
+      await userService.deleteUser('test-user-123')
+
+      expect(getByIdSpy).toHaveBeenCalledWith('test-user-123')
+      expect(getProfileStatsSpy).toHaveBeenCalledWith('test-user-123')
+      expect(mockDb.delete).toHaveBeenCalled()
+      expect(consoleSpy).toHaveBeenCalledWith(
+        'User deleted successfully:',
+        expect.any(Object)
+      )
+
+      consoleSpy.mockRestore()
+      getByIdSpy.mockRestore()
+      getProfileStatsSpy.mockRestore()
+    })
+
+    it('should handle database errors', async () => {
+      const { userService } = await import('../user.service')
+
+      const mockUser = createMockUser()
+
+      // Mock getById to succeed
+      const getByIdSpy = vi.spyOn(userService, 'getById')
+      getByIdSpy.mockResolvedValue(mockUser)
+
+      // Mock getProfileStats to succeed but delete to fail
+      const getProfileStatsSpy = vi.spyOn(userService, 'getProfileStats')
+      getProfileStatsSpy.mockResolvedValue({
+        totalUniverses: 0,
+        publicUniverses: 0,
+        favouritesCount: 0,
+      })
+
+      mockDb.delete().where.mockRejectedValue(new Error('Database error'))
+
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+      await expect(userService.deleteUser('test-user-123')).rejects.toThrow(
+        'Failed to delete user'
+      )
+      expect(consoleSpy).toHaveBeenCalledWith(
+        'Error deleting user:',
+        expect.any(Error)
+      )
+
+      consoleSpy.mockRestore()
+      getByIdSpy.mockRestore()
+      getProfileStatsSpy.mockRestore()
+    })
+  })
 })

@@ -170,7 +170,7 @@ export async function getCurrentUserProfileAction(): Promise<{
  * - All user progress records
  * - All user favorites
  * - All authentication sessions and accounts
- * 
+ *
  * Requires password verification for security
  */
 export async function deleteAccountAction(
@@ -208,7 +208,7 @@ export async function deleteAccountAction(
     // Verify password before deletion
     const bcrypt = await import('bcryptjs')
     const user = await userService.getById(session.user.id)
-    
+
     if (!user || !user.passwordHash) {
       return {
         success: false,
