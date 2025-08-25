@@ -169,13 +169,11 @@ export const config = {
 **Zustand Implementation:**
 
 ```typescript
-// stores/app-store.ts
-interface AppStore {
-  // UI State only (not server data)
-  sidebarOpen: boolean
-  currentView: 'grid' | 'list'
-  searchQuery: string
-
+// stores/favourites-store.ts & stores/progress-store.ts
+// Standalone stores with persistence for user data
+interface FavouritesState {
+  universes: Set<string>
+  content: Set<string>
   // Actions
   toggleSidebar: () => void
   setView: (view: 'grid' | 'list') => void
@@ -553,8 +551,8 @@ lib/                              # Utilities and configuration
 ├── validations.ts                # Zod schemas
 └── utils.ts
 stores/                           # Zustand stores
-├── app-store.ts
-└── user-store.ts
+├── favourites-store.ts
+└── progress-store.ts
 types/                            # TypeScript types
 └── index.ts
 migrations/                       # Database migrations
@@ -838,11 +836,11 @@ This checklist provides a structured approach to rebuilding CanonCore using mode
   - [x] `useProgressStore` with content progress tracking
   - [x] Calculated progress for organisational content
   - [x] Real-time updates across components
-- [x] **Combined App Store** - Slices pattern with TypeScript integration
-  - [x] Modular store architecture using Zustand slices
-  - [x] Centralized state management replacing event-based system
+- [x] **Standalone Stores** - Favourites and Progress stores with persistence
+  - [x] Standalone store architecture with optimistic updates
+  - [x] Persistence with localStorage for user preferences
   - [x] DevTools integration for debugging
-  - [x] Store initialization and reset helpers
+  - [x] Store initialization and loading helpers
 - [x] **Complete Store Integration** - Resolve 4 remaining TODO items in `/new` folder
   - [x] Connect favourites store to `@/lib/actions/favourites-actions` (server actions implemented)
   - [x] Implement initial favourites loading from user service
@@ -862,7 +860,7 @@ This checklist provides a structured approach to rebuilding CanonCore using mode
 - [x] **State Synchronization** - Solve synchronization issues from original
   - [x] Automatic state updates across all components
   - [x] Real-time progress updates in hierarchies
-  - [x] Consistent state without manual cache revalidation
+  - [x] Consistent state with fresh data on every request
 
 ## Phase 6: Core Pages & Routing
 
@@ -934,7 +932,7 @@ This checklist provides a structured approach to rebuilding CanonCore using mode
 - [x] **User Server Actions** - Implement based on user action logic
   - [x] `updateProfileAction` with validation
   - [x] `toggleFavouriteAction` with Zustand integration
-  - [x] Comprehensive cache revalidation strategy
+  - [x] No caching strategy - all data fetched fresh for immediate updates
 
 ## Phase 8: Advanced Features & Polish
 

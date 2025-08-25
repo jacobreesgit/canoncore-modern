@@ -196,7 +196,7 @@ export function useFormValidation<T extends Record<string, unknown>>({
     if (Object.keys(initialValues).length > 0 && validateOnChange) {
       validate()
     }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps -- Only run once on mount
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps -- Intentionally run only once on mount for initialization. Including dependencies would cause unwanted re-validation on every change.
 
   return {
     values,

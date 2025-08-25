@@ -37,6 +37,16 @@ interface TreeNode {
   children?: TreeNode[]
 }
 
+interface TreeArrowContext {
+  arrowProps?: React.HTMLAttributes<HTMLElement>
+  isExpanded?: boolean
+}
+
+interface TreeArrowProps {
+  item: TreeItem
+  context: TreeArrowContext
+}
+
 export interface TreeProps {
   /** Tree component variant */
   variant?: 'full' | 'focused'
@@ -321,39 +331,30 @@ export function Tree({
   )
 
   // Custom arrow renderer
-  const renderItemArrow = useCallback(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (props: { item: any; context: any }) => {
-      const { item, context } = props
-      if (!item.data.isFolder || !context.arrowProps) return null
+  const renderItemArrow = useCallback((props: TreeArrowProps) => {
+    const { item, context } = props
+    if (!item.data.isFolder || !context.arrowProps) return null
 
-      return (
-        <Button
-          variant='clear'
-          size='sm'
-          {...context.arrowProps}
-          className='p-1'
+    return (
+      <Button variant='clear' size='sm' {...context.arrowProps} className='p-1'>
+        <svg
+          className={`w-4 h-4 transition-transform ${
+            context.isExpanded ? 'rotate-90' : ''
+          }`}
+          fill='none'
+          stroke='currentColor'
+          viewBox='0 0 24 24'
         >
-          <svg
-            className={`w-4 h-4 transition-transform ${
-              context.isExpanded ? 'rotate-90' : ''
-            }`}
-            fill='none'
-            stroke='currentColor'
-            viewBox='0 0 24 24'
-          >
-            <path
-              strokeLinecap='round'
-              strokeLinejoin='round'
-              strokeWidth={2}
-              d='M9 5l7 7-7 7'
-            />
-          </svg>
-        </Button>
-      )
-    },
-    []
-  )
+          <path
+            strokeLinecap='round'
+            strokeLinejoin='round'
+            strokeWidth={2}
+            d='M9 5l7 7-7 7'
+          />
+        </svg>
+      </Button>
+    )
+  }, [])
 
   // Handle search results
   if (searchQuery && filteredContent.length > 0) {

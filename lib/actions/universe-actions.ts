@@ -1,7 +1,6 @@
 'use server'
 
 import { universeService } from '@/lib/services'
-import { revalidatePath } from 'next/cache'
 import { getCurrentUser } from '@/lib/auth-helpers'
 
 export interface UniverseActionResult {
@@ -50,9 +49,7 @@ export async function createUniverseAction(formData: FormData) {
       userId: user.id,
     })
 
-    // Revalidate relevant paths
-    revalidatePath('/')
-    revalidatePath('/discover')
+    // Using dynamic rendering for fresh data
 
     return {
       success: true,
@@ -111,11 +108,7 @@ export async function updateUniverseAction(
       sourceLinkName: sourceLinkName?.trim() || null,
     })
 
-    // Revalidate relevant paths
-    revalidatePath(`/universes/${universeId}`)
-    revalidatePath(`/universes/${universeId}/edit`)
-    revalidatePath('/')
-    revalidatePath('/discover')
+    // Using dynamic rendering for fresh data
 
     return {
       success: true,
@@ -145,9 +138,7 @@ export async function deleteUniverseAction(universeId: string) {
 
     await universeService.delete(universeId)
 
-    // Revalidate relevant paths
-    revalidatePath('/')
-    revalidatePath('/discover')
+    // Using dynamic rendering for fresh data
 
     return {
       success: true,

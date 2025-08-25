@@ -75,11 +75,23 @@ export function withPerformanceMonitoring<
       const duration = performance.now() - start
       DatabasePerformanceMonitor.recordQuery(queryName, duration, success)
 
-      // Log slow queries in development
-      if (process.env.NODE_ENV === 'development' && duration > 500) {
-        console.warn(
-          `Slow query detected: ${queryName} took ${duration.toFixed(2)}ms`
-        )
+      // Track slow queries using error tracking system
+      if (duration > 500) {
+        import('@/lib/errors/error-tracking').then(({ errorTracker }) => {
+          errorTracker.trackError(
+            new Error(
+              `Slow query detected: ${queryName} took ${duration.toFixed(2)}ms`
+            ),
+            {
+              type: 'performance_warning',
+              component: 'connection-pool',
+              queryName,
+              duration: duration.toFixed(2),
+              threshold: 500,
+            },
+            'low'
+          )
+        })
       }
     }
   }) as T

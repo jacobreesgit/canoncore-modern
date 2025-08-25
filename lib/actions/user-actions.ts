@@ -2,7 +2,6 @@
 
 import { auth } from '@/lib/auth'
 import { userService } from '@/lib/services/user.service'
-import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 
 /**
@@ -12,7 +11,7 @@ import { z } from 'zod'
  * - Profile updates with validation
  * - Authentication and authorization checks
  * - Database persistence through UserService
- * - Cache revalidation for updated data
+ * - Fresh data on every request
  * - Error handling and user feedback
  */
 
@@ -30,21 +29,36 @@ export interface UserActionResult {
   success: boolean
   error?: string
   data?: unknown
+  errors?: {
+    name?: string[]
+    email?: string[]
+  }
+}
+
+export interface UserActionState {
+  errors?: {
+    name?: string[]
+    email?: string[]
+  }
+  message?: string
+  success?: boolean
 }
 
 /**
  * Update user profile with validation and authorization
+ * Compatible with useActionState hook
  */
 export async function updateProfileAction(
+  prevState: UserActionState | undefined,
   formData: FormData
-): Promise<UserActionResult> {
+): Promise<UserActionState> {
   try {
     const session = await auth()
 
     if (!session?.user?.id) {
       return {
+        message: 'Authentication required',
         success: false,
-        error: 'Authentication required',
       }
     }
 
@@ -52,16 +66,20 @@ export async function updateProfileAction(
     const name = formData.get('name') as string
     const email = formData.get('email') as string
 
+    console.log('[updateProfileAction] Form data:', { name, email })
+    console.log('[updateProfileAction] User ID:', session.user.id)
+
     const validationResult = updateProfileSchema.safeParse({
       name,
       email,
     })
 
+    console.log('[updateProfileAction] Validation result:', validationResult)
+
     if (!validationResult.success) {
-      const firstError = validationResult.error.issues[0]
       return {
+        errors: validationResult.error.flatten().fieldErrors,
         success: false,
-        error: firstError.message,
       }
     }
 
@@ -72,48 +90,44 @@ export async function updateProfileAction(
       const existingUser = await userService.getByEmail(validatedEmail)
       if (existingUser && existingUser.id !== session.user.id) {
         return {
+          errors: { email: ['Email already in use by another account'] },
           success: false,
-          error: 'Email already in use by another account',
         }
       }
     }
 
     // Update the profile
+    console.log('[updateProfileAction] Updating profile with:', {
+      name: validatedName,
+      email: validatedEmail,
+    })
     const updatedUser = await userService.updateProfile(session.user.id, {
       name: validatedName,
       email: validatedEmail,
     })
 
+    console.log('[updateProfileAction] Update result:', updatedUser)
+
     if (!updatedUser) {
+      console.log('[updateProfileAction] Update failed - no user returned')
       return {
+        message: 'Failed to update profile',
         success: false,
-        error: 'Failed to update profile',
       }
     }
 
-    // Comprehensive cache revalidation
-    revalidatePath(`/profile/${session.user.id}`)
-    revalidatePath(`/profile/${session.user.id}/edit`)
-    revalidatePath('/dashboard')
-    revalidatePath('/discover')
-
-    // Revalidate any universe pages where user is the owner
-    // The userService could track owned universes for more targeted revalidation
+    // Using dynamic rendering for fresh data
+    console.log('[updateProfileAction] Profile updated successfully')
 
     return {
+      message: 'Profile updated successfully!',
       success: true,
-      data: {
-        id: updatedUser.id,
-        name: updatedUser.name,
-        email: updatedUser.email,
-        updatedAt: updatedUser.updatedAt,
-      },
     }
   } catch (error) {
     console.error('Error updating profile:', error)
     return {
+      message: 'Failed to update profile. Please try again.',
       success: false,
-      error: 'Failed to update profile. Please try again.',
     }
   }
 }

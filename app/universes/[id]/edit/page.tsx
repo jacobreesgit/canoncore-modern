@@ -1,4 +1,7 @@
 import { getCurrentUser } from '@/lib/auth-helpers'
+
+// Force dynamic rendering - no caching
+export const dynamic = 'force-dynamic'
 import { universeService } from '@/lib/services'
 import { Navigation } from '@/components/layout/Navigation'
 import { PageContainer } from '@/components/layout/PageContainer'

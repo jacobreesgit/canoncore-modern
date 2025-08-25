@@ -241,7 +241,7 @@ export class ProgressService {
           )
 
         const viewableContentIds = viewableContent.map(c => c.id)
-        
+
         if (viewableContentIds.length === 0) {
           continue // Skip universes with no viewable content
         }

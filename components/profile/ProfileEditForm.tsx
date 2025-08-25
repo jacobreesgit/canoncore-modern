@@ -1,78 +1,54 @@
 'use client'
 
-import { useForm } from 'react-hook-form'
-import { useState } from 'react'
+import { useActionState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { User } from '@/lib/db/schema'
+import { updateProfileAction } from '@/lib/actions/user-actions'
 
 interface ProfileEditFormProps {
   user: User
 }
 
-interface ProfileFormData {
-  name: string
-  email: string
-}
-
 /**
  * Profile Edit Form Component
  *
- * Form for editing user profile information using React Hook Form
- * Includes validation and error handling
+ * Form for editing user profile information using Server Actions
+ * Includes validation and error handling with useActionState
  */
 export function ProfileEditForm({ user }: ProfileEditFormProps) {
   const router = useRouter()
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [submitError, setSubmitError] = useState<string | null>(null)
+  const [state, formAction, pending] = useActionState(
+    updateProfileAction,
+    undefined
+  )
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isDirty },
-  } = useForm<ProfileFormData>({
-    defaultValues: {
-      name: user.name || '',
-      email: user.email,
-    },
-  })
-
-  const onSubmit = async (data: ProfileFormData) => {
-    setIsSubmitting(true)
-    setSubmitError(null)
-
-    try {
-      const response = await fetch(`/api/users/${user.id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to update profile')
-      }
-
-      // Redirect back to profile page
+  // Redirect on successful update
+  useEffect(() => {
+    if (state?.success) {
       router.push(`/profile/${user.id}`)
-      router.refresh() // Refresh server components
-    } catch (error) {
-      console.error('Error updating profile:', error)
-      setSubmitError(
-        error instanceof Error ? error.message : 'Failed to update profile'
-      )
-    } finally {
-      setIsSubmitting(false)
     }
-  }
+  }, [state?.success, router, user.id])
 
   const handleCancel = () => {
     router.push(`/profile/${user.id}`)
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className='space-y-6'>
+    <form action={formAction} className='space-y-6'>
+      {/* Success Message */}
+      {state?.success && state?.message && (
+        <div className='rounded-md bg-green-50 p-4'>
+          <div className='text-sm text-green-700'>{state.message}</div>
+        </div>
+      )}
+
+      {/* General Error Message */}
+      {state?.message && !state?.success && !state?.errors && (
+        <div className='rounded-md bg-red-50 p-4'>
+          <div className='text-sm text-red-700'>{state.message}</div>
+        </div>
+      )}
+
       {/* Name Field */}
       <div>
         <label
@@ -82,28 +58,26 @@ export function ProfileEditForm({ user }: ProfileEditFormProps) {
           Display Name
         </label>
         <input
-          {...register('name', {
-            required: 'Display name is required',
-            minLength: {
-              value: 2,
-              message: 'Display name must be at least 2 characters',
-            },
-            maxLength: {
-              value: 50,
-              message: 'Display name must be less than 50 characters',
-            },
-          })}
           type='text'
           id='name'
+          name='name'
+          defaultValue={user.name || ''}
           className={`mt-1 block w-full rounded-md border px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-            errors.name
+            state?.errors?.name
               ? 'border-red-300 focus:border-red-500'
               : 'border-gray-300 focus:border-blue-500'
           }`}
           placeholder='Enter your display name'
+          disabled={pending}
         />
-        {errors.name && (
-          <p className='mt-1 text-sm text-red-600'>{errors.name.message}</p>
+        {state?.errors?.name && (
+          <div className='mt-1 space-y-1'>
+            {state.errors.name.map((error, index) => (
+              <p key={index} className='text-sm text-red-600'>
+                {error}
+              </p>
+            ))}
+          </div>
         )}
       </div>
 
@@ -116,33 +90,28 @@ export function ProfileEditForm({ user }: ProfileEditFormProps) {
           Email Address
         </label>
         <input
-          {...register('email', {
-            required: 'Email is required',
-            pattern: {
-              value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-              message: 'Please enter a valid email address',
-            },
-          })}
           type='email'
           id='email'
+          name='email'
+          defaultValue={user.email}
           className={`mt-1 block w-full rounded-md border px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-            errors.email
+            state?.errors?.email
               ? 'border-red-300 focus:border-red-500'
               : 'border-gray-300 focus:border-blue-500'
           }`}
           placeholder='Enter your email address'
+          disabled={pending}
         />
-        {errors.email && (
-          <p className='mt-1 text-sm text-red-600'>{errors.email.message}</p>
+        {state?.errors?.email && (
+          <div className='mt-1 space-y-1'>
+            {state.errors.email.map((error, index) => (
+              <p key={index} className='text-sm text-red-600'>
+                {error}
+              </p>
+            ))}
+          </div>
         )}
       </div>
-
-      {/* Submit Error */}
-      {submitError && (
-        <div className='rounded-md bg-red-50 p-4'>
-          <div className='text-sm text-red-700'>{submitError}</div>
-        </div>
-      )}
 
       {/* Form Actions */}
       <div className='flex justify-end gap-4'>
@@ -150,16 +119,16 @@ export function ProfileEditForm({ user }: ProfileEditFormProps) {
           type='button'
           onClick={handleCancel}
           className='rounded-lg border border-gray-300 px-4 py-2 text-gray-700 transition-colors hover:bg-gray-50'
-          disabled={isSubmitting}
+          disabled={pending}
         >
           Cancel
         </button>
         <button
           type='submit'
-          disabled={isSubmitting || !isDirty}
+          disabled={pending}
           className='rounded-lg bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50'
         >
-          {isSubmitting ? 'Saving...' : 'Save Changes'}
+          {pending ? 'Saving...' : 'Save Changes'}
         </button>
       </div>
     </form>

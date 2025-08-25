@@ -4,7 +4,6 @@ import { auth } from '@/lib/auth'
 import { userService } from '@/lib/services/user.service'
 import { universeService } from '@/lib/services/universe.service'
 import { contentService } from '@/lib/services/content.service'
-import { revalidatePath } from 'next/cache'
 import type { Universe, Content } from '@/lib/types'
 
 /**
@@ -13,7 +12,7 @@ import type { Universe, Content } from '@/lib/types'
  * Handles server-side mutations for user favourites:
  * - Add/remove favourites with authentication
  * - Database persistence through UserService
- * - Cache revalidation for updated data
+ * - Fresh data on every request
  * - Error handling and user feedback
  */
 
@@ -58,13 +57,7 @@ export async function toggleFavouriteAction(
       await userService.addToFavourites(session.user.id, targetId, targetType)
     }
 
-    // Revalidate pages that might display favourite status
-    revalidatePath('/dashboard')
-    revalidatePath('/discover')
-    revalidatePath(`/profile/${session.user.id}`)
-    if (targetType === 'universe') {
-      revalidatePath(`/universes/${targetId}`)
-    }
+    // Using dynamic rendering for fresh data
 
     return {
       success: true,
@@ -97,13 +90,7 @@ export async function addToFavouritesAction(
 
     await userService.addToFavourites(session.user.id, targetId, targetType)
 
-    // Revalidate relevant pages
-    revalidatePath('/dashboard')
-    revalidatePath('/discover')
-    revalidatePath(`/profile/${session.user.id}`)
-    if (targetType === 'universe') {
-      revalidatePath(`/universes/${targetId}`)
-    }
+    // Using dynamic rendering for fresh data
 
     return {
       success: true,
@@ -140,13 +127,7 @@ export async function removeFromFavouritesAction(
       targetType
     )
 
-    // Revalidate relevant pages
-    revalidatePath('/dashboard')
-    revalidatePath('/discover')
-    revalidatePath(`/profile/${session.user.id}`)
-    if (targetType === 'universe') {
-      revalidatePath(`/universes/${targetId}`)
-    }
+    // Using dynamic rendering for fresh data
 
     return {
       success: true,

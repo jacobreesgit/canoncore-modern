@@ -1,4 +1,7 @@
 import { getCurrentUser } from '@/lib/auth-helpers'
+
+// Force dynamic rendering - no caching
+export const dynamic = 'force-dynamic'
 import { universeService, contentService } from '@/lib/services'
 import { Navigation } from '@/components/layout/Navigation'
 import { PageContainer } from '@/components/layout/PageContainer'
@@ -40,7 +43,7 @@ export default async function EditContentPage({
     content.userId !== user.id ||
     content.universeId !== id
   ) {
-    throw new Error('You do not have permission to edit this content')
+    notFound()
   }
 
   return (

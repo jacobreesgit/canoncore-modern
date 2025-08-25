@@ -5,6 +5,9 @@ import { PageContainer } from '@/components/layout/PageContainer'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { DiscoverClient } from './discover-client'
 
+// Force dynamic rendering - no caching
+export const dynamic = 'force-dynamic'
+
 /**
  * Discover page showing public universes with search functionality
  * Server component with server-side data fetching for SEO and performance

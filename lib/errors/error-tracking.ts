@@ -63,7 +63,10 @@ class ErrorTracker {
 
     // Check rate limiting
     if (this.isRateLimited()) {
-      console.warn('Error tracking rate limited')
+      // Log rate limiting in development, but don't create infinite loops
+      if (this.config.environment === 'development') {
+        console.warn('Error tracking rate limited')
+      }
       return
     }
 
@@ -297,7 +300,10 @@ class ErrorTracker {
 
       localStorage.setItem('error_reports', JSON.stringify(reports))
     } catch (error) {
-      console.warn('Failed to store error report locally:', error)
+      // Only log localStorage failures in development to avoid infinite loops
+      if (this.config.environment === 'development') {
+        console.warn('Failed to store error report locally:', error)
+      }
     }
   }
 }

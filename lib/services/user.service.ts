@@ -18,12 +18,12 @@ export class UserService {
    * Get user by ID
    */
   async getById(id: string): Promise<User | null> {
-    const { OptimizedQueries } = await import('@/lib/db/optimized-queries')
+    const { DatabaseQueries } = await import('@/lib/db/queries')
     const { withPerformanceMonitoring } = await import(
       '@/lib/db/connection-pool'
     )
     const optimizedGetById = withPerformanceMonitoring(
-      OptimizedQueries.getUserById,
+      DatabaseQueries.getUserById,
       'user.getById'
     )
     return await optimizedGetById(id)
@@ -87,28 +87,15 @@ export class UserService {
     userId: string
   ): Promise<{ universes: string[]; content: string[] }> {
     try {
-      const { OptimizedQueries } = await import('@/lib/db/optimized-queries')
+      const { DatabaseQueries } = await import('@/lib/db/queries')
       const { withPerformanceMonitoring } = await import(
         '@/lib/db/connection-pool'
       )
       const optimizedGetFavourites = withPerformanceMonitoring(
-        OptimizedQueries.getUserFavourites,
+        DatabaseQueries.getUserFavorites,
         'user.getUserFavourites'
       )
-      const userFavorites = await optimizedGetFavourites(userId)
-
-      const universes: string[] = []
-      const content: string[] = []
-
-      userFavorites.forEach(favorite => {
-        if (favorite.targetType === 'universe') {
-          universes.push(favorite.targetId)
-        } else if (favorite.targetType === 'content') {
-          content.push(favorite.targetId)
-        }
-      })
-
-      return { universes, content }
+      return await optimizedGetFavourites(userId)
     } catch (error) {
       console.error('Error fetching user favourites:', error)
       return { universes: [], content: [] }
@@ -226,12 +213,12 @@ export class UserService {
    * Get user by email
    */
   async getByEmail(email: string): Promise<User | null> {
-    const { OptimizedQueries } = await import('@/lib/db/optimized-queries')
+    const { DatabaseQueries } = await import('@/lib/db/queries')
     const { withPerformanceMonitoring } = await import(
       '@/lib/db/connection-pool'
     )
     const optimizedGetByEmail = withPerformanceMonitoring(
-      OptimizedQueries.getUserByEmail,
+      DatabaseQueries.getUserByEmail,
       'user.getByEmail'
     )
     return await optimizedGetByEmail(email)

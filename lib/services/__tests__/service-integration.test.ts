@@ -1,28 +1,26 @@
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-nocheck - Test file with mocked database functions
+/**
+ * Refactored to remove @ts-nocheck and implement proper TypeScript types
+ * using proven database service mocking pattern from wanago.io article.
+ *
+ * Key changes:
+ * - Removed @ts-nocheck directive for proper TypeScript support
+ * - Replaced complex pre-configured mock chains with simple mockDb object
+ * - Updated all tests to use explicit mock chain setup for better debugging
+ * - Added comprehensive beforeEach mock chain reset for reliable test isolation
+ * - Converted integration tests to use consistent mocking pattern across all service interactions
+ * - Maintains all cross-service workflow testing while improving type safety
+ */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { User, Content, ContentRelationship } from '@/lib/db/schema'
 
-// Simple mock database following existing patterns
+// Mock the database module
 const mockDb = {
-  insert: vi.fn().mockReturnValue({
-    values: vi.fn().mockReturnValue({
-      returning: vi.fn(),
-    }),
-  }),
-  select: vi.fn().mockReturnValue({
-    from: vi.fn().mockReturnValue({
-      where: vi.fn().mockReturnValue({
-        limit: vi.fn(),
-      }),
-    }),
-  }),
-  delete: vi.fn().mockReturnValue({
-    where: vi.fn(),
-  }),
+  select: vi.fn(),
+  insert: vi.fn(),
+  update: vi.fn(),
+  delete: vi.fn(),
 }
 
-// Mock database module
 vi.mock('@/lib/db', () => ({
   db: mockDb,
 }))
@@ -60,6 +58,31 @@ const createMockContent = (): Content => ({
 describe('Service Integration Tests', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    // Reset mock chain implementations
+    mockDb.select.mockReturnValue({
+      from: vi.fn().mockReturnValue({
+        where: vi.fn().mockReturnValue({
+          limit: vi.fn(),
+          orderBy: vi.fn(),
+        }),
+        orderBy: vi.fn(),
+      }),
+    })
+    mockDb.insert.mockReturnValue({
+      values: vi.fn().mockReturnValue({
+        returning: vi.fn(),
+      }),
+    })
+    mockDb.update.mockReturnValue({
+      set: vi.fn().mockReturnValue({
+        where: vi.fn().mockReturnValue({
+          returning: vi.fn(),
+        }),
+      }),
+    })
+    mockDb.delete.mockReturnValue({
+      where: vi.fn(),
+    })
   })
 
   describe('Content creation workflow', () => {
@@ -81,13 +104,18 @@ describe('Service Integration Tests', () => {
       }
 
       // Mock content creation - first call returns content
-      mockDb.insert().values().returning.mockResolvedValueOnce([mockContent])
+      const mockContentReturning = vi.fn().mockResolvedValueOnce([mockContent])
+      const mockContentValues = vi
+        .fn()
+        .mockReturnValue({ returning: mockContentReturning })
+      mockDb.insert.mockReturnValueOnce({ values: mockContentValues })
 
       // Mock relationship creation - second call returns relationship
-      mockDb
-        .insert()
-        .values()
-        .returning.mockResolvedValueOnce([mockRelationship])
+      const mockRelReturning = vi.fn().mockResolvedValueOnce([mockRelationship])
+      const mockRelValues = vi
+        .fn()
+        .mockReturnValue({ returning: mockRelReturning })
+      mockDb.insert.mockReturnValueOnce({ values: mockRelValues })
 
       // Test content creation
       const createdContent = await contentService.create({
@@ -120,7 +148,8 @@ describe('Service Integration Tests', () => {
       const { universeService } = await import('../universe.service')
 
       // Mock successful deletion
-      mockDb.delete().where.mockResolvedValue(undefined)
+      const mockWhere = vi.fn().mockResolvedValue(undefined)
+      mockDb.delete.mockReturnValue({ where: mockWhere })
 
       await universeService.delete('universe-1')
 
@@ -137,10 +166,17 @@ describe('Service Integration Tests', () => {
       const mockContent = createMockContent()
 
       // Mock user fetch
-      mockDb.select().from().where().limit.mockResolvedValueOnce([mockUser])
+      const mockUserLimit = vi.fn().mockResolvedValueOnce([mockUser])
+      const mockUserWhere = vi.fn().mockReturnValue({ limit: mockUserLimit })
+      const mockUserFrom = vi.fn().mockReturnValue({ where: mockUserWhere })
+      mockDb.select.mockReturnValueOnce({ from: mockUserFrom })
 
       // Mock content creation
-      mockDb.insert().values().returning.mockResolvedValueOnce([mockContent])
+      const mockContentReturning = vi.fn().mockResolvedValueOnce([mockContent])
+      const mockContentValues = vi
+        .fn()
+        .mockReturnValue({ returning: mockContentReturning })
+      mockDb.insert.mockReturnValueOnce({ values: mockContentValues })
 
       // Verify user exists
       const user = await userService.getById('user-1')

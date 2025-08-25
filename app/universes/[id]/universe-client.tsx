@@ -139,7 +139,10 @@ export function UniverseClient({
               <div className='text-sm text-gray-600 mb-4'>
                 Created by {universeOwner.name || universeOwner.email}
                 {universe.createdAt && (
-                  <> on {new Date(universe.createdAt).toLocaleDateString()}</>
+                  <span suppressHydrationWarning>
+                    {' '}
+                    on {new Date(universe.createdAt).toLocaleDateString()}
+                  </span>
                 )}
               </div>
             )}

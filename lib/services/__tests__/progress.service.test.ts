@@ -46,8 +46,8 @@ vi.mock('@/lib/db', () => ({
 }))
 
 // Mock other dependencies with comprehensive implementations
-vi.mock('@/lib/db/optimized-queries', () => ({
-  OptimizedQueries: {
+vi.mock('@/lib/db/queries', () => ({
+  DatabaseQueries: {
     getUserProgressForUniverse: vi.fn(),
   },
 }))
@@ -544,11 +544,15 @@ describe('Progress Service', () => {
         return {
           from: vi.fn().mockReturnValue({
             where: vi.fn().mockResolvedValue(
-              selectCallCount === 1 ? [{ count: 15 }] : 
-              selectCallCount === 2 ? [{ count: 8 }] :
-              selectCallCount === 3 ? [{ id: 'content-1' }, { id: 'content-2' }] : // universe-1 viewable content
-              selectCallCount === 4 ? [{ id: 'content-3' }] : // universe-2 viewable content  
-              [{ id: 'content-4' }, { id: 'content-5' }] // universe-3 viewable content
+              selectCallCount === 1
+                ? [{ count: 15 }]
+                : selectCallCount === 2
+                  ? [{ count: 8 }]
+                  : selectCallCount === 3
+                    ? [{ id: 'content-1' }, { id: 'content-2' }] // universe-1 viewable content
+                    : selectCallCount === 4
+                      ? [{ id: 'content-3' }] // universe-2 viewable content
+                      : [{ id: 'content-4' }, { id: 'content-5' }] // universe-3 viewable content
             ),
           }),
         }
@@ -564,13 +568,15 @@ describe('Progress Service', () => {
         ])
 
       // Mock getUserProgress to simulate completion status
-      vi.spyOn(progressService, 'getUserProgress').mockImplementation(async (userId, contentId) => {
-        // Simulate that content-1 and content-3 are completed (100%), others are not
-        if (contentId === 'content-1' || contentId === 'content-3') {
-          return 100
+      vi.spyOn(progressService, 'getUserProgress').mockImplementation(
+        async (userId, contentId) => {
+          // Simulate that content-1 and content-3 are completed (100%), others are not
+          if (contentId === 'content-1' || contentId === 'content-3') {
+            return 100
+          }
+          return 50 // Not completed
         }
-        return 50 // Not completed
-      })
+      )
 
       const result = await progressService.getProgressSummary('test-user-123')
 

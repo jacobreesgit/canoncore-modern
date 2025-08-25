@@ -1,55 +1,26 @@
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-nocheck - Test file with mocked database functions
+/**
+ * Refactored to remove @ts-nocheck and implement proper TypeScript types
+ * using proven database service mocking pattern from wanago.io article.
+ *
+ * Key changes:
+ * - Removed @ts-nocheck directive for proper TypeScript support
+ * - Replaced complex inline vi.mock with simple mockDb object pattern
+ * - Updated all tests to use explicit mock chain setup (e.g., mockWhere, mockFrom)
+ * - Added comprehensive beforeEach mock chain reset for consistent test state
+ * - Maintains all original test logic while improving type safety and maintainability
+ */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { RelationshipService } from '../relationship.service'
 import type { ContentRelationship, Content } from '@/lib/db/schema'
 
-// Mock the database with inline implementation to avoid hoisting issues
-vi.mock('@/lib/db', () => ({
-  db: {
-    select: vi.fn().mockReturnValue({
-      from: vi.fn().mockReturnValue({
-        where: vi.fn(),
-        leftJoin: vi.fn().mockReturnValue({
-          where: vi.fn(),
-        }),
-      }),
-    }),
-    insert: vi.fn().mockReturnValue({
-      values: vi.fn().mockReturnValue({
-        returning: vi.fn(),
-      }),
-    }),
-    delete: vi.fn().mockReturnValue({
-      where: vi.fn(),
-    }),
-  },
-}))
+const mockDb = {
+  select: vi.fn(),
+  insert: vi.fn(),
+  delete: vi.fn(),
+}
 
-// Import db after mocking
-import { db as mockDb } from '@/lib/db'
-
+vi.mock('@/lib/db', () => ({ db: mockDb }))
 vi.mock('server-only', () => ({}))
-
-// Function to reset mock implementations
-const createDbMock = () => ({
-  select: vi.fn().mockReturnValue({
-    from: vi.fn().mockReturnValue({
-      where: vi.fn(),
-      leftJoin: vi.fn().mockReturnValue({
-        where: vi.fn(),
-      }),
-    }),
-  }),
-  insert: vi.fn().mockReturnValue({
-    values: vi.fn().mockReturnValue({
-      returning: vi.fn(),
-    }),
-  }),
-  delete: vi.fn().mockReturnValue({
-    where: vi.fn(),
-  }),
-})
 
 // Mock data factories
 const createMockRelationship = (
@@ -87,9 +58,21 @@ describe('Relationship Service', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    // Reset mock implementation
-    Object.assign(mockDb, createDbMock())
     service = new RelationshipService()
+    // Reset mock chain implementations
+    mockDb.select.mockReturnValue({
+      from: vi.fn().mockReturnValue({
+        where: vi.fn(),
+      }),
+    })
+    mockDb.insert.mockReturnValue({
+      values: vi.fn().mockReturnValue({
+        returning: vi.fn(),
+      }),
+    })
+    mockDb.delete.mockReturnValue({
+      where: vi.fn(),
+    })
   })
 
   describe('getByUniverse', () => {
@@ -98,7 +81,10 @@ describe('Relationship Service', () => {
         { parentId: 'parent-1', childId: 'child-1' },
         { parentId: 'parent-1', childId: 'child-2' },
       ]
-      mockDb.select().from().where.mockResolvedValue(mockRelationships)
+
+      const mockWhere = vi.fn().mockResolvedValue(mockRelationships)
+      const mockFrom = vi.fn().mockReturnValue({ where: mockWhere })
+      mockDb.select.mockReturnValue({ from: mockFrom })
 
       const result = await service.getByUniverse('universe-1')
 
@@ -107,7 +93,9 @@ describe('Relationship Service', () => {
     })
 
     it('should return empty array when no relationships exist', async () => {
-      mockDb.select().from().where.mockResolvedValue([])
+      const mockWhere = vi.fn().mockResolvedValue([])
+      const mockFrom = vi.fn().mockReturnValue({ where: mockWhere })
+      mockDb.select.mockReturnValue({ from: mockFrom })
 
       const result = await service.getByUniverse('universe-1')
 
@@ -118,10 +106,10 @@ describe('Relationship Service', () => {
       const consoleErrorSpy = vi
         .spyOn(console, 'error')
         .mockImplementation(() => {})
-      mockDb
-        .select()
-        .from()
-        .where.mockRejectedValue(new Error('Database error'))
+
+      const mockWhere = vi.fn().mockRejectedValue(new Error('Database error'))
+      const mockFrom = vi.fn().mockReturnValue({ where: mockWhere })
+      mockDb.select.mockReturnValue({ from: mockFrom })
 
       await expect(service.getByUniverse('universe-1')).rejects.toThrow(
         'Failed to fetch universe relationships'
@@ -141,7 +129,9 @@ describe('Relationship Service', () => {
         { parentId: 'parent-1', childId: 'content-1' },
         { parentId: 'parent-2', childId: 'content-1' },
       ]
-      mockDb.select().from().where.mockResolvedValue(mockParents)
+      const mockWhere = vi.fn().mockResolvedValue(mockParents)
+      const mockFrom = vi.fn().mockReturnValue({ where: mockWhere })
+      mockDb.select.mockReturnValue({ from: mockFrom })
 
       const result = await service.getParents('content-1')
 
@@ -149,7 +139,9 @@ describe('Relationship Service', () => {
     })
 
     it('should return empty array when no parents exist', async () => {
-      mockDb.select().from().where.mockResolvedValue([])
+      const mockWhere = vi.fn().mockResolvedValue([])
+      const mockFrom = vi.fn().mockReturnValue({ where: mockWhere })
+      mockDb.select.mockReturnValue({ from: mockFrom })
 
       const result = await service.getParents('content-1')
 
@@ -160,10 +152,9 @@ describe('Relationship Service', () => {
       const consoleErrorSpy = vi
         .spyOn(console, 'error')
         .mockImplementation(() => {})
-      mockDb
-        .select()
-        .from()
-        .where.mockRejectedValue(new Error('Database error'))
+      const mockWhere = vi.fn().mockRejectedValue(new Error('Database error'))
+      const mockFrom = vi.fn().mockReturnValue({ where: mockWhere })
+      mockDb.select.mockReturnValue({ from: mockFrom })
 
       await expect(service.getParents('content-1')).rejects.toThrow(
         'Failed to fetch content parents'
@@ -183,7 +174,9 @@ describe('Relationship Service', () => {
         { parentId: 'parent-1', childId: 'child-1' },
         { parentId: 'parent-1', childId: 'child-2' },
       ]
-      mockDb.select().from().where.mockResolvedValue(mockChildren)
+      const mockWhere = vi.fn().mockResolvedValue(mockChildren)
+      const mockFrom = vi.fn().mockReturnValue({ where: mockWhere })
+      mockDb.select.mockReturnValue({ from: mockFrom })
 
       const result = await service.getChildren('parent-1')
 
@@ -191,7 +184,9 @@ describe('Relationship Service', () => {
     })
 
     it('should return empty array when no children exist', async () => {
-      mockDb.select().from().where.mockResolvedValue([])
+      const mockWhere = vi.fn().mockResolvedValue([])
+      const mockFrom = vi.fn().mockReturnValue({ where: mockWhere })
+      mockDb.select.mockReturnValue({ from: mockFrom })
 
       const result = await service.getChildren('parent-1')
 
@@ -202,10 +197,9 @@ describe('Relationship Service', () => {
       const consoleErrorSpy = vi
         .spyOn(console, 'error')
         .mockImplementation(() => {})
-      mockDb
-        .select()
-        .from()
-        .where.mockRejectedValue(new Error('Database error'))
+      const mockWhere = vi.fn().mockRejectedValue(new Error('Database error'))
+      const mockFrom = vi.fn().mockReturnValue({ where: mockWhere })
+      mockDb.select.mockReturnValue({ from: mockFrom })
 
       await expect(service.getChildren('parent-1')).rejects.toThrow(
         'Failed to fetch content children'
@@ -227,10 +221,9 @@ describe('Relationship Service', () => {
         universeId: 'universe-1',
         userId: 'user-1',
       })
-      mockDb
-        .insert()
-        .values()
-        .returning.mockResolvedValue([mockCreatedRelationship])
+      const mockReturning = vi.fn().mockResolvedValue([mockCreatedRelationship])
+      const mockValues = vi.fn().mockReturnValue({ returning: mockReturning })
+      mockDb.insert.mockReturnValue({ values: mockValues })
 
       const result = await service.create(
         'parent-1',
@@ -247,10 +240,11 @@ describe('Relationship Service', () => {
       const consoleErrorSpy = vi
         .spyOn(console, 'error')
         .mockImplementation(() => {})
-      mockDb
-        .insert()
-        .values()
-        .returning.mockRejectedValue(new Error('Insert failed'))
+      const mockReturning = vi
+        .fn()
+        .mockRejectedValue(new Error('Insert failed'))
+      const mockValues = vi.fn().mockReturnValue({ returning: mockReturning })
+      mockDb.insert.mockReturnValue({ values: mockValues })
 
       await expect(
         service.create('parent-1', 'child-1', 'universe-1', 'user-1')
@@ -266,7 +260,8 @@ describe('Relationship Service', () => {
 
   describe('delete', () => {
     it('should delete a relationship successfully', async () => {
-      mockDb.delete().where.mockResolvedValue(undefined)
+      const mockWhere = vi.fn().mockResolvedValue(undefined)
+      mockDb.delete.mockReturnValue({ where: mockWhere })
 
       await service.delete('parent-1', 'child-1')
 
@@ -277,7 +272,8 @@ describe('Relationship Service', () => {
       const consoleErrorSpy = vi
         .spyOn(console, 'error')
         .mockImplementation(() => {})
-      mockDb.delete().where.mockRejectedValue(new Error('Delete failed'))
+      const mockWhere = vi.fn().mockRejectedValue(new Error('Delete failed'))
+      mockDb.delete.mockReturnValue({ where: mockWhere })
 
       await expect(service.delete('parent-1', 'child-1')).rejects.toThrow(
         'Failed to delete relationship'
@@ -307,7 +303,8 @@ describe('Relationship Service', () => {
       const consoleErrorSpy = vi
         .spyOn(console, 'error')
         .mockImplementation(() => {})
-      mockDb.delete().where.mockRejectedValue(new Error('Delete failed'))
+      const mockWhere = vi.fn().mockRejectedValue(new Error('Delete failed'))
+      mockDb.delete.mockReturnValue({ where: mockWhere })
 
       await expect(service.deleteAllForContent('content-1')).rejects.toThrow(
         'Failed to delete content relationships'
@@ -411,7 +408,9 @@ describe('Relationship Service', () => {
       ]
       const mockRelationships = [{ parentId: 'parent-1', childId: 'child-1' }]
 
-      mockDb.select().from().where.mockResolvedValueOnce(mockContent)
+      const mockWhere = vi.fn().mockResolvedValueOnce(mockContent)
+      const mockFrom = vi.fn().mockReturnValue({ where: mockWhere })
+      mockDb.select.mockReturnValue({ from: mockFrom })
       vi.spyOn(service, 'getByUniverse').mockResolvedValueOnce(
         mockRelationships
       )
@@ -425,7 +424,9 @@ describe('Relationship Service', () => {
     })
 
     it('should handle empty universe', async () => {
-      mockDb.select().from().where.mockResolvedValueOnce([])
+      const mockWhere = vi.fn().mockResolvedValueOnce([])
+      const mockFrom = vi.fn().mockReturnValue({ where: mockWhere })
+      mockDb.select.mockReturnValue({ from: mockFrom })
       vi.spyOn(service, 'getByUniverse').mockResolvedValueOnce([])
 
       const result = await service.getUniverseHierarchy('universe-1')
@@ -437,10 +438,9 @@ describe('Relationship Service', () => {
       const consoleErrorSpy = vi
         .spyOn(console, 'error')
         .mockImplementation(() => {})
-      mockDb
-        .select()
-        .from()
-        .where.mockRejectedValue(new Error('Database error'))
+      const mockWhere = vi.fn().mockRejectedValue(new Error('Database error'))
+      const mockFrom = vi.fn().mockReturnValue({ where: mockWhere })
+      mockDb.select.mockReturnValue({ from: mockFrom })
 
       await expect(service.getUniverseHierarchy('universe-1')).rejects.toThrow(
         'Failed to build universe hierarchy'
@@ -588,18 +588,16 @@ describe('Relationship Service', () => {
       })
 
       // Mock creation
-      mockDb
-        .insert()
-        .values()
-        .returning.mockResolvedValueOnce([mockRelationship])
+      const mockReturning = vi.fn().mockResolvedValueOnce([mockRelationship])
+      const mockValues = vi.fn().mockReturnValue({ returning: mockReturning })
+      mockDb.insert.mockReturnValue({ values: mockValues })
 
       // Mock querying
-      mockDb
-        .select()
-        .from()
-        .where.mockResolvedValueOnce([
-          { parentId: 'parent-1', childId: 'child-1' },
-        ])
+      const mockWhere = vi
+        .fn()
+        .mockResolvedValueOnce([{ parentId: 'parent-1', childId: 'child-1' }])
+      const mockFrom = vi.fn().mockReturnValue({ where: mockWhere })
+      mockDb.select.mockReturnValue({ from: mockFrom })
 
       // Create relationship
       const created = await service.create(

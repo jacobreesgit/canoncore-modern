@@ -5,10 +5,18 @@ import {
   contentService,
   relationshipService,
 } from '@/lib/services'
+
+// Force dynamic rendering - no caching
+export const dynamic = 'force-dynamic'
 import { Navigation } from '@/components/layout/Navigation'
 import { UniverseClient } from './universe-client'
 import { redirect, notFound } from 'next/navigation'
 import type { HierarchyNode } from '@/lib/utils/progress'
+
+interface RawHierarchyNode {
+  id: string
+  children?: RawHierarchyNode[]
+}
 
 /**
  * Universe Detail Page
@@ -27,7 +35,7 @@ export default async function UniversePage({
     redirect('/')
   }
 
-  // Fetch universe data
+  // Fetch universe data - no caching
   const universe = await universeService.getById(id)
   if (!universe) {
     notFound()
@@ -35,20 +43,20 @@ export default async function UniversePage({
 
   // Check permissions - must be public or owned by user
   if (!universe.isPublic && universe.userId !== user.id) {
-    throw new Error('You do not have permission to view this universe')
+    notFound()
   }
 
-  // Fetch universe owner
+  // Fetch universe owner - no caching
   const universeOwner = await userService.getById(universe.userId)
 
-  // Get user's favourites to add favourite status
+  // Get user's favourites - no caching
   const favourites = await userService.getUserFavourites(user.id)
   const universeWithFavourite = {
     ...universe,
     isFavourite: favourites.universes.includes(universe.id),
   }
 
-  // Fetch content for this universe
+  // Fetch content for this universe - no caching
   const content = await contentService.getByUniverse(id)
 
   // Add favourite status to content
@@ -65,8 +73,9 @@ export default async function UniversePage({
   )
 
   // Convert to HierarchyNode format for Tree component
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const transformToHierarchyNodes = (nodes: any[]): HierarchyNode[] => {
+  const transformToHierarchyNodes = (
+    nodes: RawHierarchyNode[]
+  ): HierarchyNode[] => {
     return nodes.map(node => ({
       contentId: node.id,
       children: node.children ? transformToHierarchyNodes(node.children) : [],

@@ -70,9 +70,11 @@ export function ProfileDisplay({
                 <p className='text-gray-600'>{user.email}</p>
                 <p className='text-sm text-gray-500'>
                   Member since{' '}
-                  {user.createdAt
-                    ? new Date(user.createdAt).toLocaleDateString()
-                    : 'Unknown'}
+                  <span suppressHydrationWarning>
+                    {user.createdAt
+                      ? new Date(user.createdAt).toLocaleDateString()
+                      : 'Unknown'}
+                  </span>
                 </p>
               </div>
             </div>

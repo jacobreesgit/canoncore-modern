@@ -199,7 +199,7 @@ git push origin feature/new-feature
 
 - Next.js built-in error tracking
 - Vercel runtime logs
-- Optional: Sentry integration
+- Built-in error tracking system
 
 ### 3. Security
 

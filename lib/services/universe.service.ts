@@ -18,12 +18,12 @@ export class UniverseService {
    * Get universe by ID
    */
   async getById(id: string): Promise<Universe | null> {
-    const { OptimizedQueries } = await import('@/lib/db/optimized-queries')
+    const { DatabaseQueries } = await import('@/lib/db/queries')
     const { withPerformanceMonitoring } = await import(
       '@/lib/db/connection-pool'
     )
     const optimizedGetById = withPerformanceMonitoring(
-      OptimizedQueries.getUniverseById,
+      DatabaseQueries.getUniverseById,
       'universe.getById'
     )
     return await optimizedGetById(id)
@@ -125,12 +125,12 @@ export class UniverseService {
    * Get universes by user ID
    */
   async getByUserId(userId: string): Promise<Universe[]> {
-    const { OptimizedQueries } = await import('@/lib/db/optimized-queries')
+    const { DatabaseQueries } = await import('@/lib/db/queries')
     const { withPerformanceMonitoring } = await import(
       '@/lib/db/connection-pool'
     )
     const optimizedGetByUser = withPerformanceMonitoring(
-      OptimizedQueries.getUniversesByUser,
+      DatabaseQueries.getUniversesByUserId,
       'universe.getByUserId'
     )
     return await optimizedGetByUser(userId)
@@ -175,24 +175,20 @@ export class UniverseService {
     sortBy?: 'newest' | 'oldest' | 'name'
   }): Promise<Universe[]> {
     const { limitCount = 20, searchQuery } = options || {}
-    const { OptimizedQueries } = await import('@/lib/db/optimized-queries')
+    const { DatabaseQueries } = await import('@/lib/db/queries')
     const { withPerformanceMonitoring } = await import(
       '@/lib/db/connection-pool'
     )
 
-    if (searchQuery && searchQuery.trim()) {
-      const optimizedSearch = withPerformanceMonitoring(
-        OptimizedQueries.searchUniverses,
-        'universe.searchPublicUniverses'
-      )
-      return await optimizedSearch(searchQuery, limitCount)
-    }
-
     const optimizedGetPublic = withPerformanceMonitoring(
-      OptimizedQueries.getPublicUniverses,
+      DatabaseQueries.getPublicUniverses,
       'universe.getPublicUniverses'
     )
-    return await optimizedGetPublic(limitCount)
+    return await optimizedGetPublic({
+      searchQuery,
+      sortBy: options?.sortBy,
+      limit: limitCount,
+    })
   }
 
   /**

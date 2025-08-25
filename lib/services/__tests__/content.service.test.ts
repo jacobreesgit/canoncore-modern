@@ -1,53 +1,19 @@
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-nocheck - Test file with mocked database functions
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { Content, NewContent } from '@/lib/db/schema'
 
-// Mock the database module with inline implementation
+// Mock the database module
+const mockDb = {
+  select: vi.fn(),
+  insert: vi.fn(),
+  update: vi.fn(),
+  delete: vi.fn(),
+}
+
 vi.mock('@/lib/db', () => ({
-  db: {
-    insert: vi.fn().mockReturnValue({
-      values: vi.fn().mockReturnValue({
-        returning: vi.fn(),
-      }),
-    }),
-    update: vi.fn().mockReturnValue({
-      set: vi.fn().mockReturnValue({
-        where: vi.fn().mockReturnValue({
-          returning: vi.fn(),
-        }),
-      }),
-    }),
-    select: vi.fn().mockReturnValue({
-      from: vi.fn().mockReturnValue({
-        where: vi.fn().mockReturnValue({
-          limit: vi.fn(),
-          orderBy: vi.fn(),
-        }),
-        orderBy: vi.fn(),
-        leftJoin: vi.fn().mockReturnValue({
-          where: vi.fn(),
-        }),
-      }),
-    }),
-    delete: vi.fn().mockReturnValue({
-      where: vi.fn(),
-    }),
-  },
+  db: mockDb,
 }))
 
-// Import db after mocking
-import { db as mockDb } from '@/lib/db'
-
-// Mock other dependencies with comprehensive implementations
-vi.mock('@/lib/db/optimized-queries', () => ({
-  OptimizedQueries: {
-    getContentByUniverse: vi.fn(),
-    getContentById: vi.fn(),
-    searchContent: vi.fn(),
-  },
-}))
-
+// Mock server-only
 vi.mock('server-only', () => ({}))
 
 import { contentService } from '../content.service'
@@ -72,21 +38,55 @@ const createMockContent = (overrides: Partial<Content> = {}): Content => ({
 describe('Content Service', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    // Reset mock chain implementations
+    mockDb.select.mockReturnValue({
+      from: vi.fn().mockReturnValue({
+        where: vi.fn().mockReturnValue({
+          limit: vi.fn(),
+          orderBy: vi.fn(),
+        }),
+        orderBy: vi.fn(),
+      }),
+    })
+    mockDb.insert.mockReturnValue({
+      values: vi.fn().mockReturnValue({
+        returning: vi.fn(),
+      }),
+    })
+    mockDb.update.mockReturnValue({
+      set: vi.fn().mockReturnValue({
+        where: vi.fn().mockReturnValue({
+          returning: vi.fn(),
+        }),
+      }),
+    })
+    mockDb.delete.mockReturnValue({
+      where: vi.fn(),
+    })
   })
 
   describe('getById', () => {
     it('should return content when found', async () => {
       const mockContent = createMockContent({ id: 'content-123' })
-      mockDb.select().from().where().limit.mockResolvedValue([mockContent])
+      const mockLimit = vi.fn().mockResolvedValue([mockContent])
+      const mockWhere = vi.fn().mockReturnValue({ limit: mockLimit })
+      const mockFrom = vi.fn().mockReturnValue({ where: mockWhere })
+      mockDb.select.mockReturnValue({ from: mockFrom })
 
       const result = await contentService.getById('content-123')
 
       expect(result).toEqual(mockContent)
       expect(mockDb.select).toHaveBeenCalled()
+      expect(mockFrom).toHaveBeenCalled()
+      expect(mockWhere).toHaveBeenCalled()
+      expect(mockLimit).toHaveBeenCalled()
     })
 
     it('should return null when content not found', async () => {
-      mockDb.select().from().where().limit.mockResolvedValue([])
+      const mockLimit = vi.fn().mockResolvedValue([])
+      const mockWhere = vi.fn().mockReturnValue({ limit: mockLimit })
+      const mockFrom = vi.fn().mockReturnValue({ where: mockWhere })
+      mockDb.select.mockReturnValue({ from: mockFrom })
 
       const result = await contentService.getById('nonexistent-content')
 
@@ -97,11 +97,10 @@ describe('Content Service', () => {
       const consoleErrorSpy = vi
         .spyOn(console, 'error')
         .mockImplementation(() => {})
-      mockDb
-        .select()
-        .from()
-        .where()
-        .limit.mockRejectedValue(new Error('Database error'))
+      const mockLimit = vi.fn().mockRejectedValue(new Error('Database error'))
+      const mockWhere = vi.fn().mockReturnValue({ limit: mockLimit })
+      const mockFrom = vi.fn().mockReturnValue({ where: mockWhere })
+      mockDb.select.mockReturnValue({ from: mockFrom })
 
       await expect(contentService.getById('content-123')).rejects.toThrow(
         'Failed to fetch content'
@@ -126,12 +125,16 @@ describe('Content Service', () => {
         mediaType: 'video',
       }
       const createdContent = createMockContent(newContent)
-      mockDb.insert().values().returning.mockResolvedValue([createdContent])
+      const mockReturning = vi.fn().mockResolvedValue([createdContent])
+      const mockValues = vi.fn().mockReturnValue({ returning: mockReturning })
+      mockDb.insert.mockReturnValue({ values: mockValues })
 
       const result = await contentService.create(newContent)
 
       expect(result).toEqual(createdContent)
       expect(mockDb.insert).toHaveBeenCalled()
+      expect(mockValues).toHaveBeenCalled()
+      expect(mockReturning).toHaveBeenCalled()
     })
 
     it('should handle creation errors gracefully', async () => {
@@ -146,10 +149,11 @@ describe('Content Service', () => {
         isViewable: true,
         mediaType: 'video',
       }
-      mockDb
-        .insert()
-        .values()
-        .returning.mockRejectedValue(new Error('Database error'))
+      const mockReturning = vi
+        .fn()
+        .mockRejectedValue(new Error('Database error'))
+      const mockValues = vi.fn().mockReturnValue({ returning: mockReturning })
+      mockDb.insert.mockReturnValue({ values: mockValues })
 
       await expect(contentService.create(newContent)).rejects.toThrow(
         'Failed to create content'
@@ -170,20 +174,25 @@ describe('Content Service', () => {
         id: 'content-123',
         ...updates,
       })
-      mockDb
-        .update()
-        .set()
-        .where()
-        .returning.mockResolvedValue([updatedContent])
+      const mockReturning = vi.fn().mockResolvedValue([updatedContent])
+      const mockWhere = vi.fn().mockReturnValue({ returning: mockReturning })
+      const mockSet = vi.fn().mockReturnValue({ where: mockWhere })
+      mockDb.update.mockReturnValue({ set: mockSet })
 
       const result = await contentService.update('content-123', updates)
 
       expect(result).toEqual(updatedContent)
       expect(mockDb.update).toHaveBeenCalled()
+      expect(mockSet).toHaveBeenCalled()
+      expect(mockWhere).toHaveBeenCalled()
+      expect(mockReturning).toHaveBeenCalled()
     })
 
     it('should return null when content not found for update', async () => {
-      mockDb.update().set().where().returning.mockResolvedValue([])
+      const mockReturning = vi.fn().mockResolvedValue([])
+      const mockWhere = vi.fn().mockReturnValue({ returning: mockReturning })
+      const mockSet = vi.fn().mockReturnValue({ where: mockWhere })
+      mockDb.update.mockReturnValue({ set: mockSet })
 
       const result = await contentService.update('nonexistent-content', {
         name: 'New Name',
@@ -196,11 +205,12 @@ describe('Content Service', () => {
       const consoleErrorSpy = vi
         .spyOn(console, 'error')
         .mockImplementation(() => {})
-      mockDb
-        .update()
-        .set()
-        .where()
-        .returning.mockRejectedValue(new Error('Database error'))
+      const mockReturning = vi
+        .fn()
+        .mockRejectedValue(new Error('Database error'))
+      const mockWhere = vi.fn().mockReturnValue({ returning: mockReturning })
+      const mockSet = vi.fn().mockReturnValue({ where: mockWhere })
+      mockDb.update.mockReturnValue({ set: mockSet })
 
       await expect(
         contentService.update('content-123', { name: 'New Name' })
@@ -216,18 +226,21 @@ describe('Content Service', () => {
 
   describe('delete', () => {
     it('should delete content successfully', async () => {
-      mockDb.delete().where.mockResolvedValue(undefined)
+      const mockWhere = vi.fn().mockResolvedValue(undefined)
+      mockDb.delete.mockReturnValue({ where: mockWhere })
 
       await contentService.delete('content-123')
 
       expect(mockDb.delete).toHaveBeenCalled()
+      expect(mockWhere).toHaveBeenCalled()
     })
 
     it('should handle deletion errors gracefully', async () => {
       const consoleErrorSpy = vi
         .spyOn(console, 'error')
         .mockImplementation(() => {})
-      mockDb.delete().where.mockRejectedValue(new Error('Database error'))
+      const mockWhere = vi.fn().mockRejectedValue(new Error('Database error'))
+      mockDb.delete.mockReturnValue({ where: mockWhere })
 
       await expect(contentService.delete('content-123')).rejects.toThrow(
         'Failed to delete content'
@@ -244,16 +257,25 @@ describe('Content Service', () => {
   describe('getByUniverse', () => {
     it('should return content for universe', async () => {
       const mockContent = [createMockContent({ universeId: 'universe-123' })]
-      mockDb.select().from().where().orderBy.mockResolvedValue(mockContent)
+      const mockOrderBy = vi.fn().mockResolvedValue(mockContent)
+      const mockWhere = vi.fn().mockReturnValue({ orderBy: mockOrderBy })
+      const mockFrom = vi.fn().mockReturnValue({ where: mockWhere })
+      mockDb.select.mockReturnValue({ from: mockFrom })
 
       const result = await contentService.getByUniverse('universe-123')
 
       expect(result).toEqual(mockContent)
       expect(mockDb.select).toHaveBeenCalled()
+      expect(mockFrom).toHaveBeenCalled()
+      expect(mockWhere).toHaveBeenCalled()
+      expect(mockOrderBy).toHaveBeenCalled()
     })
 
     it('should return empty array when no content found', async () => {
-      mockDb.select().from().where().orderBy.mockResolvedValue([])
+      const mockOrderBy = vi.fn().mockResolvedValue([])
+      const mockWhere = vi.fn().mockReturnValue({ orderBy: mockOrderBy })
+      const mockFrom = vi.fn().mockReturnValue({ where: mockWhere })
+      mockDb.select.mockReturnValue({ from: mockFrom })
 
       const result = await contentService.getByUniverse('universe-123')
 
@@ -264,11 +286,10 @@ describe('Content Service', () => {
       const consoleErrorSpy = vi
         .spyOn(console, 'error')
         .mockImplementation(() => {})
-      mockDb
-        .select()
-        .from()
-        .where()
-        .orderBy.mockRejectedValue(new Error('Database error'))
+      const mockOrderBy = vi.fn().mockRejectedValue(new Error('Database error'))
+      const mockWhere = vi.fn().mockReturnValue({ orderBy: mockOrderBy })
+      const mockFrom = vi.fn().mockReturnValue({ where: mockWhere })
+      mockDb.select.mockReturnValue({ from: mockFrom })
 
       await expect(
         contentService.getByUniverse('universe-123')
@@ -285,7 +306,10 @@ describe('Content Service', () => {
   describe('getViewableByUniverse', () => {
     it('should return only viewable content', async () => {
       const mockContent = [createMockContent({ isViewable: true })]
-      mockDb.select().from().where().orderBy.mockResolvedValue(mockContent)
+      const mockOrderBy = vi.fn().mockResolvedValue(mockContent)
+      const mockWhere = vi.fn().mockReturnValue({ orderBy: mockOrderBy })
+      const mockFrom = vi.fn().mockReturnValue({ where: mockWhere })
+      mockDb.select.mockReturnValue({ from: mockFrom })
 
       const result = await contentService.getViewableByUniverse('universe-123')
 
@@ -296,11 +320,10 @@ describe('Content Service', () => {
       const consoleErrorSpy = vi
         .spyOn(console, 'error')
         .mockImplementation(() => {})
-      mockDb
-        .select()
-        .from()
-        .where()
-        .orderBy.mockRejectedValue(new Error('Database error'))
+      const mockOrderBy = vi.fn().mockRejectedValue(new Error('Database error'))
+      const mockWhere = vi.fn().mockReturnValue({ orderBy: mockOrderBy })
+      const mockFrom = vi.fn().mockReturnValue({ where: mockWhere })
+      mockDb.select.mockReturnValue({ from: mockFrom })
 
       await expect(
         contentService.getViewableByUniverse('universe-123')
@@ -317,7 +340,10 @@ describe('Content Service', () => {
   describe('getOrganisationalByUniverse', () => {
     it('should return only organisational content', async () => {
       const mockContent = [createMockContent({ isViewable: false })]
-      mockDb.select().from().where().orderBy.mockResolvedValue(mockContent)
+      const mockOrderBy = vi.fn().mockResolvedValue(mockContent)
+      const mockWhere = vi.fn().mockReturnValue({ orderBy: mockOrderBy })
+      const mockFrom = vi.fn().mockReturnValue({ where: mockWhere })
+      mockDb.select.mockReturnValue({ from: mockFrom })
 
       const result =
         await contentService.getOrganisationalByUniverse('universe-123')
@@ -329,11 +355,10 @@ describe('Content Service', () => {
       const consoleErrorSpy = vi
         .spyOn(console, 'error')
         .mockImplementation(() => {})
-      mockDb
-        .select()
-        .from()
-        .where()
-        .orderBy.mockRejectedValue(new Error('Database error'))
+      const mockOrderBy = vi.fn().mockRejectedValue(new Error('Database error'))
+      const mockWhere = vi.fn().mockReturnValue({ orderBy: mockOrderBy })
+      const mockFrom = vi.fn().mockReturnValue({ where: mockWhere })
+      mockDb.select.mockReturnValue({ from: mockFrom })
 
       await expect(
         contentService.getOrganisationalByUniverse('universe-123')
@@ -350,7 +375,10 @@ describe('Content Service', () => {
   describe('searchInUniverse', () => {
     it('should search content by name', async () => {
       const mockContent = [createMockContent({ name: 'Searched Content' })]
-      mockDb.select().from().where().orderBy.mockResolvedValue(mockContent)
+      const mockOrderBy = vi.fn().mockResolvedValue(mockContent)
+      const mockWhere = vi.fn().mockReturnValue({ orderBy: mockOrderBy })
+      const mockFrom = vi.fn().mockReturnValue({ where: mockWhere })
+      mockDb.select.mockReturnValue({ from: mockFrom })
 
       const result = await contentService.searchInUniverse(
         'universe-123',
@@ -361,7 +389,10 @@ describe('Content Service', () => {
     })
 
     it('should return empty results for no matches', async () => {
-      mockDb.select().from().where().orderBy.mockResolvedValue([])
+      const mockOrderBy = vi.fn().mockResolvedValue([])
+      const mockWhere = vi.fn().mockReturnValue({ orderBy: mockOrderBy })
+      const mockFrom = vi.fn().mockReturnValue({ where: mockWhere })
+      mockDb.select.mockReturnValue({ from: mockFrom })
 
       const result = await contentService.searchInUniverse(
         'universe-123',
@@ -375,11 +406,10 @@ describe('Content Service', () => {
       const consoleErrorSpy = vi
         .spyOn(console, 'error')
         .mockImplementation(() => {})
-      mockDb
-        .select()
-        .from()
-        .where()
-        .orderBy.mockRejectedValue(new Error('Search error'))
+      const mockOrderBy = vi.fn().mockRejectedValue(new Error('Search error'))
+      const mockWhere = vi.fn().mockReturnValue({ orderBy: mockOrderBy })
+      const mockFrom = vi.fn().mockReturnValue({ where: mockWhere })
+      mockDb.select.mockReturnValue({ from: mockFrom })
 
       await expect(
         contentService.searchInUniverse('universe-123', 'query')
@@ -396,7 +426,10 @@ describe('Content Service', () => {
   describe('getByMediaType', () => {
     it('should filter content by media type', async () => {
       const mockContent = [createMockContent({ mediaType: 'video' })]
-      mockDb.select().from().where().orderBy.mockResolvedValue(mockContent)
+      const mockOrderBy = vi.fn().mockResolvedValue(mockContent)
+      const mockWhere = vi.fn().mockReturnValue({ orderBy: mockOrderBy })
+      const mockFrom = vi.fn().mockReturnValue({ where: mockWhere })
+      mockDb.select.mockReturnValue({ from: mockFrom })
 
       const result = await contentService.getByMediaType(
         'universe-123',
@@ -410,11 +443,10 @@ describe('Content Service', () => {
       const consoleErrorSpy = vi
         .spyOn(console, 'error')
         .mockImplementation(() => {})
-      mockDb
-        .select()
-        .from()
-        .where()
-        .orderBy.mockRejectedValue(new Error('Database error'))
+      const mockOrderBy = vi.fn().mockRejectedValue(new Error('Database error'))
+      const mockWhere = vi.fn().mockReturnValue({ orderBy: mockOrderBy })
+      const mockFrom = vi.fn().mockReturnValue({ where: mockWhere })
+      mockDb.select.mockReturnValue({ from: mockFrom })
 
       await expect(
         contentService.getByMediaType('universe-123', 'video')

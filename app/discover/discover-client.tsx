@@ -92,7 +92,7 @@ export function DiscoverClient({
     if (initialQuery !== searchQuery) {
       setSearchQuery(initialQuery)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Intentionally run only once on mount for URL initialization. Including dependencies would cause infinite loops.
   }, []) // Only run on mount
 
   const handleFiltersChange = (newFilters: FilterOptions) => {

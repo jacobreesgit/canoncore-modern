@@ -2,7 +2,6 @@
 
 import { auth } from '@/lib/auth'
 import { progressService } from '@/lib/services/progress.service'
-import { revalidatePath } from 'next/cache'
 
 /**
  * Server Actions for Progress Management
@@ -10,7 +9,7 @@ import { revalidatePath } from 'next/cache'
  * Handles server-side mutations for user progress:
  * - Set/update content progress with authentication
  * - Database persistence through ProgressService
- * - Cache revalidation for updated data
+ * - Fresh data on every request
  * - Error handling and user feedback
  */
 
@@ -55,11 +54,7 @@ export async function setContentProgressAction(
       }
     )
 
-    // Revalidate pages that might display progress
-    revalidatePath('/dashboard')
-    revalidatePath(`/universes/${universeId}`)
-    revalidatePath(`/content/${contentId}`)
-    revalidatePath(`/profile/${session.user.id}`)
+    // Using dynamic rendering for fresh data
 
     return {
       success: true,
@@ -184,13 +179,7 @@ export async function bulkUpdateProgressAction(
     await progressService.bulkUpdateProgress(session.user.id, progressUpdates)
 
     // Revalidate relevant pages
-    const universeIds = [...new Set(progressUpdates.map(u => u.universeId))]
-    revalidatePath('/dashboard')
-    revalidatePath(`/profile/${session.user.id}`)
-
-    universeIds.forEach(universeId => {
-      revalidatePath(`/universes/${universeId}`)
-    })
+    // Using dynamic rendering for fresh data - no explicit revalidation needed
 
     return {
       success: true,

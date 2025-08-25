@@ -1,4 +1,7 @@
 import { notFound, redirect } from 'next/navigation'
+
+// Force dynamic rendering - no caching
+export const dynamic = 'force-dynamic'
 import { requireAuth } from '@/lib/auth-helpers'
 import { userService } from '@/lib/services'
 import { ProfileEditForm } from '@/components/profile/ProfileEditForm'

@@ -9,6 +9,9 @@ import { ButtonLink } from '@/components/interactive/Button'
 import { AccountDeletionSuccess } from '@/components/AccountDeletionSuccess'
 import { HiPlus } from 'react-icons/hi'
 
+// Force dynamic rendering - no caching
+export const dynamic = 'force-dynamic'
+
 /**
  * Dashboard page showing user's universes with statistics and quick actions
  * Server component with server-side data fetching for performance

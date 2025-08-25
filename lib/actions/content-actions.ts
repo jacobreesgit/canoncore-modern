@@ -1,7 +1,7 @@
 'use server'
 
 import { contentService, relationshipService } from '@/lib/services'
-import { revalidatePath } from 'next/cache'
+import { redirect } from 'next/navigation'
 import { getCurrentUser } from '@/lib/auth-helpers'
 
 /**
@@ -66,8 +66,7 @@ export async function createContentAction(formData: FormData) {
       )
     }
 
-    // Revalidate relevant paths
-    revalidatePath(`/universes/${universeId}`)
+    // Using dynamic rendering for fresh data
 
     return {
       success: true,
@@ -123,9 +122,7 @@ export async function updateContentAction(
 
     await contentService.update(contentId, updateData)
 
-    // Revalidate relevant paths
-    revalidatePath(`/universes/${existingContent.universeId}`)
-    revalidatePath(`/content/${contentId}`)
+    // Using dynamic rendering for fresh data
 
     return {
       success: true,
@@ -141,6 +138,8 @@ export async function updateContentAction(
 }
 
 export async function deleteContentAction(contentId: string) {
+  let universeId: string
+
   try {
     const user = await getCurrentUser()
     if (!user || !user.id) {
@@ -153,19 +152,16 @@ export async function deleteContentAction(contentId: string) {
       return { success: false, error: 'Permission denied' }
     }
 
+    // Store universeId for redirect
+    universeId = existingContent.universeId
+
     // Delete relationships first
     await relationshipService.deleteAllForContent(contentId)
 
     // Delete the content
     await contentService.delete(contentId)
 
-    // Revalidate relevant paths
-    revalidatePath(`/universes/${existingContent.universeId}`)
-
-    return {
-      success: true,
-      message: 'Content deleted successfully',
-    }
+    // Using dynamic rendering for fresh data
   } catch (error) {
     console.error('Error deleting content:', error)
     return {
@@ -173,4 +169,7 @@ export async function deleteContentAction(contentId: string) {
       error: 'Failed to delete content. Please try again.',
     }
   }
+
+  // Redirect outside try/catch block as recommended by Next.js docs
+  redirect(`/universes/${universeId}`)
 }

@@ -55,7 +55,18 @@ export function useSearch<T>(
           })
           setFuseInstance(instance)
         } catch (error) {
-          console.warn('Error creating Fuse instance:', error)
+          // Use error tracking instead of console.warn
+          import('@/lib/errors/error-tracking').then(({ errorTracker }) => {
+            errorTracker.trackError(
+              error,
+              {
+                type: 'search_initialization_error',
+                component: 'useSearch',
+                action: 'create_fuse_instance',
+              },
+              'low'
+            )
+          })
           setFuseInstance(null)
         }
       })
@@ -87,7 +98,19 @@ export function useSearch<T>(
         .search(searchQuery)
         .map(result => result.item)
     } catch (error) {
-      console.warn('Error in Fuse search:', error)
+      // Use error tracking instead of console.warn
+      import('@/lib/errors/error-tracking').then(({ errorTracker }) => {
+        errorTracker.trackError(
+          error,
+          {
+            type: 'search_execution_error',
+            component: 'useSearch',
+            action: 'fuse_search',
+            searchQuery,
+          },
+          'low'
+        )
+      })
       return data
     }
   }, [fuseInstance, searchQuery, data, stableKeys])
