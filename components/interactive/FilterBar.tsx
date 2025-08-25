@@ -14,7 +14,7 @@ interface FilterBarProps {
 }
 
 /**
- * Advanced filter controls for search results
+ * Sort controls for search results
  */
 export function FilterBar({
   currentFilters,
@@ -28,7 +28,7 @@ export function FilterBar({
     })
   }
 
-  const resetFilters = () => {
+  const resetSort = () => {
     onFiltersChange({
       sortBy: 'newest',
       showFilters: false,
@@ -78,14 +78,12 @@ export function FilterBar({
           </span>
 
           {currentFilters.sortBy !== 'newest' && (
-            <Button variant='clear' size='sm' onClick={resetFilters}>
-              Reset filters
+            <Button variant='clear' size='sm' onClick={resetSort}>
+              Reset sort
             </Button>
           )}
         </div>
       </div>
-
-      {/* Advanced filters placeholder - will be implemented later */}
     </div>
   )
 }
