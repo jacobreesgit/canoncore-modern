@@ -66,15 +66,10 @@ export async function updateProfileAction(
     const name = formData.get('name') as string
     const email = formData.get('email') as string
 
-    console.log('[updateProfileAction] Form data:', { name, email })
-    console.log('[updateProfileAction] User ID:', session.user.id)
-
     const validationResult = updateProfileSchema.safeParse({
       name,
       email,
     })
-
-    console.log('[updateProfileAction] Validation result:', validationResult)
 
     if (!validationResult.success) {
       return {
@@ -97,19 +92,12 @@ export async function updateProfileAction(
     }
 
     // Update the profile
-    console.log('[updateProfileAction] Updating profile with:', {
-      name: validatedName,
-      email: validatedEmail,
-    })
     const updatedUser = await userService.updateProfile(session.user.id, {
       name: validatedName,
       email: validatedEmail,
     })
 
-    console.log('[updateProfileAction] Update result:', updatedUser)
-
     if (!updatedUser) {
-      console.log('[updateProfileAction] Update failed - no user returned')
       return {
         message: 'Failed to update profile',
         success: false,
@@ -117,7 +105,6 @@ export async function updateProfileAction(
     }
 
     // Using dynamic rendering for fresh data
-    console.log('[updateProfileAction] Profile updated successfully')
 
     return {
       message: 'Profile updated successfully!',
