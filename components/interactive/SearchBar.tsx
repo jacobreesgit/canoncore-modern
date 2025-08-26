@@ -3,6 +3,7 @@
 import React from 'react'
 import { cn } from '@/lib/utils'
 import { HiSearch } from 'react-icons/hi'
+import { FormInput } from '@/components/forms/FormInput'
 
 export interface SearchBarProps
   extends Omit<
@@ -26,8 +27,8 @@ export function SearchBar({
 }: SearchBarProps) {
   const inputClasses =
     variant === 'large'
-      ? 'w-full px-4 py-3 pl-12 border border-gray-300 rounded-lg text-base sm:text-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[44px]'
-      : 'w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[40px]'
+      ? 'w-full px-4 py-3 pl-12 border border-neutral-300 rounded-lg text-base sm:text-lg focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:border-primary-500 min-h-[44px]'
+      : 'w-full px-4 py-2 pl-10 border border-neutral-300 rounded-lg text-base focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:border-primary-500 min-h-[40px]'
 
   const iconClasses =
     variant === 'large'
@@ -38,7 +39,7 @@ export function SearchBar({
 
   return (
     <div className={cn('relative w-full', className)}>
-      <input
+      <FormInput
         type='text'
         placeholder={placeholder}
         value={value}
@@ -47,7 +48,7 @@ export function SearchBar({
         {...props}
       />
       <div className={iconClasses}>
-        <HiSearch className={cn(iconSize, 'text-gray-400')} />
+        <HiSearch className={cn(iconSize, 'text-neutral-400')} />
       </div>
     </div>
   )

@@ -1,16 +1,18 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { UniverseCard } from '@/components/content/UniverseCard'
-import { useFavouritesStore } from '@/stores/favourites-store'
+import { User, Universe, Content } from '@/lib/db/schema'
+import { useFavouritesStore } from '@/lib/stores/favourites-store'
 import {
   getFavoriteUniversesAction,
   getFavoriteContentAction,
 } from '@/lib/actions/favourites-actions'
-import type { Universe, Content } from '@/lib/types'
+import { UniverseCard } from '@/components/content/UniverseCard'
+import { Button } from '@/components/interactive/Button'
+import { ContentDisplay } from '@/components/content/ContentDisplay'
 
 interface FavouritesDisplayProps {
-  userId: string
+  user: User
   canEdit: boolean
 }
 
@@ -24,25 +26,30 @@ interface FavoriteContent extends Content {
 }
 
 /**
+ * FavouritesDisplay Component
+ *
  * Displays user's favourites organized by type (universes and content)
  * with real-time updates from the favourites store
+ * Uses ContentDisplay for consistent UI patterns
  */
-export function FavouritesDisplay({ userId, canEdit }: FavouritesDisplayProps) {
-  const [activeTab, setActiveTab] = useState<'universes' | 'content'>(
-    'universes'
-  )
+export function FavouritesDisplay({ user, canEdit }: FavouritesDisplayProps) {
+  const [favouritesActiveTab, setFavouritesActiveTab] = useState<
+    'universes' | 'content'
+  >('universes')
   const [favoriteUniverses, setFavoriteUniverses] = useState<
     FavoriteUniverse[]
   >([])
   const [favoriteContent, setFavoriteContent] = useState<FavoriteContent[]>([])
-  const [loading, setLoading] = useState(true)
+  const [favoritesLoading, setFavoritesLoading] = useState(true)
 
-  const universeIds = useFavouritesStore(state => Array.from(state.universes))
-  const contentIds = useFavouritesStore(state => Array.from(state.content))
+  // Get favorite counts to trigger re-fetch when favorites change
+  const universeCount = useFavouritesStore(state => state.universes.size)
+  const contentCount = useFavouritesStore(state => state.content.size)
 
+  // Load favorites when component mounts or favorites change
   useEffect(() => {
     const loadFavorites = async () => {
-      setLoading(true)
+      setFavoritesLoading(true)
 
       try {
         const [universesResult, contentResult] = await Promise.all([
@@ -53,183 +60,258 @@ export function FavouritesDisplay({ userId, canEdit }: FavouritesDisplayProps) {
         if (universesResult.success && universesResult.data) {
           setFavoriteUniverses(universesResult.data)
         } else {
-          console.error(
-            'Error loading favorite universes:',
-            universesResult.error
-          )
+          if (process.env.NODE_ENV === 'development') {
+            console.error(
+              'Error loading favorite universes:',
+              universesResult.error
+            )
+          }
           setFavoriteUniverses([])
         }
 
         if (contentResult.success && contentResult.data) {
           setFavoriteContent(contentResult.data)
         } else {
-          console.error('Error loading favorite content:', contentResult.error)
+          if (process.env.NODE_ENV === 'development') {
+            console.error(
+              'Error loading favorite content:',
+              contentResult.error
+            )
+          }
           setFavoriteContent([])
         }
       } catch (error) {
-        console.error('Error loading favorites:', error)
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Error loading favorites:', error)
+        }
         setFavoriteUniverses([])
         setFavoriteContent([])
       } finally {
-        setLoading(false)
+        setFavoritesLoading(false)
       }
     }
 
     loadFavorites()
-  }, [universeIds, contentIds])
+  }, [universeCount, contentCount])
 
-  if (loading) {
+  // Sort universes function
+  const sortUniverses = (
+    universes: FavoriteUniverse[],
+    sortBy: string
+  ): FavoriteUniverse[] => {
+    const sorted = [...universes]
+    switch (sortBy) {
+      case 'oldest':
+        return sorted.sort(
+          (a, b) =>
+            new Date(a.createdAt || 0).getTime() -
+            new Date(b.createdAt || 0).getTime()
+        )
+      case 'name':
+        return sorted.sort((a, b) => a.name.localeCompare(b.name))
+      case 'newest':
+      default:
+        return sorted.sort(
+          (a, b) =>
+            new Date(b.createdAt || 0).getTime() -
+            new Date(a.createdAt || 0).getTime()
+        )
+    }
+  }
+
+  if (favoritesLoading) {
     return (
       <div className='flex justify-center py-8'>
-        <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600'></div>
+        <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600'></div>
       </div>
     )
   }
 
   const totalFavorites = favoriteUniverses.length + favoriteContent.length
 
-  if (totalFavorites === 0) {
-    return (
-      <div className='py-8 text-center'>
-        <p className='text-gray-500 mb-4'>
-          {canEdit
-            ? "You haven't favourited anything yet."
-            : "This user hasn't favourited anything yet."}
-        </p>
-        {canEdit && (
-          <div className='space-x-4'>
-            <a
-              href='/discover'
-              className='inline-block rounded-lg bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700'
-            >
-              Discover Universes
-            </a>
-          </div>
-        )}
-      </div>
-    )
-  }
-
   return (
     <div className='space-y-6'>
-      {/* Tab Navigation */}
-      <div className='border-b border-gray-200'>
-        <nav className='flex space-x-8'>
-          <button
-            onClick={() => setActiveTab('universes')}
-            className={`border-b-2 pb-2 text-sm font-medium transition-colors ${
-              activeTab === 'universes'
-                ? 'border-blue-600 text-blue-600'
-                : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-            }`}
-          >
-            Universe Favourites ({favoriteUniverses.length})
-          </button>
-          <button
-            onClick={() => setActiveTab('content')}
-            className={`border-b-2 pb-2 text-sm font-medium transition-colors ${
-              activeTab === 'content'
-                ? 'border-blue-600 text-blue-600'
-                : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-            }`}
-          >
-            Content Favourites ({favoriteContent.length})
-          </button>
-        </nav>
-      </div>
-
-      {/* Tab Content */}
-      {activeTab === 'universes' && (
-        <div>
-          {favoriteUniverses.length === 0 ? (
-            <div className='py-8 text-center'>
-              <p className='text-gray-500 mb-4'>No favourite universes yet.</p>
-              {canEdit && (
-                <a
-                  href='/discover'
-                  className='inline-block rounded-lg bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700'
-                >
-                  Discover Universes
-                </a>
-              )}
-            </div>
-          ) : (
-            <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
-              {favoriteUniverses.map(universe => (
-                <UniverseCard
-                  key={universe.id}
-                  universe={universe}
-                  href={`/universes/${universe.id}`}
-                  showFavourite={true}
-                  showOwner={universe.userId !== userId}
-                  currentUserId={userId}
-                />
-              ))}
-            </div>
-          )}
-        </div>
+      {totalFavorites > 0 && (
+        <>
+          {/* Favourites Tab Navigation */}
+          <div className='border-b border-neutral-200'>
+            <nav className='flex space-x-8'>
+              <Button
+                onClick={() => setFavouritesActiveTab('universes')}
+                variant='clear'
+                className={`border-b-2 pb-2 text-sm font-medium transition-colors ${
+                  favouritesActiveTab === 'universes'
+                    ? 'border-primary-600 text-primary-600'
+                    : 'border-transparent text-neutral-500 hover:border-neutral-300 hover:text-neutral-700'
+                }`}
+              >
+                Universe Favourites ({favoriteUniverses.length})
+              </Button>
+              <Button
+                onClick={() => setFavouritesActiveTab('content')}
+                variant='clear'
+                className={`border-b-2 pb-2 text-sm font-medium transition-colors ${
+                  favouritesActiveTab === 'content'
+                    ? 'border-primary-600 text-primary-600'
+                    : 'border-transparent text-neutral-500 hover:border-neutral-300 hover:text-neutral-700'
+                }`}
+              >
+                Content Favourites ({favoriteContent.length})
+              </Button>
+            </nav>
+          </div>
+        </>
       )}
 
-      {activeTab === 'content' && (
-        <div>
-          {favoriteContent.length === 0 ? (
-            <div className='py-8 text-center'>
-              <p className='text-gray-500 mb-4'>No favourite content yet.</p>
+      {/* Overall Empty State */}
+      {totalFavorites === 0 && (
+        <ContentDisplay
+          items={[]}
+          displayMode='grid'
+          renderItem={() => <div />}
+          emptyState={
+            <div className='text-center py-8'>
+              <h3 className='text-lg font-medium text-neutral-900 mb-2'>
+                No favourites yet
+              </h3>
+              <p className='text-neutral-600 mb-6'>
+                {canEdit
+                  ? "You haven't favourited anything yet."
+                  : "This user hasn't favourited anything yet."}
+              </p>
               {canEdit && (
-                <p className='text-sm text-gray-400'>
-                  Favourite individual content items while browsing universes.
-                </p>
+                <Button
+                  variant='primary'
+                  onClick={() => (window.location.href = '/discover')}
+                >
+                  Discover Universes
+                </Button>
               )}
             </div>
-          ) : (
-            <div className='space-y-4'>
-              {favoriteContent.map(content => (
-                <div
-                  key={content.id}
-                  className='bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow'
+          }
+        />
+      )}
+
+      {/* Favourites Content */}
+      {totalFavorites > 0 && favouritesActiveTab === 'universes' && (
+        <ContentDisplay
+          items={favoriteUniverses}
+          displayMode='grid'
+          searchable={true}
+          searchPlaceholder='Search favourite universes...'
+          filterItems={sortUniverses}
+          getSearchText={universe =>
+            `${universe.name} ${universe.description || ''}`
+          }
+          renderItem={universe => (
+            <UniverseCard
+              universe={universe}
+              href={`/universes/${universe.id}`}
+              showFavourite={true}
+              showOwner={universe.userId !== user.id}
+              currentUserId={user.id}
+            />
+          )}
+          emptyState={
+            <div className='text-center py-8'>
+              <h3 className='text-lg font-medium text-neutral-900 mb-2'>
+                No favourite universes yet
+              </h3>
+              <p className='text-neutral-600 mb-6'>
+                {canEdit
+                  ? 'Discover universes to add to your favourites.'
+                  : 'This user has no favourite universes.'}
+              </p>
+              {canEdit && (
+                <Button
+                  variant='primary'
+                  onClick={() => (window.location.href = '/discover')}
                 >
-                  <div className='flex justify-between items-start'>
-                    <div className='flex-1'>
-                      <h3 className='font-medium text-gray-900 mb-1'>
-                        <a
-                          href={`/content/${content.id}`}
-                          className='hover:text-blue-600 transition-colors'
-                        >
-                          {content.name}
-                        </a>
-                      </h3>
-                      <p className='text-sm text-gray-600 mb-2'>
-                        in{' '}
-                        <a
-                          href={`/universes/${content.universeId}`}
-                          className='text-blue-600 hover:text-blue-700'
-                        >
-                          {content.universeName}
-                        </a>
-                      </p>
-                      {content.description && (
-                        <p className='text-sm text-gray-500 line-clamp-2'>
-                          {content.description}
-                        </p>
-                      )}
-                    </div>
-                    <div className='ml-4 flex-shrink-0'>
-                      <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          content.isViewable
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-blue-100 text-blue-800'
-                        }`}
+                  Discover Universes
+                </Button>
+              )}
+            </div>
+          }
+          gridClasses='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'
+        />
+      )}
+
+      {totalFavorites > 0 && favouritesActiveTab === 'content' && (
+        <ContentDisplay
+          items={favoriteContent}
+          displayMode='list'
+          searchable={true}
+          searchPlaceholder='Search favourite content...'
+          getSearchText={content =>
+            `${content.name} ${content.description || ''} ${(content as FavoriteContent).universeName || ''}`
+          }
+          renderItem={content => {
+            const favoriteContent = content as FavoriteContent
+            return (
+              <div className='bg-white border border-neutral-200 rounded-lg p-4 hover:shadow-md transition-shadow'>
+                <div className='flex justify-between items-start'>
+                  <div className='flex-1'>
+                    <h3 className='text-lg font-medium text-neutral-900 mb-1'>
+                      <a
+                        href={`/content/${favoriteContent.id}`}
+                        className='hover:text-primary-600 transition-colors'
                       >
-                        {content.isViewable ? 'Viewable' : 'Organisational'}
-                      </span>
-                    </div>
+                        {favoriteContent.name}
+                      </a>
+                    </h3>
+                    <p className='text-sm text-neutral-600 mb-2'>
+                      in{' '}
+                      <a
+                        href={`/universes/${favoriteContent.universeId}`}
+                        className='text-primary-600 hover:text-primary-700'
+                      >
+                        {favoriteContent.universeName}
+                      </a>
+                    </p>
+                    {favoriteContent.description && (
+                      <p className='text-sm text-neutral-500 line-clamp-2'>
+                        {favoriteContent.description}
+                      </p>
+                    )}
+                  </div>
+                  <div className='ml-4 flex-shrink-0'>
+                    <span
+                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        favoriteContent.isViewable
+                          ? 'bg-success-100 text-success-800'
+                          : 'bg-primary-100 text-primary-800'
+                      }`}
+                    >
+                      {favoriteContent.isViewable
+                        ? 'Viewable'
+                        : 'Organisational'}
+                    </span>
                   </div>
                 </div>
-              ))}
+              </div>
+            )
+          }}
+          emptyState={
+            <div className='text-center py-8'>
+              <h3 className='text-lg font-medium text-neutral-900 mb-2'>
+                No favourite content yet
+              </h3>
+              <p className='text-neutral-600 mb-6'>
+                {canEdit
+                  ? 'Favourite individual content items while browsing universes.'
+                  : 'This user has no favourite content.'}
+              </p>
+              {canEdit && (
+                <Button
+                  variant='primary'
+                  onClick={() => (window.location.href = '/discover')}
+                >
+                  Discover Universes
+                </Button>
+              )}
             </div>
-          )}
-        </div>
+          }
+        />
       )}
     </div>
   )

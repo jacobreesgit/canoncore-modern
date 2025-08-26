@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react'
 import { useSession } from 'next-auth/react'
-import { useFavouritesStore } from '@/stores/favourites-store'
+import { useFavouritesStore } from '@/lib/stores/favourites-store'
 
 /**
  * Store initialization provider
@@ -20,7 +20,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     if (status === 'authenticated' && session?.user) {
       // Load favourites (progress is loaded per-page for performance)
       loadInitialFavourites().catch(error => {
-        console.error('Failed to load initial favourites:', error)
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Failed to load initial favourites:', error)
+        }
       })
     }
   }, [status, session?.user, loadInitialFavourites])

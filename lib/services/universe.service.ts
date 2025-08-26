@@ -50,7 +50,9 @@ export class UniverseService {
         progress,
       }
     } catch (error) {
-      console.error('Error fetching universe with user progress:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error fetching universe with user progress:', error)
+      }
       throw new Error('Failed to fetch universe with user progress')
     }
   }
@@ -74,7 +76,9 @@ export class UniverseService {
 
       return newUniverse
     } catch (error) {
-      console.error('Error creating universe:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error creating universe:', error)
+      }
       throw new Error('Failed to create universe')
     }
   }
@@ -101,7 +105,9 @@ export class UniverseService {
 
       return updatedUniverse || null
     } catch (error) {
-      console.error('Error updating universe:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error updating universe:', error)
+      }
       throw new Error('Failed to update universe')
     }
   }
@@ -116,7 +122,9 @@ export class UniverseService {
 
       await db.delete(universes).where(eq(universes.id, id))
     } catch (error) {
-      console.error('Error deleting universe:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error deleting universe:', error)
+      }
       throw new Error('Failed to delete universe')
     }
   }
@@ -161,7 +169,9 @@ export class UniverseService {
 
       return universesWithProgress
     } catch (error) {
-      console.error('Error fetching user universes with progress:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error fetching user universes with progress:', error)
+      }
       throw new Error('Failed to fetch user universes with progress')
     }
   }
@@ -252,7 +262,9 @@ export class UniverseService {
 
       return Math.min(100, Math.max(0, averageProgress))
     } catch (error) {
-      console.error('Error calculating universe progress:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error calculating universe progress:', error)
+      }
       return 0
     }
   }
@@ -300,7 +312,9 @@ export class UniverseService {
         organisationalContent: Number(stats.organisationalContent),
       }
     } catch (error) {
-      console.error('Error fetching universe with content stats:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error fetching universe with content stats:', error)
+      }
       throw new Error('Failed to fetch universe with content stats')
     }
   }
@@ -330,7 +344,9 @@ export class UniverseService {
 
       return searchResults
     } catch (error) {
-      console.error('Error searching public universes:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error searching public universes:', error)
+      }
       throw new Error('Failed to search public universes')
     }
   }

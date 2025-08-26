@@ -14,6 +14,7 @@ import { FormTextarea } from '@/components/forms/FormTextarea'
 import { FormSelect } from '@/components/forms/FormSelect'
 import { FormActions } from '@/components/forms/FormActions'
 import { FormError } from '@/components/forms/FormError'
+import { Button } from '@/components/interactive/Button'
 
 const viewableMediaTypes = [
   { value: 'video', label: 'Movies & Episodes' },
@@ -68,7 +69,7 @@ export function EditContentClient({ content }: EditContentClientProps) {
   const currentType = content.mediaType || 'other'
 
   return (
-    <div className='bg-white rounded-lg shadow-sm'>
+    <div className='bg-white rounded-lg shadow-sm border border-neutral-200 hover:shadow-md transition-shadow'>
       <form action={formAction} className='p-6 space-y-6'>
         <FormError error={state?.error} />
 
@@ -76,7 +77,7 @@ export function EditContentClient({ content }: EditContentClientProps) {
           <FormInput
             name='name'
             defaultValue={content.name}
-            placeholder='Content name...'
+            placeholder='Enter content name'
             disabled={isPending}
             required
           />
@@ -86,7 +87,7 @@ export function EditContentClient({ content }: EditContentClientProps) {
           <FormTextarea
             name='description'
             defaultValue={content.description || ''}
-            placeholder='Brief description...'
+            placeholder='Enter brief description'
             rows={3}
             disabled={isPending}
           />
@@ -108,18 +109,18 @@ export function EditContentClient({ content }: EditContentClientProps) {
               </option>
             ))}
           </FormSelect>
-          <p className='text-sm text-gray-600 mt-1'>
+          <p className='text-sm text-neutral-600 mt-1'>
             {content.isViewable
               ? 'The type of viewable content'
               : 'How this content organizes your universe'}
           </p>
         </FormField>
 
-        <div className='bg-gray-50 rounded-lg p-4'>
-          <h4 className='text-sm font-medium text-gray-900 mb-2'>
+        <div className='bg-neutral-50 rounded-lg p-4'>
+          <h4 className='text-sm font-medium text-neutral-900 mb-2'>
             Content Type
           </h4>
-          <p className='text-sm text-gray-600'>
+          <p className='text-sm text-neutral-600'>
             {content.isViewable ? 'Viewable Content' : 'Organizational Content'}{' '}
             - This cannot be changed after creation.
           </p>
@@ -133,54 +134,57 @@ export function EditContentClient({ content }: EditContentClientProps) {
       </form>
 
       {/* Delete Section */}
-      <div className='border-t border-gray-200 p-6'>
-        <div className='bg-red-50 rounded-lg p-4'>
-          <h4 className='text-sm font-medium text-red-800 mb-2'>
+      <div className='border-t border-neutral-200 p-6'>
+        <div className='bg-error-50 rounded-lg p-4'>
+          <h4 className='text-sm font-medium text-error-800 mb-2'>
             Delete Content
           </h4>
-          <p className='text-sm text-red-600 mb-4'>
+          <p className='text-sm text-error-600 mb-4'>
             This action cannot be undone. This will permanently delete the
             content and remove all associated relationships.
           </p>
 
           {deleteState?.error && (
-            <div className='mb-4 p-3 bg-red-100 border border-red-200 rounded text-sm text-red-600'>
+            <div className='mb-4 p-3 bg-error-100 border border-error-200 rounded text-sm text-error-600'>
               {deleteState.error}
             </div>
           )}
 
           {!showDeleteConfirm ? (
-            <button
+            <Button
               type='button'
               onClick={() => setShowDeleteConfirm(true)}
               disabled={isPending || isDeleting}
-              className='inline-flex items-center px-3 py-2 border border-red-300 shadow-sm text-sm leading-4 font-medium rounded-md text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50'
+              variant='danger'
+              size='small'
             >
               Delete Content
-            </button>
+            </Button>
           ) : (
             <div className='space-y-3'>
-              <p className='text-sm font-medium text-red-800'>
+              <p className='text-sm font-medium text-error-800'>
                 Are you sure you want to delete &quot;{content.name}&quot;?
               </p>
               <div className='flex space-x-3'>
                 <form action={deleteAction}>
-                  <button
+                  <Button
                     type='submit'
                     disabled={isPending || isDeleting}
-                    className='inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50'
+                    variant='danger'
+                    size='small'
                   >
                     {isDeleting ? 'Deleting...' : 'Yes, Delete'}
-                  </button>
+                  </Button>
                 </form>
-                <button
+                <Button
                   type='button'
                   onClick={() => setShowDeleteConfirm(false)}
                   disabled={isPending || isDeleting}
-                  className='inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50'
+                  variant='danger'
+                  size='small'
                 >
                   Cancel
-                </button>
+                </Button>
               </div>
             </div>
           )}

@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import { getCurrentSession } from '@/lib/auth-helpers'
 import { userService, universeService } from '@/lib/services'
 import { ProfileDisplay } from '@/components/profile/ProfileDisplay'
+import { getUserFavouritesAction } from '@/lib/actions/favourites-actions'
 
 // Force dynamic rendering - no caching
 export const dynamic = 'force-dynamic'
@@ -34,19 +35,27 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
     // Check if current user can edit this profile
     const canEdit = session?.user?.id === userId
 
-    // Get user statistics - no caching
-    const stats = await userService.getProfileStats(userId)
-
     // Get user's public universes - no caching
     const userUniverses = await universeService.getByUserId(userId)
     const publicUniverses = userUniverses.filter(u => u.isPublic)
 
+    // Get actual favourites count from server for current user
+    let favouritesCount = 0
+    if (session?.user?.id) {
+      const favouritesResult = await getUserFavouritesAction()
+      if (favouritesResult.success && favouritesResult.data) {
+        favouritesCount =
+          favouritesResult.data.universes.length +
+          favouritesResult.data.content.length
+      }
+    }
+
     return (
       <ProfileDisplay
         user={user}
-        stats={stats}
         canEdit={canEdit}
         publicUniverses={publicUniverses}
+        favouritesCount={favouritesCount}
       />
     )
   } catch (error) {
@@ -55,7 +64,9 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
       error instanceof Error &&
       !error.message.includes('NEXT_HTTP_ERROR_FALLBACK')
     ) {
-      console.error('Error loading profile:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error loading profile:', error)
+      }
     }
     notFound()
   }

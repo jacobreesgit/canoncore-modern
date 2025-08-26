@@ -13,6 +13,7 @@ import { FormTextarea } from '@/components/forms/FormTextarea'
 import { FormURLInput } from '@/components/forms/FormURLInput'
 import { FormActions } from '@/components/forms/FormActions'
 import { FormError } from '@/components/forms/FormError'
+import { Button } from '@/components/interactive/Button'
 
 interface EditUniverseClientProps {
   universe: Universe
@@ -42,7 +43,7 @@ export function EditUniverseClient({ universe }: EditUniverseClientProps) {
   }, [state, router, universe.id])
 
   return (
-    <div className='bg-white rounded-lg shadow-sm'>
+    <div className='bg-white rounded-lg shadow-sm border border-neutral-200 hover:shadow-md transition-shadow'>
       <form action={formAction} className='p-6 space-y-6'>
         <FormError error={state?.error} />
 
@@ -74,26 +75,27 @@ export function EditUniverseClient({ universe }: EditUniverseClientProps) {
               value='true'
               defaultChecked={universe.isPublic}
               disabled={isPending}
-              className='rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-500 focus:ring-blue-500'
+              className='rounded border-neutral-300 text-primary-600 shadow-sm focus-visible:border-primary-500 focus-visible:ring-primary-500'
             />
-            <span className='ml-2 text-sm text-gray-700'>
+            <span className='ml-2 text-sm text-neutral-700'>
               Make this universe publicly discoverable
             </span>
           </label>
         </FormField>
 
-        <div className='border-t pt-6'>
+        <div className='pt-6'>
           <div className='flex items-center justify-between mb-4'>
-            <h3 className='text-lg font-medium text-gray-900'>
+            <h3 className='text-lg font-medium text-neutral-900'>
               Source Information
             </h3>
-            <button
+            <Button
               type='button'
               onClick={() => setHasSourceURL(!hasSourceURL)}
-              className='text-sm text-blue-600 hover:text-blue-700'
+              variant='clear'
+              size='small'
             >
               {hasSourceURL ? 'Remove source link' : 'Add source link'}
-            </button>
+            </Button>
           </div>
 
           {hasSourceURL && (

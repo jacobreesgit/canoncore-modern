@@ -5,13 +5,12 @@ import {
   contentService,
   relationshipService,
 } from '@/lib/services'
-
-// Force dynamic rendering - no caching
-export const dynamic = 'force-dynamic'
-import { Navigation } from '@/components/layout/Navigation'
 import { UniverseClient } from './universe-client'
 import { redirect, notFound } from 'next/navigation'
 import type { HierarchyNode } from '@/lib/utils/progress'
+
+// Force dynamic rendering - no caching
+export const dynamic = 'force-dynamic'
 
 interface RawHierarchyNode {
   id: string
@@ -85,16 +84,12 @@ export default async function UniversePage({
   const hierarchyTree = transformToHierarchyNodes(rawHierarchyTree)
 
   return (
-    <div className='min-h-screen bg-gray-50'>
-      <Navigation showNavigationMenu={true} currentPage='dashboard' />
-
-      <UniverseClient
-        universe={universeWithFavourite}
-        universeOwner={universeOwner}
-        content={contentWithFavourites}
-        hierarchyTree={hierarchyTree}
-        userId={user.id}
-      />
-    </div>
+    <UniverseClient
+      universe={universeWithFavourite}
+      universeOwner={universeOwner}
+      content={contentWithFavourites}
+      hierarchyTree={hierarchyTree}
+      userId={user.id}
+    />
   )
 }

@@ -1,11 +1,12 @@
 import { notFound, redirect } from 'next/navigation'
-
-// Force dynamic rendering - no caching
-export const dynamic = 'force-dynamic'
 import { requireAuth } from '@/lib/auth-helpers'
 import { userService } from '@/lib/services'
 import { ProfileEditForm } from '@/components/profile/ProfileEditForm'
 import { AccountDeletionSection } from '@/components/profile/AccountDeletionSection'
+import { PageLayout } from '@/components/layout/PageLayout'
+
+// Force dynamic rendering - no caching
+export const dynamic = 'force-dynamic'
 
 interface EditProfilePageProps {
   params: Promise<{ userId: string }>
@@ -39,25 +40,31 @@ export default async function EditProfilePage({
     }
 
     return (
-      <div className='min-h-screen bg-gray-50'>
-        <div className='mx-auto max-w-2xl px-4 py-8'>
-          <div className='mb-6'>
-            <h1 className='text-2xl font-bold text-gray-900'>Edit Profile</h1>
-            <p className='text-gray-600'>Update your profile information</p>
+      <PageLayout
+        currentPage='profile'
+        header={{
+          title: 'Edit Profile',
+          description: 'Update your profile information',
+          breadcrumbs: [
+            { label: 'Dashboard', href: '/dashboard' },
+            { label: 'Profile', href: `/profile/${userId}` },
+            { label: 'Edit', href: `/profile/${userId}/edit` },
+          ],
+        }}
+      >
+        <div className='space-y-6'>
+          <div className='rounded-lg bg-surface-elevated p-6 shadow-sm'>
+            <ProfileEditForm user={user} />
           </div>
 
-          <div className='space-y-6'>
-            <div className='rounded-lg bg-white p-6 shadow-sm'>
-              <ProfileEditForm user={user} />
-            </div>
-
-            <AccountDeletionSection />
-          </div>
+          <AccountDeletionSection />
         </div>
-      </div>
+      </PageLayout>
     )
   } catch (error) {
-    console.error('Error loading edit profile page:', error)
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error loading edit profile page:', error)
+    }
     notFound()
   }
 }

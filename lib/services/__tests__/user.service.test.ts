@@ -540,53 +540,6 @@ describe('User Service', () => {
     })
   })
 
-  describe('getPublicUniversesCount', () => {
-    it('should return count of public universes', async () => {
-      const { userService } = await import('../user.service')
-
-      const mockResult = [{ id: 'u1' }, { id: 'u2' }, { id: 'u3' }]
-      const mockWhere = vi.fn().mockResolvedValue(mockResult)
-      const mockFrom = vi.fn().mockReturnValue({ where: mockWhere })
-      mockDb.select.mockReturnValue({ from: mockFrom })
-
-      const result = await userService.getPublicUniversesCount('test-user-123')
-
-      expect(result).toBe(3)
-    })
-
-    it('should handle empty results', async () => {
-      const { userService } = await import('../user.service')
-
-      const mockWhere = vi.fn().mockResolvedValue([])
-      const mockFrom = vi.fn().mockReturnValue({ where: mockWhere })
-      mockDb.select.mockReturnValue({ from: mockFrom })
-
-      const result = await userService.getPublicUniversesCount('test-user-123')
-
-      expect(result).toBe(0)
-    })
-
-    it('should handle database errors gracefully', async () => {
-      const { userService } = await import('../user.service')
-
-      const mockWhere = vi.fn().mockRejectedValue(new Error('Database error'))
-      const mockFrom = vi.fn().mockReturnValue({ where: mockWhere })
-      mockDb.select.mockReturnValue({ from: mockFrom })
-
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-
-      const result = await userService.getPublicUniversesCount('test-user-123')
-
-      expect(result).toBe(0)
-      expect(consoleSpy).toHaveBeenCalledWith(
-        'Error fetching public universes count:',
-        expect.any(Error)
-      )
-
-      consoleSpy.mockRestore()
-    })
-  })
-
   describe('deleteUser', () => {
     it('should delete user and cascade delete related data', async () => {
       const { userService } = await import('../user.service')

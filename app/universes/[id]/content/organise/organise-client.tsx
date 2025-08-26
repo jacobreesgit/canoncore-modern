@@ -88,7 +88,7 @@ export function OrganiseClient({
   }, [state, router, universe.id])
 
   return (
-    <div className='bg-white rounded-lg shadow-sm'>
+    <div className='bg-white rounded-lg shadow-sm border border-neutral-200 hover:shadow-md transition-shadow'>
       <form action={formAction} className='p-6 space-y-6'>
         <FormError error={state?.error} />
 
@@ -118,7 +118,7 @@ export function OrganiseClient({
               </option>
             ))}
           </FormSelect>
-          <p className='text-sm text-gray-600 mt-1'>
+          <p className='text-sm text-neutral-600 mt-1'>
             Choose how this content helps organize your universe
           </p>
         </FormField>
@@ -138,7 +138,7 @@ export function OrganiseClient({
                 </option>
               ))}
             </FormSelect>
-            <p className='text-sm text-gray-600 mt-1'>
+            <p className='text-sm text-neutral-600 mt-1'>
               Nest this organization under another organizational group
             </p>
           </FormField>

@@ -60,9 +60,9 @@ export function FormActions({
       {...props}
     >
       <ButtonLink
-        variant='secondary'
+        variant='danger'
         href={cancelHref}
-        className='text-secondary hover:text-primary bg-transparent hover:bg-transparent p-0 w-full sm:w-auto text-center sm:text-left'
+        className='w-full sm:w-auto'
       >
         Cancel
       </ButtonLink>

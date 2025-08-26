@@ -13,8 +13,8 @@ export interface ProgressBarProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 const variantColors = {
-  viewable: 'bg-green-600',
-  organisational: 'bg-blue-600',
+  viewable: 'bg-success-600',
+  organisational: 'bg-primary-600',
 }
 
 const sizeStyles = {
@@ -38,12 +38,12 @@ export function ProgressBar({
   return (
     <div className={cn('progress-bar w-full', className)} {...props}>
       {showLabel && (
-        <div className='flex justify-between items-center text-sm text-gray-600 mb-1'>
+        <div className='flex justify-between items-center text-sm text-neutral-600 mb-1'>
           <span>{label}</span>
           <span>{Math.round(normalizedValue)}%</span>
         </div>
       )}
-      <div className={cn('w-full bg-gray-200 rounded-full', heightClass)}>
+      <div className={cn('w-full bg-neutral-200 rounded-full', heightClass)}>
         <div
           className={cn(
             progressColor,

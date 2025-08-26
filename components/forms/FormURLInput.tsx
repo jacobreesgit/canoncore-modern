@@ -119,13 +119,13 @@ const FormURLInput = forwardRef<HTMLInputElement, FormURLInputProps>(
         />
 
         {(validationError || validationState.errorMessage) && (
-          <div className='text-sm text-red-600 mt-1'>
+          <div className='text-sm text-error-600 mt-1'>
             {validationError || validationState.errorMessage}
           </div>
         )}
 
         {!inputValue.trim() && !validationError && (
-          <div className='text-sm text-gray-500 mt-1'>
+          <div className='text-sm text-neutral-500 mt-1'>
             Accepts URLs with or without https:// (e.g., &quot;example.com&quot;
             or &quot;https://www.example.com&quot;)
           </div>

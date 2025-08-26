@@ -115,7 +115,9 @@ export async function updateUniverseAction(
       message: 'Universe updated successfully',
     }
   } catch (error) {
-    console.error('Error updating universe:', error)
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error updating universe:', error)
+    }
     return {
       success: false,
       error: 'Failed to update universe. Please try again.',
@@ -145,7 +147,9 @@ export async function deleteUniverseAction(universeId: string) {
       message: 'Universe deleted successfully',
     }
   } catch (error) {
-    console.error('Error deleting universe:', error)
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error deleting universe:', error)
+    }
     return {
       success: false,
       error: 'Failed to delete universe. Please try again.',

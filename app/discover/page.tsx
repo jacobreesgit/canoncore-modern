@@ -1,8 +1,6 @@
 import { getCurrentUser } from '@/lib/auth-helpers'
 import { universeService, userService, Universe } from '@/lib/services'
-import { Navigation } from '@/components/layout/Navigation'
-import { PageContainer } from '@/components/layout/PageContainer'
-import { PageHeader } from '@/components/layout/PageHeader'
+import { PageLayout } from '@/components/layout/PageLayout'
 import { DiscoverClient } from './discover-client'
 
 // Force dynamic rendering - no caching
@@ -20,20 +18,20 @@ export default async function DiscoverPage({
   // Check if database is available
   if (!process.env.DATABASE_URL) {
     return (
-      <div className='min-h-screen bg-gray-50'>
-        <Navigation showNavigationMenu={true} currentPage='discover' />
-        <PageContainer>
-          <PageHeader
-            title='Discover Franchises'
-            description='Explore public franchise universes created by the community'
-          />
-          <div className='text-center py-8'>
-            <p className='text-gray-600'>
-              Database not available. Please check back later.
-            </p>
-          </div>
-        </PageContainer>
-      </div>
+      <PageLayout
+        currentPage='discover'
+        header={{
+          title: 'Discover Franchises',
+          description:
+            'Explore public franchise universes created by the community',
+        }}
+      >
+        <div className='text-center py-8'>
+          <p className='text-neutral-600'>
+            Database not available. Please check back later.
+          </p>
+        </div>
+      </PageLayout>
     )
   }
 
@@ -50,7 +48,9 @@ export default async function DiscoverPage({
   try {
     user = await getCurrentUser()
   } catch (error) {
-    console.error('Error getting current user:', error)
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error getting current user:', error)
+    }
   }
 
   try {
@@ -60,22 +60,24 @@ export default async function DiscoverPage({
       sortBy: sort as 'newest' | 'oldest' | 'name' | undefined,
     })
   } catch (error) {
-    console.error('Error fetching public universes:', error)
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error fetching public universes:', error)
+    }
     return (
-      <div className='min-h-screen bg-gray-50'>
-        <Navigation showNavigationMenu={true} currentPage='discover' />
-        <PageContainer>
-          <PageHeader
-            title='Discover Franchises'
-            description='Explore public franchise universes created by the community'
-          />
-          <div className='text-center py-8'>
-            <p className='text-gray-600'>
-              Unable to load franchises. Please try again later.
-            </p>
-          </div>
-        </PageContainer>
-      </div>
+      <PageLayout
+        currentPage='discover'
+        header={{
+          title: 'Discover Franchises',
+          description:
+            'Explore public franchise universes created by the community',
+        }}
+      >
+        <div className='text-center py-8'>
+          <p className='text-neutral-600'>
+            Unable to load franchises. Please try again later.
+          </p>
+        </div>
+      </PageLayout>
     )
   }
 
@@ -85,7 +87,9 @@ export default async function DiscoverPage({
       const favorites = await userService.getUserFavourites(user.id)
       userFavorites = favorites.universes
     } catch (error) {
-      console.error('Error fetching user favorites:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error fetching user favorites:', error)
+      }
     }
   }
 
@@ -99,7 +103,9 @@ export default async function DiscoverPage({
         universeOwners[userId] = owner
       }
     } catch (error) {
-      console.error(`Error fetching user ${userId}:`, error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error(`Error fetching user ${userId}:`, error)
+      }
     }
   }
 
@@ -110,21 +116,10 @@ export default async function DiscoverPage({
   }))
 
   return (
-    <div className='min-h-screen bg-gray-50'>
-      <Navigation showNavigationMenu={true} currentPage='discover' />
-
-      <PageContainer>
-        <PageHeader
-          title='Discover Franchises'
-          description='Explore public franchise universes created by the community'
-        />
-
-        <DiscoverClient
-          initialUniverses={universesWithFavorites}
-          universeOwners={universeOwners}
-          currentUserId={user?.id}
-        />
-      </PageContainer>
-    </div>
+    <DiscoverClient
+      initialUniverses={universesWithFavorites}
+      universeOwners={universeOwners}
+      currentUserId={user?.id}
+    />
   )
 }

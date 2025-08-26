@@ -12,8 +12,9 @@ import { Button } from '@/components/interactive/Button'
 import { FavouriteButton } from '@/components/interactive/FavouriteButton'
 import { ProgressBar } from '@/components/content/ProgressBar'
 import { Badge } from '@/components/content/Badge'
-import { useProgressStore } from '@/stores/progress-store'
+import { useProgressStore } from '@/lib/stores/progress-store'
 import { type HierarchyNode } from '@/lib/utils/progress'
+import { HiChevronRight } from 'react-icons/hi'
 import Link from 'next/link'
 import 'react-complex-tree/lib/style.css'
 
@@ -266,8 +267,8 @@ export function Tree({
         <div
           className={`flex items-center ${
             isHighlighted
-              ? 'bg-blue-50 border-2 border-blue-100 rounded-lg shadow-sm'
-              : 'hover:bg-gray-50 transition-colors rounded-lg'
+              ? 'bg-primary-50 border-2 border-primary-100 rounded-lg shadow-sm'
+              : 'hover:bg-neutral-50 transition-colors rounded-lg'
           }`}
         >
           {/* Expand arrow */}
@@ -280,7 +281,7 @@ export function Tree({
               className='flex items-center px-2 py-3 cursor-pointer'
             >
               <div className='flex-1 min-w-0'>
-                <div className='font-medium text-gray-900 truncate'>
+                <div className='font-medium text-neutral-900 truncate'>
                   {content.name}
                 </div>
                 <div className='flex items-center gap-2 mt-1'>
@@ -312,7 +313,7 @@ export function Tree({
                 />
               </div>
             )}
-            <div className='text-xs text-gray-600 w-12 text-right'>
+            <div className='text-xs text-neutral-600 w-12 text-right'>
               {Math.round(progress)}%
             </div>
             <FavouriteButton
@@ -336,22 +337,17 @@ export function Tree({
     if (!item.data.isFolder || !context.arrowProps) return null
 
     return (
-      <Button variant='clear' size='sm' {...context.arrowProps} className='p-1'>
-        <svg
+      <Button
+        variant='clear'
+        size='small'
+        {...context.arrowProps}
+        className='p-1'
+      >
+        <HiChevronRight
           className={`w-4 h-4 transition-transform ${
             context.isExpanded ? 'rotate-90' : ''
           }`}
-          fill='none'
-          stroke='currentColor'
-          viewBox='0 0 24 24'
-        >
-          <path
-            strokeLinecap='round'
-            strokeLinejoin='round'
-            strokeWidth={2}
-            d='M9 5l7 7-7 7'
-          />
-        </svg>
+        />
       </Button>
     )
   }, [])
@@ -360,14 +356,14 @@ export function Tree({
   if (searchQuery && filteredContent.length > 0) {
     return (
       <div className={`space-y-2 ${className}`}>
-        <div className='text-sm text-gray-600 mb-4'>
+        <div className='text-sm text-neutral-600 mb-4'>
           {filteredContent.length} result
           {filteredContent.length === 1 ? '' : 's'} for {`"${searchQuery}"`}
         </div>
         {filteredContent.map(item => (
           <div
             key={item.id}
-            className='flex items-center p-3 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow'
+            className='flex items-center p-3 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow border border-neutral-200'
           >
             <div className='flex-1 min-w-0'>
               <Link
@@ -375,7 +371,7 @@ export function Tree({
                 className='flex items-center cursor-pointer'
               >
                 <div className='flex-1 min-w-0'>
-                  <div className='font-medium text-gray-900 truncate'>
+                  <div className='font-medium text-neutral-900 truncate'>
                     {item.name}
                   </div>
                   <div className='flex items-center gap-2 mt-1'>
@@ -405,7 +401,7 @@ export function Tree({
                   />
                 </div>
               )}
-              <div className='text-xs text-gray-600 w-12 text-right'>
+              <div className='text-xs text-neutral-600 w-12 text-right'>
                 {Math.round(getProgress(item.id))}%
               </div>
               <FavouriteButton
@@ -424,8 +420,10 @@ export function Tree({
   if (!treeData.root.children || treeData.root.children.length === 0) {
     return (
       <div className={`text-center py-8 ${className}`}>
-        <div className='text-gray-500'>
-          <h3 className='text-lg font-medium mb-2'>No content hierarchy</h3>
+        <div className='text-neutral-500'>
+          <h3 className='text-lg font-medium text-neutral-900 mb-2'>
+            No content hierarchy
+          </h3>
           <p className='text-sm'>
             No hierarchical relationships defined yet. Create relationships by
             setting parent content when adding new items.

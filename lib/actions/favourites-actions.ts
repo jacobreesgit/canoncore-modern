@@ -63,7 +63,9 @@ export async function toggleFavouriteAction(
       success: true,
     }
   } catch (error) {
-    console.error('Error toggling favourite:', error)
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error toggling favourite:', error)
+    }
     return {
       success: false,
       error: 'Failed to update favourite status',
@@ -96,7 +98,9 @@ export async function getUserFavouritesAction(): Promise<{
       data: favourites,
     }
   } catch (error) {
-    console.error('Error fetching user favourites:', error)
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error fetching user favourites:', error)
+    }
     return {
       success: false,
       error: 'Failed to fetch favourites',
@@ -138,7 +142,9 @@ export async function getFavoriteUniversesAction(): Promise<{
           const universe = await universeService.getById(id)
           return universe ? { ...universe, isFavorite: true } : null
         } catch (error) {
-          console.error(`Error loading universe ${id}:`, error)
+          if (process.env.NODE_ENV === 'development') {
+            console.error(`Error loading universe ${id}:`, error)
+          }
           return null
         }
       })
@@ -149,7 +155,9 @@ export async function getFavoriteUniversesAction(): Promise<{
       data: universes.filter(Boolean) as FavoriteUniverse[],
     }
   } catch (error) {
-    console.error('Error fetching favorite universes:', error)
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error fetching favorite universes:', error)
+    }
     return {
       success: false,
       error: 'Failed to fetch favorite universes',
@@ -191,7 +199,9 @@ export async function getFavoriteContentAction(): Promise<{
             universeName: universe?.name || 'Unknown Universe',
           }
         } catch (error) {
-          console.error(`Error loading content ${id}:`, error)
+          if (process.env.NODE_ENV === 'development') {
+            console.error(`Error loading content ${id}:`, error)
+          }
           return null
         }
       })
@@ -202,7 +212,9 @@ export async function getFavoriteContentAction(): Promise<{
       data: content.filter(Boolean) as FavoriteContent[],
     }
   } catch (error) {
-    console.error('Error fetching favorite content:', error)
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error fetching favorite content:', error)
+    }
     return {
       success: false,
       error: 'Failed to fetch favorite content',

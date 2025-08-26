@@ -190,26 +190,6 @@ export class UserService {
   }
 
   /**
-   * Get user's public universes count
-   */
-  async getPublicUniversesCount(userId: string): Promise<number> {
-    try {
-      const { db } = await import('@/lib/db')
-      const { universes } = await import('@/lib/db/schema')
-
-      const result = await db
-        .select({ count: universes.id })
-        .from(universes)
-        .where(and(eq(universes.userId, userId), eq(universes.isPublic, true)))
-
-      return result.length
-    } catch (error) {
-      console.error('Error fetching public universes count:', error)
-      return 0
-    }
-  }
-
-  /**
    * Get user by email
    */
   async getByEmail(email: string): Promise<User | null> {
@@ -291,18 +271,22 @@ export class UserService {
         throw new Error('User deletion failed - no rows affected')
       }
 
-      // Log the deletion for audit purposes
-      console.log(`User deleted successfully:`, {
-        userId,
-        email: existingUser.email,
-        deletedData: {
-          universes: stats.totalUniverses,
-          favorites: stats.favouritesCount,
-        },
-        timestamp: new Date().toISOString(),
-      })
+      // Log the deletion for audit purposes (only in development)
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`User deleted successfully:`, {
+          userId,
+          email: existingUser.email,
+          deletedData: {
+            universes: stats.totalUniverses,
+            favorites: stats.favouritesCount,
+          },
+          timestamp: new Date().toISOString(),
+        })
+      }
     } catch (error) {
-      console.error('Error deleting user:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error deleting user:', error)
+      }
       throw new Error('Failed to delete user account')
     }
   }

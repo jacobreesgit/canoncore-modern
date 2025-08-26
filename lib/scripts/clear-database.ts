@@ -1,4 +1,4 @@
-import { db } from './lib/db'
+import { db } from '../db'
 import {
   users,
   universes,
@@ -6,7 +6,7 @@ import {
   userProgress,
   favorites,
   contentRelationships,
-} from './lib/db/schema'
+} from '../db/schema'
 
 async function clearAllData() {
   try {
@@ -34,7 +34,9 @@ async function clearAllData() {
     console.log('✅ All data cleared successfully!')
     console.log('Database is now empty and ready for fresh development.')
   } catch (error) {
-    console.error('❌ Error clearing database:', error)
+    if (process.env.NODE_ENV === 'development') {
+      console.error('❌ Error clearing database:', error)
+    }
     throw error
   }
 }
@@ -46,6 +48,8 @@ clearAllData()
     process.exit(0)
   })
   .catch(error => {
-    console.error('💥 Failed to clear database:', error)
+    if (process.env.NODE_ENV === 'development') {
+      console.error('💥 Failed to clear database:', error)
+    }
     process.exit(1)
   })

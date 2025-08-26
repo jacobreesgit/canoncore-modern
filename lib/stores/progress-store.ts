@@ -156,7 +156,9 @@ export const useProgressStore = create<ProgressState>()(
                 'progress/setProgress-rollback'
               )
 
-              console.error('Failed to set progress:', result.error)
+              if (process.env.NODE_ENV === 'development') {
+                console.error('Failed to set progress:', result.error)
+              }
               return
             }
 
@@ -183,7 +185,9 @@ export const useProgressStore = create<ProgressState>()(
               'progress/setProgress-error'
             )
 
-            console.error('Network error setting progress:', error)
+            if (process.env.NODE_ENV === 'development') {
+              console.error('Network error setting progress:', error)
+            }
           }
         },
 
@@ -216,7 +220,9 @@ export const useProgressStore = create<ProgressState>()(
                 'progress/loadSuccess'
               )
             } else {
-              console.error('Failed to load progress:', result.error)
+              if (process.env.NODE_ENV === 'development') {
+                console.error('Failed to load progress:', result.error)
+              }
               set(
                 state => ({ ...state, isLoading: false }),
                 false,
@@ -224,7 +230,9 @@ export const useProgressStore = create<ProgressState>()(
               )
             }
           } catch (error) {
-            console.error('Network error loading progress:', error)
+            if (process.env.NODE_ENV === 'development') {
+              console.error('Network error loading progress:', error)
+            }
             set(
               state => ({ ...state, isLoading: false }),
               false,
@@ -253,7 +261,9 @@ export const useProgressStore = create<ProgressState>()(
                 'progress/loadUniverseSuccess'
               )
             } else {
-              console.error('Failed to load universe progress:', result.error)
+              if (process.env.NODE_ENV === 'development') {
+                console.error('Failed to load universe progress:', result.error)
+              }
               set(
                 state => ({ ...state, isLoading: false }),
                 false,
@@ -261,7 +271,9 @@ export const useProgressStore = create<ProgressState>()(
               )
             }
           } catch (error) {
-            console.error('Network error loading universe progress:', error)
+            if (process.env.NODE_ENV === 'development') {
+              console.error('Network error loading universe progress:', error)
+            }
             set(
               state => ({ ...state, isLoading: false }),
               false,

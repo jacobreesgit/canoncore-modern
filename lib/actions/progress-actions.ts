@@ -61,7 +61,9 @@ export async function setContentProgressAction(
       data: updatedProgress,
     }
   } catch (error) {
-    console.error('Error setting content progress:', error)
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error setting content progress:', error)
+    }
     return {
       success: false,
       error: 'Failed to update progress',
@@ -99,7 +101,9 @@ export async function getUserProgressByUniverseAction(
       data: progressMap,
     }
   } catch (error) {
-    console.error('Error fetching universe progress:', error)
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error fetching universe progress:', error)
+    }
     return {
       success: false,
       error: 'Failed to fetch progress',
@@ -134,7 +138,9 @@ export async function getAllUserProgressAction(): Promise<{
       data: progressMap,
     }
   } catch (error) {
-    console.error('Error fetching all user progress:', error)
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error fetching all user progress:', error)
+    }
     return {
       success: false,
       error: 'Failed to fetch progress',

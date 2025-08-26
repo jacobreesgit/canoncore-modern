@@ -25,7 +25,9 @@ export async function GET() {
       } catch (error) {
         health.database = 'disconnected'
         health.status = 'unhealthy'
-        console.error('Database health check failed:', error)
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Database health check failed:', error)
+        }
       }
     } else {
       health.database = 'not_configured'
@@ -38,7 +40,9 @@ export async function GET() {
       },
     })
   } catch (error) {
-    console.error('Health check failed:', error)
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Health check failed:', error)
+    }
     return NextResponse.json(
       {
         status: 'error',

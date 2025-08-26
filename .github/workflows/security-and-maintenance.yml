@@ -62,7 +62,7 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
           AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
-          NEXTAUTH_URL: 'http://localhost:3000'
+          AUTH_URL: 'http://localhost:3000'
 
       - name: Run Lighthouse CI
         run: pnpm perf:lighthouse:ci
@@ -94,4 +94,4 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
           AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
-          NEXTAUTH_URL: 'http://localhost:3000'
+          AUTH_URL: 'http://localhost:3000'

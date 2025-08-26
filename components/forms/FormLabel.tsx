@@ -21,15 +21,15 @@ export function FormLabel({
       className={cn(
         'form-label',
         'block text-sm font-medium mb-1',
-        variant === 'default' && 'text-gray-700',
-        variant === 'required' && 'text-gray-700',
-        variant === 'error' && 'text-red-600',
+        variant === 'default' && 'text-neutral-700',
+        variant === 'required' && 'text-neutral-700',
+        variant === 'error' && 'text-error-600',
         className
       )}
       {...props}
     >
       {children}
-      {variant === 'required' && <span className='text-red-500 ml-1'>*</span>}
+      {variant === 'required' && <span className='text-error-500 ml-1'>*</span>}
     </label>
   )
 }

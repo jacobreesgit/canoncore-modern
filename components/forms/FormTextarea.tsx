@@ -16,10 +16,10 @@ const FormTextarea = forwardRef<HTMLTextAreaElement, FormTextareaProps>(
         ref={ref}
         className={cn(
           'form-textarea',
-          'w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-vertical',
-          variant === 'default' && 'border-gray-300',
+          'w-full px-3 py-2 border rounded-lg focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:border-primary-500 resize-vertical',
+          variant === 'default' && 'border-neutral-300',
           variant === 'error' &&
-            'border-red-300 focus:ring-red-500 focus:border-red-500',
+            'border-error-300 focus-visible:ring-error-500 focus-visible:border-error-500',
           className
         )}
         {...props}

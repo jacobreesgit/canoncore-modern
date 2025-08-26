@@ -1,6 +1,7 @@
 import React from 'react'
 import Link from 'next/link'
 import { HiChevronRight } from 'react-icons/hi'
+import { Button, ButtonLink } from '@/components/interactive/Button'
 
 /**
  * PageHeader component with consistent styling and behavior
@@ -31,15 +32,18 @@ export interface PageHeaderBreadcrumb {
   isCurrentPage?: boolean
 }
 
-export interface PageHeaderProps extends React.HTMLAttributes<HTMLDivElement> {
+export interface PageHeaderProps
+  extends Omit<React.HTMLAttributes<HTMLDivElement>, 'title'> {
   /** Header variant */
   variant?: 'dashboard' | 'detail' | 'form' | 'centered'
   /** Optional custom class names */
   className?: string
   /** Page title */
-  title: string
+  title: string | React.ReactNode
   /** Page description */
-  description?: string
+  description?: string | React.ReactNode
+  /** Optional icon/avatar to display left of title */
+  icon?: React.ReactNode
   /** Action buttons */
   actions?: PageHeaderAction[]
   /** Breadcrumb navigation items */
@@ -53,7 +57,7 @@ export interface PageHeaderProps extends React.HTMLAttributes<HTMLDivElement> {
 /**
  * Base header styles
  */
-const baseStyles = 'bg-white border-b border-gray-200'
+const baseStyles = 'bg-surface-elevated border-b border-surface-200'
 
 /**
  * Variant styles for different header types
@@ -66,19 +70,6 @@ const variantStyles = {
 }
 
 /**
- * Button styles for actions
- */
-const buttonStyles = {
-  primary:
-    'bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 rounded-lg font-medium transition-colors',
-  secondary:
-    'bg-gray-100 text-gray-700 hover:bg-gray-200 px-4 py-2 rounded-lg font-medium transition-colors border border-gray-300',
-  danger:
-    'bg-red-600 text-white hover:bg-red-700 px-4 py-2 rounded-lg font-medium transition-colors',
-  text: 'text-blue-600 hover:text-blue-700 font-medium transition-colors',
-}
-
-/**
  * PageHeader component
  */
 export function PageHeader({
@@ -86,6 +77,7 @@ export function PageHeader({
   className = '',
   title,
   description,
+  icon,
   actions = [],
   breadcrumbs = [],
   metadata,
@@ -108,20 +100,20 @@ export function PageHeader({
         {/* Breadcrumbs */}
         {breadcrumbs.length > 0 && (
           <nav className='mb-4'>
-            <ol className='flex items-center space-x-2 text-sm text-gray-500'>
+            <ol className='flex items-center space-x-2 text-sm text-neutral-500'>
               {breadcrumbs.map((breadcrumb, index) => (
                 <li key={index} className='flex items-center'>
                   {index > 0 && (
-                    <HiChevronRight className='h-4 w-4 mx-2 text-gray-400' />
+                    <HiChevronRight className='h-4 w-4 mx-2 text-neutral-400' />
                   )}
                   {breadcrumb.isCurrentPage ? (
-                    <span className='text-gray-900 font-medium'>
+                    <span className='text-neutral-900 font-medium'>
                       {breadcrumb.label}
                     </span>
                   ) : breadcrumb.href ? (
                     <Link
                       href={breadcrumb.href}
-                      className='text-blue-600 hover:text-blue-700 transition-colors'
+                      className='text-primary-600 hover:text-primary-700 transition-colors'
                     >
                       {breadcrumb.label}
                     </Link>
@@ -135,43 +127,53 @@ export function PageHeader({
         )}
 
         {/* Header content */}
-        <div
-          className={`flex ${variant === 'centered' ? 'flex-col items-center' : 'flex-col sm:flex-row sm:items-center sm:justify-between'} gap-4`}
-        >
-          <div className={`${variant === 'centered' ? 'text-center' : ''}`}>
-            <h1 className='text-2xl font-bold text-gray-900 sm:text-3xl'>
-              {title}
-            </h1>
-            {description && <p className='mt-2 text-gray-600'>{description}</p>}
-            {metadata && <div className='mt-3'>{metadata}</div>}
-            {extraContent && <div className='mt-4'>{extraContent}</div>}
+        <div className={`${variant === 'centered' ? 'text-center' : ''}`}>
+          {/* Title and Actions Row */}
+          <div
+            className={`flex ${variant === 'centered' ? 'flex-col items-center' : 'items-start justify-between'} gap-4 mb-4`}
+          >
+            <div className='flex items-start gap-3'>
+              {icon && <div className='flex-shrink-0'>{icon}</div>}
+              <div>
+                <h1 className='text-2xl font-bold text-neutral-900 sm:text-3xl'>
+                  {title}
+                </h1>
+                {description && (
+                  <div className='mt-2 text-neutral-600'>{description}</div>
+                )}
+                {metadata && <div className='mt-3'>{metadata}</div>}
+              </div>
+            </div>
+
+            {/* Actions */}
+            {actions.length > 0 && (
+              <div className='flex items-center gap-3 flex-shrink-0'>
+                {actions.map((action, index) => (
+                  <React.Fragment key={index}>
+                    {action.href ? (
+                      <ButtonLink
+                        href={action.href}
+                        variant={action.type === 'text' ? 'clear' : action.type}
+                      >
+                        {action.label}
+                      </ButtonLink>
+                    ) : (
+                      <Button
+                        onClick={action.onClick}
+                        disabled={action.disabled}
+                        variant={action.type === 'text' ? 'clear' : action.type}
+                      >
+                        {action.label}
+                      </Button>
+                    )}
+                  </React.Fragment>
+                ))}
+              </div>
+            )}
           </div>
 
-          {/* Actions */}
-          {actions.length > 0 && (
-            <div className='flex items-center gap-3 flex-shrink-0'>
-              {actions.map((action, index) => (
-                <React.Fragment key={index}>
-                  {action.href ? (
-                    <Link
-                      href={action.href}
-                      className={buttonStyles[action.type]}
-                    >
-                      {action.label}
-                    </Link>
-                  ) : (
-                    <button
-                      onClick={action.onClick}
-                      disabled={action.disabled}
-                      className={`${buttonStyles[action.type]} ${action.disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    >
-                      {action.label}
-                    </button>
-                  )}
-                </React.Fragment>
-              ))}
-            </div>
-          )}
+          {/* Extra Content */}
+          {extraContent && <div>{extraContent}</div>}
         </div>
       </div>
     </header>

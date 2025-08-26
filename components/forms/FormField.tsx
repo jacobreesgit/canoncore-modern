@@ -31,7 +31,7 @@ export function FormField({
       {label && <FormLabel variant={labelVariant}>{label}</FormLabel>}
       {children}
       {description && !hasError && (
-        <div className='text-sm text-gray-500'>{description}</div>
+        <div className='text-sm text-neutral-500'>{description}</div>
       )}
       <FormError error={error} />
     </div>

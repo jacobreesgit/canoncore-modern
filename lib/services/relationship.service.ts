@@ -34,7 +34,9 @@ export class RelationshipService {
 
       return relationships
     } catch (error) {
-      console.error('Error fetching universe relationships:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error fetching universe relationships:', error)
+      }
       throw new Error('Failed to fetch universe relationships')
     }
   }
@@ -59,7 +61,9 @@ export class RelationshipService {
 
       return parentRelationships
     } catch (error) {
-      console.error('Error fetching content parents:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error fetching content parents:', error)
+      }
       throw new Error('Failed to fetch content parents')
     }
   }
@@ -84,7 +88,9 @@ export class RelationshipService {
 
       return childRelationships
     } catch (error) {
-      console.error('Error fetching content children:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error fetching content children:', error)
+      }
       throw new Error('Failed to fetch content children')
     }
   }
@@ -115,7 +121,9 @@ export class RelationshipService {
 
       return relationship
     } catch (error) {
-      console.error('Error creating relationship:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error creating relationship:', error)
+      }
       throw new Error('Failed to create relationship')
     }
   }
@@ -137,7 +145,9 @@ export class RelationshipService {
           )
         )
     } catch (error) {
-      console.error('Error deleting relationship:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error deleting relationship:', error)
+      }
       throw new Error('Failed to delete relationship')
     }
   }
@@ -160,7 +170,9 @@ export class RelationshipService {
         .delete(contentRelationships)
         .where(eq(contentRelationships.childId, contentId))
     } catch (error) {
-      console.error('Error deleting content relationships:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error deleting content relationships:', error)
+      }
       throw new Error('Failed to delete content relationships')
     }
   }
@@ -234,7 +246,9 @@ export class RelationshipService {
       // Build and return hierarchy tree
       return this.buildHierarchyTree(contentItems, relationships)
     } catch (error) {
-      console.error('Error building universe hierarchy:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error building universe hierarchy:', error)
+      }
       throw new Error('Failed to build universe hierarchy')
     }
   }
@@ -255,7 +269,9 @@ export class RelationshipService {
       // Check if childId is already an ancestor of parentId
       return await this.isAncestor(childId, parentId)
     } catch (error) {
-      console.error('Error checking circular dependency:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error checking circular dependency:', error)
+      }
       return true // Err on the side of caution
     }
   }
@@ -283,7 +299,9 @@ export class RelationshipService {
 
       return false
     } catch (error) {
-      console.error('Error checking ancestor relationship:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error checking ancestor relationship:', error)
+      }
       return false
     }
   }
@@ -310,7 +328,9 @@ export class RelationshipService {
 
       return path
     } catch (error) {
-      console.error('Error getting content path:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error getting content path:', error)
+      }
       return [contentId]
     }
   }

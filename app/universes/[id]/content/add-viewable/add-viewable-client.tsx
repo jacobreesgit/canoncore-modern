@@ -79,7 +79,7 @@ export function AddViewableClient({
   }, [state, router, universe.id])
 
   return (
-    <div className='bg-white rounded-lg shadow-sm'>
+    <div className='bg-white rounded-lg shadow-sm border border-neutral-200 hover:shadow-md transition-shadow'>
       <form action={formAction} className='p-6 space-y-6'>
         <FormError error={state?.error} />
 
@@ -109,7 +109,7 @@ export function AddViewableClient({
               </option>
             ))}
           </FormSelect>
-          <p className='text-sm text-gray-600 mt-1'>
+          <p className='text-sm text-neutral-600 mt-1'>
             Choose the type of viewable content you&apos;re adding
           </p>
         </FormField>
@@ -129,7 +129,7 @@ export function AddViewableClient({
                 </option>
               ))}
             </FormSelect>
-            <p className='text-sm text-gray-600 mt-1'>
+            <p className='text-sm text-neutral-600 mt-1'>
               Organize this content under a series, phase, or collection
             </p>
           </FormField>

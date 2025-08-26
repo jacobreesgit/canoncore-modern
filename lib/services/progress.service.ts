@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { eq, and, count, sql } from 'drizzle-orm'
+import { eq, and, count } from 'drizzle-orm'
 import type { UserProgress, NewUserProgress, Content } from '@/lib/db/schema'
 
 /**
@@ -35,7 +35,9 @@ export class ProgressService {
 
       return progressData?.progress || 0
     } catch (error) {
-      console.error('Error fetching user progress:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error fetching user progress:', error)
+      }
       return 0
     }
   }
@@ -72,7 +74,9 @@ export class ProgressService {
 
       return progressMap
     } catch (error) {
-      console.error('Error fetching universe progress:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error fetching universe progress:', error)
+      }
       return {}
     }
   }
@@ -137,7 +141,9 @@ export class ProgressService {
         return createdProgress
       }
     } catch (error) {
-      console.error('Error setting user progress:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error setting user progress:', error)
+      }
       throw new Error('Failed to set user progress')
     }
   }
@@ -188,7 +194,9 @@ export class ProgressService {
 
       return progressCount > 0 ? Math.round(totalProgress / progressCount) : 0
     } catch (error) {
-      console.error('Error calculating organisational progress:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error calculating organisational progress:', error)
+      }
       return 0
     }
   }
@@ -273,7 +281,9 @@ export class ProgressService {
         completedUniverses,
       }
     } catch (error) {
-      console.error('Error getting progress summary:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error getting progress summary:', error)
+      }
       return {
         totalContent: 0,
         completedContent: 0,
@@ -293,7 +303,9 @@ export class ProgressService {
 
       await db.delete(userProgress).where(eq(userProgress.contentId, contentId))
     } catch (error) {
-      console.error('Error deleting progress for content:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error deleting progress for content:', error)
+      }
       throw new Error('Failed to delete progress for content')
     }
   }
@@ -310,88 +322,10 @@ export class ProgressService {
         .delete(userProgress)
         .where(eq(userProgress.universeId, universeId))
     } catch (error) {
-      console.error('Error deleting progress for universe:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error deleting progress for universe:', error)
+      }
       throw new Error('Failed to delete progress for universe')
-    }
-  }
-
-  /**
-   * Get recent progress updates for user
-   */
-  async getRecentProgress(
-    userId: string,
-    limit: number = 10
-  ): Promise<UserProgress[]> {
-    try {
-      const { db } = await import('@/lib/db')
-      const { userProgress } = await import('@/lib/db/schema')
-
-      const recentProgress = await db
-        .select()
-        .from(userProgress)
-        .where(eq(userProgress.userId, userId))
-        .orderBy(sql`${userProgress.updatedAt} DESC`)
-        .limit(limit)
-
-      return recentProgress
-    } catch (error) {
-      console.error('Error fetching recent progress:', error)
-      return []
-    }
-  }
-
-  /**
-   * Get content progress statistics for a universe
-   */
-  async getUniverseProgressStats(universeId: string): Promise<{
-    totalViewableContent: number
-    usersWithProgress: number
-    averageCompletion: number
-  }> {
-    try {
-      const { db } = await import('@/lib/db')
-      const { content, userProgress } = await import('@/lib/db/schema')
-
-      // Get total viewable content in universe
-      const [totalViewableResult] = await db
-        .select({ count: count() })
-        .from(content)
-        .where(
-          and(eq(content.universeId, universeId), eq(content.isViewable, true))
-        )
-
-      // Get unique users with progress in this universe
-      const uniqueUsers = await db
-        .selectDistinct({ userId: userProgress.userId })
-        .from(userProgress)
-        .where(eq(userProgress.universeId, universeId))
-
-      // Get average completion percentage
-      const [avgCompletionResult] = await db
-        .select({
-          avgProgress: sql<number>`AVG(${userProgress.progress})`,
-        })
-        .from(userProgress)
-        .where(eq(userProgress.universeId, universeId))
-
-      const totalViewableContent = totalViewableResult?.count || 0
-      const usersWithProgress = uniqueUsers.length
-      const averageCompletion = Math.round(
-        Number(avgCompletionResult?.avgProgress) || 0
-      )
-
-      return {
-        totalViewableContent,
-        usersWithProgress,
-        averageCompletion,
-      }
-    } catch (error) {
-      console.error('Error getting universe progress stats:', error)
-      return {
-        totalViewableContent: 0,
-        usersWithProgress: 0,
-        averageCompletion: 0,
-      }
     }
   }
 
@@ -419,7 +353,9 @@ export class ProgressService {
 
       return progressMap
     } catch (error) {
-      console.error('Error fetching all user progress:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error fetching all user progress:', error)
+      }
       return {}
     }
   }

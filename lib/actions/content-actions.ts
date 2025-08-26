@@ -74,7 +74,9 @@ export async function createContentAction(formData: FormData) {
       message: 'Content created successfully',
     }
   } catch (error) {
-    console.error('Error creating content:', error)
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error creating content:', error)
+    }
     return {
       success: false,
       error: 'Failed to create content. Please try again.',
@@ -129,7 +131,9 @@ export async function updateContentAction(
       message: 'Content updated successfully',
     }
   } catch (error) {
-    console.error('Error updating content:', error)
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error updating content:', error)
+    }
     return {
       success: false,
       error: 'Failed to update content. Please try again.',
@@ -163,7 +167,9 @@ export async function deleteContentAction(contentId: string) {
 
     // Using dynamic rendering for fresh data
   } catch (error) {
-    console.error('Error deleting content:', error)
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error deleting content:', error)
+    }
     return {
       success: false,
       error: 'Failed to delete content. Please try again.',

@@ -1,13 +1,11 @@
 import { getCurrentUser } from '@/lib/auth-helpers'
+import { universeService } from '@/lib/services'
+import { PageLayout } from '@/components/layout/PageLayout'
+import { EditUniverseClient } from './edit-client'
+import { redirect, notFound } from 'next/navigation'
 
 // Force dynamic rendering - no caching
 export const dynamic = 'force-dynamic'
-import { universeService } from '@/lib/services'
-import { Navigation } from '@/components/layout/Navigation'
-import { PageContainer } from '@/components/layout/PageContainer'
-import { PageHeader } from '@/components/layout/PageHeader'
-import { EditUniverseClient } from './edit-client'
-import { redirect, notFound } from 'next/navigation'
 
 /**
  * Edit Universe Page
@@ -38,22 +36,19 @@ export default async function EditUniversePage({
   }
 
   return (
-    <div className='min-h-screen bg-gray-50'>
-      <Navigation showNavigationMenu={true} currentPage='dashboard' />
-
-      <PageContainer>
-        <PageHeader
-          title='Edit Universe'
-          description='Update your universe information'
-          breadcrumbs={[
-            { label: 'Dashboard', href: '/' },
-            { label: universe.name, href: `/universes/${id}` },
-            { label: 'Edit', href: `/universes/${id}/edit` },
-          ]}
-        />
-
-        <EditUniverseClient universe={universe} />
-      </PageContainer>
-    </div>
+    <PageLayout
+      currentPage='dashboard'
+      header={{
+        title: 'Edit Universe',
+        description: 'Update your universe information',
+        breadcrumbs: [
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: universe.name, href: `/universes/${id}` },
+          { label: 'Edit', href: `/universes/${id}/edit` },
+        ],
+      }}
+    >
+      <EditUniverseClient universe={universe} />
+    </PageLayout>
   )
 }

@@ -9,6 +9,14 @@ config({ path: '.env.test' })
 beforeAll(async () => {
   // Setup test database or other global test resources
   console.log('🧪 Setting up test environment...')
+
+  // Set NODE_ENV to development for tests to enable console.error statements
+  Object.defineProperty(process.env, 'NODE_ENV', {
+    value: 'development',
+    writable: true,
+    enumerable: true,
+    configurable: true,
+  })
 })
 
 afterAll(async () => {

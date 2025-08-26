@@ -12,14 +12,14 @@ export default auth(req => {
 
   // If accessing a protected route without authentication, redirect to signin
   if (isProtectedRoute && !req.auth) {
-    const signInUrl = new URL('/auth/signin', req.url)
+    const signInUrl = new URL('/api/auth/signin', req.url)
     signInUrl.searchParams.set('callbackUrl', pathname)
     return NextResponse.redirect(signInUrl)
   }
 
   // If authenticated and trying to access auth pages, redirect to dashboard
-  if (req.auth && pathname.startsWith('/auth/')) {
-    return NextResponse.redirect(new URL('/dashboard', req.url))
+  if (req.auth && pathname.startsWith('/api/auth/signin')) {
+    return NextResponse.redirect(new URL('/', req.url))
   }
 
   return NextResponse.next()

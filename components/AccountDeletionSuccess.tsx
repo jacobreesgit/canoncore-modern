@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
+import { HiCheckCircle } from 'react-icons/hi'
+import { Button } from '@/components/interactive/Button'
 
 /**
  * Account Deletion Success Component
@@ -27,36 +29,28 @@ export function AccountDeletionSuccess() {
   if (!show) return null
 
   return (
-    <div className='mb-6 rounded-lg border border-green-200 bg-green-50 p-4'>
+    <div className='mb-6 rounded-lg border border-success-200 bg-success-50 p-4'>
       <div className='flex'>
         <div className='flex-shrink-0'>
-          <svg
-            className='h-5 w-5 text-green-400'
-            viewBox='0 0 20 20'
-            fill='currentColor'
-          >
-            <path
-              fillRule='evenodd'
-              d='M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z'
-              clipRule='evenodd'
-            />
-          </svg>
+          <HiCheckCircle className='h-5 w-5 text-success-400' />
         </div>
         <div className='ml-3'>
-          <h3 className='text-sm font-medium text-green-800'>
+          <h3 className='text-sm font-medium text-success-800'>
             Account Successfully Deleted
           </h3>
-          <p className='mt-1 text-sm text-green-700'>
+          <p className='mt-1 text-sm text-success-700'>
             Your account and all associated data have been permanently deleted.
             Thank you for using CanonCore.
           </p>
           <div className='mt-2'>
-            <button
+            <Button
               onClick={() => setShow(false)}
-              className='text-sm font-medium text-green-800 underline hover:text-green-600'
+              variant='clear'
+              size='small'
+              className='text-sm font-medium text-success-800 underline hover:text-success-600'
             >
               Dismiss
-            </button>
+            </Button>
           </div>
         </div>
       </div>

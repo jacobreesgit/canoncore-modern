@@ -55,18 +55,9 @@ export function useSearch<T>(
           })
           setFuseInstance(instance)
         } catch (error) {
-          // Use error tracking instead of console.warn
-          import('@/lib/errors/error-tracking').then(({ errorTracker }) => {
-            errorTracker.trackError(
-              error,
-              {
-                type: 'search_initialization_error',
-                component: 'useSearch',
-                action: 'create_fuse_instance',
-              },
-              'low'
-            )
-          })
+          if (process.env.NODE_ENV === 'development') {
+            console.warn('Failed to initialize search:', error)
+          }
           setFuseInstance(null)
         }
       })
@@ -98,19 +89,9 @@ export function useSearch<T>(
         .search(searchQuery)
         .map(result => result.item)
     } catch (error) {
-      // Use error tracking instead of console.warn
-      import('@/lib/errors/error-tracking').then(({ errorTracker }) => {
-        errorTracker.trackError(
-          error,
-          {
-            type: 'search_execution_error',
-            component: 'useSearch',
-            action: 'fuse_search',
-            searchQuery,
-          },
-          'low'
-        )
-      })
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('Search execution failed:', error)
+      }
       return data
     }
   }, [fuseInstance, searchQuery, data, stableKeys])

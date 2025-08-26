@@ -8,7 +8,7 @@ import { AiOutlineLoading3Quarters } from 'react-icons/ai'
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'danger' | 'clear'
-  size?: 'sm' | 'md' | 'lg'
+  size?: 'small' | 'default' | 'large'
   loading?: boolean
   icon?: React.ReactNode
   className?: string
@@ -18,7 +18,7 @@ export interface ButtonProps
 export interface ButtonLinkProps
   extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
   variant?: 'primary' | 'secondary' | 'danger' | 'clear'
-  size?: 'sm' | 'md' | 'lg'
+  size?: 'small' | 'default' | 'large'
   href: string
   external?: boolean
   icon?: React.ReactNode
@@ -32,7 +32,7 @@ function LoadingSpinner({ className }: { className?: string }) {
 
 export function Button({
   variant = 'primary',
-  size = 'md',
+  size = 'default',
   loading = false,
   disabled = false,
   icon,
@@ -45,18 +45,18 @@ export function Button({
   return (
     <button
       className={cn(
-        'inline-flex items-center justify-center font-medium rounded-lg focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors',
+        'inline-flex items-center justify-center font-medium rounded-lg focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors',
         variant === 'primary' &&
-          'bg-blue-600 hover:bg-blue-700 text-white focus:ring-blue-500',
+          'button-variant-primary bg-primary-600 hover:bg-primary-700 text-white focus-visible:ring-primary-500',
         variant === 'secondary' &&
-          'bg-gray-100 hover:bg-gray-200 text-gray-900 focus:ring-gray-500',
+          'button-variant-secondary bg-secondary-100 hover:bg-secondary-200 text-secondary-900 focus-visible:ring-secondary-500',
         variant === 'danger' &&
-          'bg-red-600 hover:bg-red-700 text-white focus:ring-red-500',
+          'button-variant-danger bg-error-600 hover:bg-error-700 text-white focus-visible:ring-error-500',
         variant === 'clear' &&
-          'bg-transparent hover:bg-gray-100 text-gray-700 focus:ring-gray-500',
-        size === 'sm' && 'px-3 py-1.5 text-sm',
-        size === 'md' && 'px-4 py-2 text-sm',
-        size === 'lg' && 'px-6 py-3 text-base',
+          'button-variant-clear bg-transparent hover:bg-surface-100 text-surface-700 focus-visible:ring-surface-500',
+        size === 'small' && 'px-3 py-1.5 text-sm',
+        size === 'default' && 'px-4 py-2 text-sm',
+        size === 'large' && 'px-6 py-3 text-base',
         className
       )}
       disabled={isDisabled}
@@ -73,7 +73,7 @@ export function Button({
 
 export function ButtonLink({
   variant = 'primary',
-  size = 'md',
+  size = 'default',
   href,
   external = false,
   icon,
@@ -82,18 +82,18 @@ export function ButtonLink({
   ...props
 }: ButtonLinkProps) {
   const baseClasses = cn(
-    'inline-flex items-center justify-center font-medium rounded-lg focus:ring-2 focus:ring-offset-2 transition-colors',
+    'inline-flex items-center justify-center font-medium rounded-lg focus-visible:ring-2 focus-visible:ring-offset-2 cursor-pointer transition-colors',
     variant === 'primary' &&
-      'bg-blue-600 hover:bg-blue-700 text-white focus:ring-blue-500',
+      'button-variant-primary bg-primary-600 hover:bg-primary-700 text-white focus-visible:ring-primary-500',
     variant === 'secondary' &&
-      'bg-gray-100 hover:bg-gray-200 text-gray-900 focus:ring-gray-500',
+      'button-variant-secondary bg-secondary-100 hover:bg-secondary-200 text-secondary-900 focus-visible:ring-secondary-500',
     variant === 'danger' &&
-      'bg-red-600 hover:bg-red-700 text-white focus:ring-red-500',
+      'button-variant-danger bg-error-600 hover:bg-error-700 text-white focus-visible:ring-error-500',
     variant === 'clear' &&
-      'bg-transparent hover:bg-gray-100 text-gray-700 focus:ring-gray-500',
-    size === 'sm' && 'px-3 py-1.5 text-sm',
-    size === 'md' && 'px-4 py-2 text-sm',
-    size === 'lg' && 'px-6 py-3 text-base',
+      'button-variant-clear bg-transparent hover:bg-surface-100 text-surface-700 focus-visible:ring-surface-500',
+    size === 'small' && 'px-3 py-1.5 text-sm',
+    size === 'default' && 'px-4 py-2 text-sm',
+    size === 'large' && 'px-6 py-3 text-base',
     className
   )
 

@@ -30,7 +30,9 @@ export class ContentService {
 
       return contentItem || null
     } catch (error) {
-      console.error('Error fetching content:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error fetching content:', error)
+      }
       throw new Error('Failed to fetch content')
     }
   }
@@ -73,7 +75,9 @@ export class ContentService {
         progress,
       }
     } catch (error) {
-      console.error('Error fetching content with user progress:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error fetching content with user progress:', error)
+      }
       throw new Error('Failed to fetch content with user progress')
     }
   }
@@ -97,7 +101,9 @@ export class ContentService {
 
       return newContent
     } catch (error) {
-      console.error('Error creating content:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error creating content:', error)
+      }
       throw new Error('Failed to create content')
     }
   }
@@ -124,7 +130,9 @@ export class ContentService {
 
       return updatedContent || null
     } catch (error) {
-      console.error('Error updating content:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error updating content:', error)
+      }
       throw new Error('Failed to update content')
     }
   }
@@ -139,7 +147,9 @@ export class ContentService {
 
       await db.delete(content).where(eq(content.id, id))
     } catch (error) {
-      console.error('Error deleting content:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error deleting content:', error)
+      }
       throw new Error('Failed to delete content')
     }
   }
@@ -369,35 +379,6 @@ export class ContentService {
     } catch (error) {
       console.error('Error searching content:', error)
       throw new Error('Failed to search content')
-    }
-  }
-
-  /**
-   * Get content by media type
-   */
-  async getByMediaType(
-    universeId: string,
-    mediaType: string
-  ): Promise<Content[]> {
-    try {
-      const { db } = await import('@/lib/db')
-      const { content } = await import('@/lib/db/schema')
-
-      const contentByType = await db
-        .select()
-        .from(content)
-        .where(
-          and(
-            eq(content.universeId, universeId),
-            eq(content.mediaType, mediaType)
-          )
-        )
-        .orderBy(desc(content.createdAt))
-
-      return contentByType
-    } catch (error) {
-      console.error('Error fetching content by media type:', error)
-      throw new Error('Failed to fetch content by media type')
     }
   }
 }

@@ -1,6 +1,5 @@
 import NextAuth from 'next-auth'
 import Credentials from 'next-auth/providers/credentials'
-import { DrizzleAdapter } from '@auth/drizzle-adapter'
 import bcryptjs from 'bcryptjs'
 import { eq } from 'drizzle-orm'
 import { db } from './db'
@@ -14,7 +13,6 @@ const signInSchema = z.object({
 })
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  adapter: DrizzleAdapter(db),
   providers: [
     Credentials({
       name: 'credentials',
@@ -64,7 +62,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             image: user.image,
           }
         } catch (error) {
-          console.error('Authentication error:', error)
+          if (process.env.NODE_ENV === 'development') {
+            console.error('Authentication error:', error)
+          }
           return null
         }
       },
@@ -73,6 +73,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   session: {
     strategy: 'jwt',
     maxAge: 30 * 24 * 60 * 60, // 30 days
+  },
+  pages: {
+    signIn: '/signin',
   },
   callbacks: {
     async jwt({ token, user }) {
@@ -88,5 +91,5 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return session
     },
   },
-  debug: false, // Disable debug warnings
+  debug: false,
 })

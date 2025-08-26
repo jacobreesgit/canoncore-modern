@@ -63,7 +63,9 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     )
   } catch (error) {
-    console.error('Registration error:', error)
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Registration error:', error)
+    }
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(

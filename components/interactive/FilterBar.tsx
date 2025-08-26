@@ -36,17 +36,17 @@ export function FilterBar({
   }
 
   return (
-    <div className='bg-white rounded-lg shadow-sm p-4 border border-gray-200'>
+    <div className='bg-white rounded-lg shadow-sm p-6 border border-neutral-200'>
       <div className='flex items-center justify-between'>
         <div className='flex items-center gap-4'>
-          <span className='text-sm font-medium text-gray-700'>Sort by:</span>
+          <span className='text-sm font-medium text-neutral-700'>Sort by:</span>
 
           <div className='flex gap-2'>
             <Button
               variant={
                 currentFilters.sortBy === 'newest' ? 'primary' : 'secondary'
               }
-              size='sm'
+              size='small'
               onClick={() => handleSortChange('newest')}
             >
               Newest
@@ -55,7 +55,7 @@ export function FilterBar({
               variant={
                 currentFilters.sortBy === 'oldest' ? 'primary' : 'secondary'
               }
-              size='sm'
+              size='small'
               onClick={() => handleSortChange('oldest')}
             >
               Oldest
@@ -64,7 +64,7 @@ export function FilterBar({
               variant={
                 currentFilters.sortBy === 'name' ? 'primary' : 'secondary'
               }
-              size='sm'
+              size='small'
               onClick={() => handleSortChange('name')}
             >
               Name (A-Z)
@@ -73,12 +73,12 @@ export function FilterBar({
         </div>
 
         <div className='flex items-center gap-3'>
-          <span className='text-sm text-gray-600'>
+          <span className='text-sm text-neutral-600'>
             {resultsCount} result{resultsCount !== 1 ? 's' : ''}
           </span>
 
           {currentFilters.sortBy !== 'newest' && (
-            <Button variant='clear' size='sm' onClick={resetSort}>
+            <Button variant='clear' size='small' onClick={resetSort}>
               Reset sort
             </Button>
           )}

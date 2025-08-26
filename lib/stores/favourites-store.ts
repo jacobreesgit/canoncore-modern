@@ -132,7 +132,9 @@ export const useFavouritesStore = create<FavouritesState>()(
                 `favourites/toggle-${targetType}-rollback`
               )
 
-              console.error('Failed to toggle favourite:', result.error)
+              if (process.env.NODE_ENV === 'development') {
+                console.error('Failed to toggle favourite:', result.error)
+              }
               return
             }
 
@@ -167,7 +169,9 @@ export const useFavouritesStore = create<FavouritesState>()(
               `favourites/toggle-${targetType}-error`
             )
 
-            console.error('Network error toggling favourite:', error)
+            if (process.env.NODE_ENV === 'development') {
+              console.error('Network error toggling favourite:', error)
+            }
           }
         },
 
@@ -234,7 +238,9 @@ export const useFavouritesStore = create<FavouritesState>()(
                 'favourites/loadSuccess'
               )
             } else {
-              console.error('Failed to load favourites:', result.error)
+              if (process.env.NODE_ENV === 'development') {
+                console.error('Failed to load favourites:', result.error)
+              }
               set(
                 state => ({ ...state, isLoading: false }),
                 false,
@@ -242,7 +248,9 @@ export const useFavouritesStore = create<FavouritesState>()(
               )
             }
           } catch (error) {
-            console.error('Network error loading favourites:', error)
+            if (process.env.NODE_ENV === 'development') {
+              console.error('Network error loading favourites:', error)
+            }
             set(
               state => ({ ...state, isLoading: false }),
               false,
@@ -274,7 +282,9 @@ export const useFavouritesStore = create<FavouritesState>()(
         onRehydrateStorage: () => {
           return (state, error) => {
             if (error) {
-              console.error('Favourites store rehydration failed:', error)
+              if (process.env.NODE_ENV === 'development') {
+                console.error('Favourites store rehydration failed:', error)
+              }
             } else {
               state?.setHasHydrated(true)
             }

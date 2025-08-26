@@ -43,7 +43,7 @@ export function UniverseCard({
     <Link
       href={href}
       className={cn(
-        'block bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer p-6',
+        'block bg-white border border-neutral-200 rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer p-6 h-full',
         className
       )}
     >
@@ -52,7 +52,7 @@ export function UniverseCard({
         <div className='mb-3'>
           <div className='flex items-center justify-between mb-2'>
             <div className='flex items-center space-x-2 min-w-0 flex-1'>
-              <h3 className='text-lg font-medium text-gray-900 truncate'>
+              <h3 className='text-lg font-medium text-neutral-900 truncate'>
                 {universe.name}
               </h3>
               {showFavourite && (
@@ -87,7 +87,7 @@ export function UniverseCard({
 
         {/* Description */}
         {universe.description && (
-          <p className='text-gray-600 text-sm mb-4 line-clamp-3'>
+          <p className='text-neutral-600 text-sm mb-4 line-clamp-3'>
             {universe.description}
           </p>
         )}

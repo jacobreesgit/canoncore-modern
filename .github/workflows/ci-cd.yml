@@ -79,14 +79,14 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
           AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
-          NEXTAUTH_URL: 'http://localhost:3000'
+          AUTH_URL: 'http://localhost:3000'
 
       - name: Generate test coverage
         run: pnpm test:coverage
         env:
           DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
           AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
-          NEXTAUTH_URL: 'http://localhost:3000'
+          AUTH_URL: 'http://localhost:3000'
 
   build:
     name: Build Application
@@ -145,7 +145,7 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
-          NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL }}
+          AUTH_URL: ${{ secrets.AUTH_URL }}
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4

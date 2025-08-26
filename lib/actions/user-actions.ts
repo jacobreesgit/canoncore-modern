@@ -111,7 +111,9 @@ export async function updateProfileAction(
       success: true,
     }
   } catch (error) {
-    console.error('Error updating profile:', error)
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error updating profile:', error)
+    }
     return {
       message: 'Failed to update profile. Please try again.',
       success: false,
@@ -193,7 +195,9 @@ export async function deleteAccountAction(
       },
     }
   } catch (error) {
-    console.error('Error deleting account:', error)
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error deleting account:', error)
+    }
     return {
       success: false,
       error: 'Failed to delete account. Please try again.',

@@ -1,13 +1,11 @@
 import { getCurrentUser } from '@/lib/auth-helpers'
+import { universeService, contentService } from '@/lib/services'
+import { PageLayout } from '@/components/layout/PageLayout'
+import { EditContentClient } from './edit-content-client'
+import { redirect, notFound } from 'next/navigation'
 
 // Force dynamic rendering - no caching
 export const dynamic = 'force-dynamic'
-import { universeService, contentService } from '@/lib/services'
-import { Navigation } from '@/components/layout/Navigation'
-import { PageContainer } from '@/components/layout/PageContainer'
-import { PageHeader } from '@/components/layout/PageHeader'
-import { EditContentClient } from './edit-content-client'
-import { redirect, notFound } from 'next/navigation'
 
 /**
  * Edit Content Page
@@ -47,26 +45,23 @@ export default async function EditContentPage({
   }
 
   return (
-    <div className='min-h-screen bg-gray-50'>
-      <Navigation showNavigationMenu={true} currentPage='dashboard' />
-
-      <PageContainer>
-        <PageHeader
-          title='Edit Content'
-          description='Update content information'
-          breadcrumbs={[
-            { label: 'Dashboard', href: '/' },
-            { label: universe.name, href: `/universes/${id}` },
-            { label: content.name, href: `/content/${contentId}` },
-            {
-              label: 'Edit',
-              href: `/universes/${id}/content/${contentId}/edit`,
-            },
-          ]}
-        />
-
-        <EditContentClient content={content} />
-      </PageContainer>
-    </div>
+    <PageLayout
+      currentPage='dashboard'
+      header={{
+        title: 'Edit Content',
+        description: 'Update content information',
+        breadcrumbs: [
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: universe.name, href: `/universes/${id}` },
+          { label: content.name, href: `/content/${contentId}` },
+          {
+            label: 'Edit',
+            href: `/universes/${id}/content/${contentId}/edit`,
+          },
+        ],
+      }}
+    >
+      <EditContentClient content={content} />
+    </PageLayout>
   )
 }

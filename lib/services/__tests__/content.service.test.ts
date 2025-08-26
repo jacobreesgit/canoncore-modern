@@ -422,41 +422,4 @@ describe('Content Service', () => {
       consoleErrorSpy.mockRestore()
     })
   })
-
-  describe('getByMediaType', () => {
-    it('should filter content by media type', async () => {
-      const mockContent = [createMockContent({ mediaType: 'video' })]
-      const mockOrderBy = vi.fn().mockResolvedValue(mockContent)
-      const mockWhere = vi.fn().mockReturnValue({ orderBy: mockOrderBy })
-      const mockFrom = vi.fn().mockReturnValue({ where: mockWhere })
-      mockDb.select.mockReturnValue({ from: mockFrom })
-
-      const result = await contentService.getByMediaType(
-        'universe-123',
-        'video'
-      )
-
-      expect(result).toEqual(mockContent)
-    })
-
-    it('should handle errors gracefully', async () => {
-      const consoleErrorSpy = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
-      const mockOrderBy = vi.fn().mockRejectedValue(new Error('Database error'))
-      const mockWhere = vi.fn().mockReturnValue({ orderBy: mockOrderBy })
-      const mockFrom = vi.fn().mockReturnValue({ where: mockWhere })
-      mockDb.select.mockReturnValue({ from: mockFrom })
-
-      await expect(
-        contentService.getByMediaType('universe-123', 'video')
-      ).rejects.toThrow('Failed to fetch content by media type')
-
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        'Error fetching content by media type:',
-        new Error('Database error')
-      )
-      consoleErrorSpy.mockRestore()
-    })
-  })
 })

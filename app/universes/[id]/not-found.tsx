@@ -1,33 +1,28 @@
-import { Navigation } from '@/components/layout/Navigation'
-import { PageContainer } from '@/components/layout/PageContainer'
+import { PageLayout } from '@/components/layout/PageLayout'
 import { ButtonLink } from '@/components/interactive/Button'
 
 export default function NotFound() {
   return (
-    <div className='min-h-screen bg-gray-50'>
-      <Navigation showNavigationMenu={true} currentPage='dashboard' />
-
-      <PageContainer>
-        <div className='text-center py-12'>
-          <div className='bg-white rounded-lg shadow-sm p-8 max-w-md mx-auto'>
-            <h1 className='text-xl font-semibold text-gray-900 mb-2'>
-              Universe Not Found
-            </h1>
-            <p className='text-gray-600 mb-6'>
-              The universe you&apos;re looking for doesn&apos;t exist or you
-              don&apos;t have permission to view it.
-            </p>
-            <div className='flex justify-center gap-4'>
-              <ButtonLink href='/' variant='primary'>
-                Back to Dashboard
-              </ButtonLink>
-              <ButtonLink href='/discover' variant='secondary'>
-                Discover Universes
-              </ButtonLink>
-            </div>
+    <PageLayout
+      currentPage='dashboard'
+      header={{
+        title: 'Universe Not Found',
+        description:
+          "The universe you're looking for doesn't exist or you don't have permission to view it.",
+      }}
+    >
+      <div className='text-center py-12'>
+        <div className='bg-surface-elevated rounded-lg shadow-sm p-6 max-w-md mx-auto border border-surface-200 hover:shadow-md transition-shadow'>
+          <div className='flex justify-center gap-4'>
+            <ButtonLink href='/dashboard' variant='primary'>
+              Back to Dashboard
+            </ButtonLink>
+            <ButtonLink href='/discover' variant='secondary'>
+              Discover Universes
+            </ButtonLink>
           </div>
         </div>
-      </PageContainer>
-    </div>
+      </div>
+    </PageLayout>
   )
 }

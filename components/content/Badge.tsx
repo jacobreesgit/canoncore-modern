@@ -8,14 +8,15 @@ export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
   size?: 'small' | 'default'
   className?: string
   children: React.ReactNode
+  icon?: React.ReactNode
 }
 
 const variantStyles = {
-  public: 'bg-green-100 text-green-800',
-  private: 'bg-gray-100 text-gray-800',
-  owner: 'bg-blue-100 text-blue-800',
-  info: 'bg-purple-100 text-purple-800',
-  organisational: 'bg-orange-100 text-orange-800',
+  public: 'bg-success-100 text-success-800',
+  private: 'bg-neutral-100 text-neutral-800',
+  owner: 'bg-primary-100 text-primary-800',
+  info: 'bg-primary-100 text-primary-800',
+  organisational: 'bg-warning-100 text-warning-800',
 }
 
 const sizeStyles = {
@@ -28,6 +29,7 @@ export function Badge({
   size = 'default',
   className = '',
   children,
+  icon,
   ...props
 }: BadgeProps) {
   return (
@@ -36,10 +38,12 @@ export function Badge({
         'inline-flex items-center font-medium rounded-full',
         variantStyles[variant],
         sizeStyles[size],
+        icon && 'gap-1.5',
         className
       )}
       {...props}
     >
+      {icon && <span className='flex-shrink-0'>{icon}</span>}
       {children}
     </span>
   )

@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useSession, signOut } from 'next-auth/react'
 import { HiMenu, HiX } from 'react-icons/hi'
+import { Button, ButtonLink } from '@/components/interactive/Button'
 
 /**
  * Navigation component with responsive design and auth integration
@@ -50,19 +51,6 @@ export interface NavigationProps extends React.HTMLAttributes<HTMLElement> {
 const baseStyles = 'bg-white shadow-sm relative'
 
 /**
- * Button styles for actions
- */
-const buttonStyles = {
-  primary:
-    'bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 rounded-lg font-medium transition-colors',
-  secondary:
-    'bg-gray-100 text-gray-700 hover:bg-gray-200 px-4 py-2 rounded-lg font-medium transition-colors border border-gray-300',
-  danger:
-    'bg-red-600 text-white hover:bg-red-700 px-4 py-2 rounded-lg font-medium transition-colors',
-  text: 'text-gray-600 hover:text-gray-900 font-medium transition-colors',
-}
-
-/**
  * Navigation component
  */
 export function Navigation({
@@ -79,7 +67,7 @@ export function Navigation({
   // Auto-determine current page from pathname if not provided
   const determineCurrentPage = () => {
     if (currentPage) return currentPage
-    if (pathname === '/') return 'dashboard'
+    if (pathname === '/' || pathname === '/dashboard') return 'dashboard'
     if (pathname === '/discover') return 'discover'
     if (pathname?.startsWith('/profile/')) return 'profile'
     return undefined
@@ -99,8 +87,8 @@ export function Navigation({
   const getLinkClasses = (page: string) => {
     const isActive = activePage === page
     return isActive
-      ? 'text-blue-600 font-medium'
-      : 'text-gray-600 hover:text-gray-900 font-medium transition-colors'
+      ? 'text-primary-600 font-medium'
+      : 'text-surface-600 hover:text-surface-900 font-medium transition-colors'
   }
 
   const handleSignOut = () => {
@@ -116,11 +104,13 @@ export function Navigation({
           <div className='flex items-center space-x-8'>
             {/* CanonCore Brand */}
             {activePage === 'dashboard' ? (
-              <span className='text-xl font-bold text-blue-600'>CanonCore</span>
+              <span className='text-xl font-bold text-primary-600'>
+                CanonCore
+              </span>
             ) : (
               <Link
-                href='/'
-                className='text-xl font-bold text-blue-600 hover:text-blue-700 transition-colors'
+                href='/dashboard'
+                className='text-xl font-bold text-primary-600 hover:text-primary-700 transition-colors'
               >
                 CanonCore
               </Link>
@@ -129,7 +119,7 @@ export function Navigation({
             {/* Navigation Menu - Desktop only */}
             {showNavigationMenu && (
               <div className='hidden md:flex space-x-6'>
-                <Link href='/' className={getLinkClasses('dashboard')}>
+                <Link href='/dashboard' className={getLinkClasses('dashboard')}>
                   Dashboard
                 </Link>
                 <Link href='/discover' className={getLinkClasses('discover')}>
@@ -154,59 +144,48 @@ export function Navigation({
               {actions.map((action, index) => (
                 <React.Fragment key={index}>
                   {action.href ? (
-                    <Link
+                    <ButtonLink
                       href={action.href}
-                      className={buttonStyles[action.type]}
+                      variant={action.type === 'text' ? 'clear' : action.type}
                     >
                       {action.label}
-                    </Link>
+                    </ButtonLink>
                   ) : (
-                    <button
+                    <Button
                       onClick={action.onClick}
                       disabled={action.disabled}
-                      className={`${buttonStyles[action.type]} ${action.disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      variant={action.type === 'text' ? 'clear' : action.type}
                     >
                       {action.label}
-                    </button>
+                    </Button>
                   )}
                 </React.Fragment>
               ))}
             </div>
 
             {/* User authentication elements */}
-            {session?.user ? (
-              <div className='hidden md:flex items-center space-x-3'>
+            {session?.user && (
+              <div className='hidden md:flex items-center space-x-4'>
                 {/* User greeting - only show when nav menu is not shown */}
                 {!showNavigationMenu && (
-                  <span className='text-gray-700'>
+                  <span className='text-surface-700'>
                     Welcome, {session.user.name || session.user.email}
                   </span>
                 )}
 
-                {/* Sign out button */}
-                {shouldShowSignOut && (
-                  <button
-                    onClick={handleSignOut}
-                    className={buttonStyles.secondary}
-                  >
-                    Sign out
-                  </button>
-                )}
-              </div>
-            ) : (
-              /* Sign in for unauthenticated users - Desktop only */
-              <div className='hidden md:block'>
-                <Link href='/api/auth/signin' className={buttonStyles.primary}>
-                  Sign In
-                </Link>
+                {/* Sign out button - always show when authenticated */}
+                <Button onClick={handleSignOut} variant='secondary'>
+                  Sign out
+                </Button>
               </div>
             )}
 
             {/* Mobile hamburger menu button */}
             {showNavigationMenu && (
-              <button
+              <Button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className='md:hidden p-2 text-gray-600 hover:text-gray-900 transition-colors'
+                variant='clear'
+                className='md:hidden p-2 text-surface-600 hover:text-surface-900 transition-colors'
                 aria-label='Toggle mobile menu'
               >
                 {isMobileMenuOpen ? (
@@ -214,7 +193,7 @@ export function Navigation({
                 ) : (
                   <HiMenu className='h-6 w-6 transition-transform duration-200' />
                 )}
-              </button>
+              </Button>
             )}
           </div>
         </div>
@@ -224,7 +203,7 @@ export function Navigation({
       {showNavigationMenu && (
         <div
           className={`
-          md:hidden absolute top-full left-0 right-0 bg-white border-t border-gray-200 shadow-lg transition-all duration-200 ease-out z-50
+          md:hidden absolute top-full left-0 right-0 bg-white border-t border-surface-200 shadow-lg transition-all duration-200 ease-out z-50
           ${isMobileMenuOpen ? 'opacity-100' : 'max-h-0 opacity-0 overflow-hidden'}
         `}
         >
@@ -233,12 +212,12 @@ export function Navigation({
               {/* Navigation Links Section */}
               <div className='flex flex-col gap-1'>
                 <Link
-                  href='/'
+                  href='/dashboard'
                   onClick={() => setIsMobileMenuOpen(false)}
                   className={`py-3 px-4 rounded-lg min-h-[44px] flex items-center transition-colors ${
                     activePage === 'dashboard'
-                      ? 'text-blue-600 font-medium'
-                      : 'text-gray-600 hover:text-gray-900 font-medium hover:bg-gray-50'
+                      ? 'text-primary-600 font-medium'
+                      : 'text-surface-600 hover:text-surface-900 font-medium hover:bg-surface-50'
                   }`}
                 >
                   Dashboard
@@ -248,8 +227,8 @@ export function Navigation({
                   onClick={() => setIsMobileMenuOpen(false)}
                   className={`py-3 px-4 rounded-lg min-h-[44px] flex items-center transition-colors ${
                     activePage === 'discover'
-                      ? 'text-blue-600 font-medium'
-                      : 'text-gray-600 hover:text-gray-900 font-medium hover:bg-gray-50'
+                      ? 'text-primary-600 font-medium'
+                      : 'text-surface-600 hover:text-surface-900 font-medium hover:bg-surface-50'
                   }`}
                 >
                   Discover
@@ -260,8 +239,8 @@ export function Navigation({
                     onClick={() => setIsMobileMenuOpen(false)}
                     className={`py-3 px-4 rounded-lg min-h-[44px] flex items-center transition-colors ${
                       activePage === 'profile'
-                        ? 'text-blue-600 font-medium'
-                        : 'text-gray-600 hover:text-gray-900 font-medium hover:bg-gray-50'
+                        ? 'text-primary-600 font-medium'
+                        : 'text-surface-600 hover:text-surface-900 font-medium hover:bg-surface-50'
                     }`}
                   >
                     {session.user.name || session.user.email}
@@ -271,51 +250,42 @@ export function Navigation({
 
               {/* Actions Section */}
               {(actions.length > 0 || shouldShowSignOut || !session?.user) && (
-                <div className='flex flex-col gap-2 border-t border-gray-200 pt-4'>
+                <div className='flex flex-col gap-2 border-t border-surface-200 pt-4'>
                   {/* Custom actions */}
                   {actions.map((action, index) => (
                     <React.Fragment key={index}>
                       {action.href ? (
-                        <Link
+                        <ButtonLink
                           href={action.href}
                           onClick={() => setIsMobileMenuOpen(false)}
-                          className={buttonStyles[action.type]}
+                          variant={
+                            action.type === 'text' ? 'clear' : action.type
+                          }
                         >
                           {action.label}
-                        </Link>
+                        </ButtonLink>
                       ) : (
-                        <button
+                        <Button
                           onClick={() => {
                             action.onClick?.()
                             setIsMobileMenuOpen(false)
                           }}
                           disabled={action.disabled}
-                          className={`${buttonStyles[action.type]} ${action.disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          variant={
+                            action.type === 'text' ? 'clear' : action.type
+                          }
                         >
                           {action.label}
-                        </button>
+                        </Button>
                       )}
                     </React.Fragment>
                   ))}
 
                   {/* Authentication actions */}
-                  {session?.user ? (
-                    shouldShowSignOut && (
-                      <button
-                        onClick={handleSignOut}
-                        className={buttonStyles.secondary}
-                      >
-                        Sign out
-                      </button>
-                    )
-                  ) : (
-                    <Link
-                      href='/api/auth/signin'
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      className={buttonStyles.primary}
-                    >
-                      Sign In
-                    </Link>
+                  {session?.user && (
+                    <Button onClick={handleSignOut} variant='secondary'>
+                      Sign out
+                    </Button>
                   )}
                 </div>
               )}
