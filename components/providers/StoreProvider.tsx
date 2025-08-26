@@ -3,32 +3,27 @@
 import { useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useFavouritesStore } from '@/stores/favourites-store'
-import { useProgressStore } from '@/stores/progress-store'
 
 /**
  * Store initialization provider
- * Loads initial state for all stores when user is authenticated
+ * Loads initial state for favourites store when user is authenticated
+ * Progress data is loaded per-page as needed for optimal performance
  */
 export function StoreProvider({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession()
   const loadInitialFavourites = useFavouritesStore(
     state => state.loadInitialFavourites
   )
-  const loadInitialProgress = useProgressStore(
-    state => state.loadInitialProgress
-  )
 
   useEffect(() => {
     // Only load initial data when user is authenticated
     if (status === 'authenticated' && session?.user) {
-      // Load favourites and progress in parallel
-      Promise.all([loadInitialFavourites(), loadInitialProgress()]).catch(
-        error => {
-          console.error('Failed to load initial store data:', error)
-        }
-      )
+      // Load favourites (progress is loaded per-page for performance)
+      loadInitialFavourites().catch(error => {
+        console.error('Failed to load initial favourites:', error)
+      })
     }
-  }, [status, session?.user, loadInitialFavourites, loadInitialProgress])
+  }, [status, session?.user, loadInitialFavourites])
 
   return <>{children}</>
 }

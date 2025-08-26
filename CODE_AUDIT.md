@@ -279,7 +279,7 @@ test/mocks/server-only.ts
 
 ### ⚠️ Action Methods Audit - DECISIONS REQUIRED
 
-**Comprehensive Review**: Found **9 remaining unused action exports** out of 22 total (41% unused), with **1 critical export recently implemented**. Analysis shows these are mostly **incomplete planned features** rather than dead code requiring architectural decisions.
+**Comprehensive Review**: Found **7 remaining unused action exports** out of 22 total (32% unused), with **3 exports recently resolved**. Analysis shows these are mostly **incomplete planned features** rather than dead code requiring architectural decisions.
 
 #### ✅ CRITICAL - Recently Implemented
 
@@ -293,16 +293,32 @@ test/mocks/server-only.ts
 | --------------------- | ----------------------------- | -------------------------------------------------------- | --------------------------------------------------------------------------------------- | ----------------- |
 | `updateProfileAction` | `lib/actions/user-actions.ts` | API route `/api/users/[id]` exists, server action unused | A) Implement server action, migrate from API<br>B) Remove unused export, keep API route | **COMPLETED** ✅  |
 
+#### ✅ COMPLETED - Feature Enhancements
+
+| Export                       | File                                | Status         | Resolution Details                                                                                                             |
+| ---------------------------- | ----------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `addToFavouritesAction`      | `lib/actions/favourites-actions.ts` | **REMOVED** ✅ | Dead code elimination - unused actions removed. Toggle pattern with optimistic updates in Zustand store is working effectively |
+| `removeFromFavouritesAction` | `lib/actions/favourites-actions.ts` | **REMOVED** ✅ | Dead code elimination - unused actions removed. Toggle pattern with optimistic updates in Zustand store is working effectively |
+
+#### ✅ COMPLETED - Feature Enhancements (Continued)
+
+| Export                            | File                              | Status             | Resolution Details                                                                                                                                                                             |
+| --------------------------------- | --------------------------------- | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `getUserProgressByUniverseAction` | `lib/actions/progress-actions.ts` | **IMPLEMENTED** ✅ | Universe-specific progress loading implemented. Added `loadUniverseProgress` method to progress store, integrated with UniverseClient, removed global progress loading for optimal performance |
+
+#### ✅ COMPLETED - Feature Enhancements (Continued)
+
+| Export                            | File                              | Status             | Resolution Details                                                                                                                                                                             |
+| --------------------------------- | --------------------------------- | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `getUserProgressByUniverseAction` | `lib/actions/progress-actions.ts` | **IMPLEMENTED** ✅ | Universe-specific progress loading implemented. Added `loadUniverseProgress` method to progress store, integrated with UniverseClient, removed global progress loading for optimal performance |
+| `bulkUpdateProgressAction`        | `lib/actions/progress-actions.ts` | **REMOVED** ✅     | Dead code elimination - unused speculative feature with poor implementation (simple loop over individual calls). No business case identified for bulk progress operations                      |
+
 #### 🎯 FEATURE ENHANCEMENTS - Implement or Remove
 
-| Export                            | File                                | Business Value                                | Decision Required |
-| --------------------------------- | ----------------------------------- | --------------------------------------------- | ----------------- |
-| `addToFavouritesAction`           | `lib/actions/favourites-actions.ts` | Explicit add/remove vs current toggle pattern |
-| `removeFromFavouritesAction`      | `lib/actions/favourites-actions.ts` | Better UX than toggle-only approach           |
-| `getUserProgressByUniverseAction` | `lib/actions/progress-actions.ts`   | Performance optimization for universe pages   |
-| `bulkUpdateProgressAction`        | `lib/actions/progress-actions.ts`   | Batch operations for imports/sync features    | \*\*              |
-| `getProgressSummaryAction`        | `lib/actions/progress-actions.ts`   | Dashboard analytics and completion stats      |
-| `getCurrentUserProfileAction`     | `lib/actions/user-actions.ts`       | Consistent server-side profile fetching       |
+| Export                        | File                              | Business Value                           | Decision Required |
+| ----------------------------- | --------------------------------- | ---------------------------------------- | ----------------- |
+| `getProgressSummaryAction`    | `lib/actions/progress-actions.ts` | Dashboard analytics and completion stats |                   |
+| `getCurrentUserProfileAction` | `lib/actions/user-actions.ts`     | Consistent server-side profile fetching  |                   |
 
 #### ✅ UTILITY FUNCTIONS - Keep (Low Priority)
 
@@ -424,11 +440,11 @@ PageHeader|default     components/layout/PageHeader.tsx
 - ✅ **~~Placeholder Code~~**: ~~1 item remaining (FilterBar advanced filters)~~ → **0 items** (All resolved ✅)
 - **Technical Debt**: 3 items (~~5 TypeScript suppressions resolved~~, ~~2 weak typing resolved~~, ~~2 ESLint issues resolved~~)
 - **Unused Files**: 30 items (mostly safe to remove)
-- **Unused Exports**: 72 items total (10 action methods audited ⚠️ DECISIONS REQUIRED, 62 others review needed)
+- **Unused Exports**: 69 items total (7 action methods audited ⚠️ DECISIONS REQUIRED, 62 others review needed)
 - **Unused Dependencies**: 5 items (some false positives)
 - **Duplicate Exports**: 13 items (standardization needed)
 
-**Total Cleanup Potential**: ~124+ items for review and cleanup (21 items resolved ✅)
+**Total Cleanup Potential**: ~121+ items for review and cleanup (24 items resolved ✅)
 
 ### Priority Recommendations:
 
@@ -437,10 +453,10 @@ PageHeader|default     components/layout/PageHeader.tsx
 3. ✅ **~~Fix TypeScript suppressions~~** → **COMPLETED** ✅ (5 test files refactored with proven mocking patterns)
 4. ✅ **~~Improve type safety~~** → **COMPLETED** ✅ (2 any types replaced with proper interfaces)
 5. **Remove safe index.ts files** - Quick wins for code cleanup
-6. ⚠️ **Action Methods Audit - AWAITING DECISIONS** - 10 unused exports requiring architectural decisions:
+6. ⚠️ **Action Methods Audit - AWAITING DECISIONS** - 7 unused exports requiring architectural decisions:
    - **CRITICAL**: `deleteContentAction` - Core missing functionality
    - **ARCHITECTURE**: Profile update pattern choice (server action vs API route)
-   - **FEATURES**: 6 progress/favorites enhancements requiring implementation decisions
+   - **FEATURES**: 3 progress enhancements remaining (~~1 universe progress optimization implemented~~, ~~2 favorites actions removed~~)
    - **UTILITIES**: 2 validation helpers (recommended to keep)
 
 ### Code Quality Impact:

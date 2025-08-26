@@ -143,57 +143,6 @@ export async function getAllUserProgressAction(): Promise<{
 }
 
 /**
- * Bulk update progress for multiple content items
- */
-export async function bulkUpdateProgressAction(
-  progressUpdates: Array<{
-    contentId: string
-    universeId: string
-    progress: number
-  }>
-): Promise<ProgressActionResult> {
-  try {
-    const session = await auth()
-
-    if (!session?.user?.id) {
-      return {
-        success: false,
-        error: 'Authentication required',
-      }
-    }
-
-    // Validate all progress values
-    for (const update of progressUpdates) {
-      if (
-        typeof update.progress !== 'number' ||
-        update.progress < 0 ||
-        update.progress > 100
-      ) {
-        return {
-          success: false,
-          error: 'All progress values must be numbers between 0 and 100',
-        }
-      }
-    }
-
-    await progressService.bulkUpdateProgress(session.user.id, progressUpdates)
-
-    // Revalidate relevant pages
-    // Using dynamic rendering for fresh data - no explicit revalidation needed
-
-    return {
-      success: true,
-    }
-  } catch (error) {
-    console.error('Error bulk updating progress:', error)
-    return {
-      success: false,
-      error: 'Failed to update progress',
-    }
-  }
-}
-
-/**
  * Get progress summary for user dashboard
  */
 export async function getProgressSummaryAction(): Promise<{

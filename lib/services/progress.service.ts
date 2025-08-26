@@ -423,27 +423,6 @@ export class ProgressService {
       return {}
     }
   }
-
-  /**
-   * Bulk update progress for multiple content items
-   */
-  async bulkUpdateProgress(
-    userId: string,
-    progressUpdates: Array<{
-      contentId: string
-      universeId: string
-      progress: number
-    }>
-  ): Promise<void> {
-    try {
-      for (const update of progressUpdates) {
-        await this.setUserProgress(userId, update)
-      }
-    } catch (error) {
-      console.error('Error bulk updating progress:', error)
-      throw new Error('Failed to bulk update progress')
-    }
-  }
 }
 
 export const progressService = new ProgressService()

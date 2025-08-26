@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Universe, Content, User } from '@/lib/types'
 import { PageContainer } from '@/components/layout/PageContainer'
@@ -43,7 +43,12 @@ export function UniverseClient({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
 
-  const { getUniverseProgress } = useProgressStore()
+  const { getUniverseProgress, loadUniverseProgress } = useProgressStore()
+
+  // Load universe-specific progress on mount
+  useEffect(() => {
+    loadUniverseProgress(universe.id)
+  }, [universe.id, loadUniverseProgress])
 
   // Convert hierarchyTree to HierarchyNode format for progress calculation
   const hierarchyNodes = hierarchyTree

@@ -4,6 +4,7 @@ import type {} from '@redux-devtools/extension' // required for devtools typing
 import {
   setContentProgressAction,
   getAllUserProgressAction,
+  getUserProgressByUniverseAction,
 } from '@/lib/actions/progress-actions'
 import {
   calculateUniverseProgressWithHierarchy,
@@ -38,6 +39,7 @@ interface ProgressState {
   ) => Promise<void>
   setInitialProgress: (progressMap: Record<string, number>) => void
   loadInitialProgress: () => Promise<void>
+  loadUniverseProgress: (universeId: string) => Promise<void>
   clearProgress: (contentId: string) => void
   clearAllProgress: () => void
 
@@ -227,6 +229,43 @@ export const useProgressStore = create<ProgressState>()(
               state => ({ ...state, isLoading: false }),
               false,
               'progress/loadNetworkError'
+            )
+          }
+        },
+
+        loadUniverseProgress: async (universeId: string) => {
+          set(
+            state => ({ ...state, isLoading: true }),
+            false,
+            'progress/loadUniverseStart'
+          )
+
+          try {
+            const result = await getUserProgressByUniverseAction(universeId)
+
+            if (result.success && result.data) {
+              set(
+                {
+                  progress: new Map(Object.entries(result.data)),
+                  isLoading: false,
+                },
+                false,
+                'progress/loadUniverseSuccess'
+              )
+            } else {
+              console.error('Failed to load universe progress:', result.error)
+              set(
+                state => ({ ...state, isLoading: false }),
+                false,
+                'progress/loadUniverseError'
+              )
+            }
+          } catch (error) {
+            console.error('Network error loading universe progress:', error)
+            set(
+              state => ({ ...state, isLoading: false }),
+              false,
+              'progress/loadUniverseNetworkError'
             )
           }
         },
