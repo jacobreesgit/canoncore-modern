@@ -133,50 +133,6 @@ export async function updateProfileAction(
 }
 
 /**
- * Get current user profile (for form initialization)
- */
-export async function getCurrentUserProfileAction(): Promise<{
-  success: boolean
-  data?: { id: string; name: string | null; email: string }
-  error?: string
-}> {
-  try {
-    const session = await auth()
-
-    if (!session?.user?.id) {
-      return {
-        success: false,
-        error: 'Authentication required',
-      }
-    }
-
-    const user = await userService.getById(session.user.id)
-
-    if (!user) {
-      return {
-        success: false,
-        error: 'User not found',
-      }
-    }
-
-    return {
-      success: true,
-      data: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-      },
-    }
-  } catch (error) {
-    console.error('Error fetching user profile:', error)
-    return {
-      success: false,
-      error: 'Failed to fetch profile',
-    }
-  }
-}
-
-/**
  * Delete user account and all associated data
  * This will permanently delete the user and cascade to delete all related data:
  * - All universes created by the user

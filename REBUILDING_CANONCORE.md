@@ -1173,13 +1173,11 @@ This checklist provides a structured approach to rebuilding CanonCore using mode
 - [ ] **Code Consistency & Standards**
   - [ ] Ensure consistent TypeScript usage and strict mode compliance
   - [ ] Standardize naming conventions across components and files
-  - [ ] Verify ESLint and Prettier rules are applied consistently
-  - [x] Search for and do all TODO, FIXME, HACK comments in codebase
-  - [x] Find and clean up "implemented" or temporary development comments
   - [ ] Audit all inline comments for relevance and accuracy
   - [ ] Remove debug console.log statements and development artifacts
-  - [ ] Format as part of pipeline
   - [ ] Backwards compatibility removed
+  - [x] Search for and do all TODO, FIXME, HACK comments in codebase
+  - [x] Find and clean up "implemented" or temporary development comments
 - [ ] **Unused Code Detection & Removal**
   - [ ] Scan for unused imports, functions, and components across the codebase
   - [ ] Scan for any backend thigns frontend isnt using
