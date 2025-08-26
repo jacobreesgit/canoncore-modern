@@ -85,31 +85,32 @@ jobs:
       - name: Build application
         run: pnpm build
 
-      - name: Run performance benchmarks
-        if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
-        run: pnpm bench
-        env:
-          NODE_OPTIONS: '--expose-gc --max-old-space-size=4096'
+      # Benchmarks disabled - no benchmark files present in project
+      # - name: Run performance benchmarks
+      #   if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+      #   run: pnpm bench
+      #   env:
+      #     NODE_OPTIONS: '--expose-gc --max-old-space-size=4096'
 
-      - name: Run custom benchmarks
-        if: github.event_name == 'workflow_dispatch'
-        run: |
-          case "${{ github.event.inputs.test_priority }}" in
-            high)
-              pnpm bench:db
-              ;;
-            medium)
-              pnpm bench:db && pnpm bench:api
-              ;;
-            low)
-              pnpm bench:memory
-              ;;
-            all|*)
-              pnpm bench
-              ;;
-          esac
-        env:
-          NODE_OPTIONS: '--expose-gc --max-old-space-size=4096'
+      # - name: Run custom benchmarks
+      #   if: github.event_name == 'workflow_dispatch'
+      #   run: |
+      #     case "${{ github.event.inputs.test_priority }}" in
+      #       high)
+      #         pnpm bench:db
+      #         ;;
+      #       medium)
+      #         pnpm bench:db && pnpm bench:api
+      #         ;;
+      #       low)
+      #         pnpm bench:memory
+      #         ;;
+      #       all|*)
+      #         pnpm bench
+      #         ;;
+      #     esac
+      #   env:
+      #     NODE_OPTIONS: '--expose-gc --max-old-space-size=4096'
 
       - name: Comment PR with benchmark results
         if: github.event_name == 'pull_request'
