@@ -4,3 +4,34 @@ out/
 public/
 *.log
 .env*
+
+# Lock files
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Generated files
+*.d.ts
+*.min.js
+*.min.css
+
+# Build outputs
+dist/
+build/
+
+# Editor directories
+.vscode/
+.idea/
+
+# Git
+.git/
+
+# Deployment
+.vercel/
+
+# Database migrations (if auto-generated)
+drizzle/
