@@ -4,6 +4,8 @@ import React from 'react'
 import { MdFavorite, MdFavoriteBorder } from 'react-icons/md'
 import { useFavouritesStore } from '@/lib/stores/favourites-store'
 import { cn } from '@/lib/utils'
+import { IconButton } from './IconButton'
+import { Icon } from './Icon'
 
 /**
  * Modern Favourite Button Component
@@ -29,9 +31,7 @@ export interface FavouriteButtonProps {
   /** Whether to show text label */
   showText?: boolean
   /** Button size */
-  size?: 'small' | 'default' | 'large' | 'xl'
-  /** Optional variant for different visual styles */
-  variant?: 'default' | 'subtle' | 'ghost'
+  size?: 'sm' | 'default' | 'lg' | 'xl'
 }
 
 export function FavouriteButton({
@@ -40,7 +40,6 @@ export function FavouriteButton({
   className,
   showText = false,
   size = 'default',
-  variant = 'default',
 }: FavouriteButtonProps) {
   const {
     _hasHydrated,
@@ -60,75 +59,99 @@ export function FavouriteButton({
     await toggleFavourite(targetId, targetType)
   }
 
-  // Get size classes for button and icon
-  const getSizeClasses = () => {
+  // Map size prop to IconButton size
+  const getButtonSize = () => {
     switch (size) {
-      case 'small':
-        return {
-          button: showText ? 'px-2 py-1 text-xs gap-1.5' : 'w-6 h-6 p-1',
-          icon: 'w-3 h-3',
-        }
-      case 'large':
-        return {
-          button: showText ? 'px-4 py-2 text-base gap-2' : 'w-10 h-10 p-2',
-          icon: 'w-5 h-5',
-        }
+      case 'sm':
+        return 'sm'
+      case 'lg':
+        return 'lg'
       case 'xl':
-        return {
-          button: showText ? 'px-5 py-3 text-lg gap-2.5' : 'w-12 h-12 p-2.5',
-          icon: 'w-6 h-6',
-        }
+        return 'xl'
       default:
-        return {
-          button: showText ? 'px-3 py-1.5 text-sm gap-2' : 'w-8 h-8 p-1.5',
-          icon: 'w-4 h-4',
-        }
+        return 'default'
     }
   }
 
-  // Get variant styles
-  const getVariantClasses = () => {
-    const baseClasses =
-      'transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-opacity-50'
-
-    switch (variant) {
-      case 'subtle':
-        return `${baseClasses} hover:bg-neutral-100m`
-      case 'ghost':
-        return `${baseClasses} hover:bg-transparent opacity-70 hover:opacity-100`
+  // Get text size classes for showText mode
+  const getTextSizeClasses = () => {
+    switch (size) {
+      case 'sm':
+        return 'text-xs'
+      case 'lg':
+        return 'text-base'
+      case 'xl':
+        return 'text-lg'
       default:
-        return `${baseClasses} hover:bg-surface-secondary`
+        return 'text-sm'
     }
   }
 
-  const sizeClasses = getSizeClasses()
-  const variantClasses = getVariantClasses()
-
-  const buttonClasses = cn(
-    'favourite-button',
-    'inline-flex items-center justify-center',
-    showText ? 'rounded-lg' : 'rounded-full',
-    sizeClasses.button,
-    variantClasses,
-    isLoading && 'opacity-50 cursor-not-allowed',
-    !isLoading && 'cursor-pointer',
-    className
-  )
-
-  // Icon color classes
-  const iconClasses = cn(
-    sizeClasses.icon,
-    'transition-all duration-200',
-    isLoading && 'animate-pulse',
-    isFavorite
-      ? 'text-error-500'
-      : 'text-neutral-400 hover:text-error-500 group-hover:text-error-500'
-  )
+  // Get text container classes
+  const getTextContainerClasses = () => {
+    switch (size) {
+      case 'sm':
+        return 'px-2 py-1 gap-1.5'
+      case 'lg':
+        return 'px-4 py-2 gap-2'
+      case 'xl':
+        return 'px-5 py-3 gap-2.5'
+      default:
+        return 'px-3 py-1.5 gap-2'
+    }
+  }
 
   // Text color classes
   const textClasses = cn(
     'transition-colors duration-200',
+    getTextSizeClasses(),
     isFavorite ? 'text-error-500' : 'text-neutral-600 hover:text-error-500'
+  )
+
+  // Icon color - let IconButton handle base styling, we'll override with error color
+  const iconColor = isFavorite ? 'error' : 'neutral'
+  const iconHoverColor = 'error' // Always hover to error/red color
+
+  // For icon-only mode, use IconButton directly
+  if (!showText) {
+    return (
+      <IconButton
+        icon={isFavorite ? MdFavorite : MdFavoriteBorder}
+        size={getButtonSize()}
+        iconColor={iconColor}
+        iconHoverColor={iconHoverColor}
+        loading={isLoading}
+        disabled={isLoading}
+        onClick={handleToggleFavorite}
+        className={cn('favourite-button', className)}
+        aria-label={
+          isLoading
+            ? 'Updating favourite status...'
+            : isFavorite
+              ? `Remove ${targetType} from favourites`
+              : `Add ${targetType} to favourites`
+        }
+        title={
+          isLoading
+            ? 'Updating favourite status...'
+            : isFavorite
+              ? `Remove from favourites`
+              : `Add to favourites`
+        }
+      />
+    )
+  }
+
+  // For text mode, use custom button with IconButton-style classes
+  const buttonClasses = cn(
+    'favourite-button',
+    'inline-flex items-center justify-center',
+    'rounded-lg',
+    getTextContainerClasses(),
+    'transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-opacity-50',
+    isLoading && 'opacity-50 cursor-not-allowed',
+    !isLoading && 'cursor-pointer',
+    className
   )
 
   return (
@@ -151,30 +174,34 @@ export function FavouriteButton({
             : `Add to favourites`
       }
     >
-      {/* Heart Icon */}
-      {isFavorite ? (
-        <MdFavorite className={iconClasses} />
-      ) : (
-        <MdFavoriteBorder className={iconClasses} />
-      )}
+      {/* Heart Icon using Icon component */}
+      <Icon
+        icon={isFavorite ? MdFavorite : MdFavoriteBorder}
+        size={(() => {
+          switch (size) {
+            case 'sm':
+              return 'sm'
+            case 'lg':
+              return 'lg'
+            case 'xl':
+              return 'xl'
+            default:
+              return 'default'
+          }
+        })()}
+        color={iconColor}
+        hoverColor={iconHoverColor}
+        animate={isLoading ? 'pulse' : 'none'}
+      />
 
-      {/* Optional Text Label */}
-      {showText && (
-        <span className={textClasses}>
-          {isLoading
-            ? 'Updating...'
-            : isFavorite
-              ? 'Remove from favourites'
-              : 'Add to favourites'}
-        </span>
-      )}
-
-      {/* Loading indicator for non-text buttons */}
-      {isLoading && !showText && (
-        <div className='absolute inset-0 flex items-center justify-center'>
-          <div className='w-2 h-2 bg-neutral-400 rounded-full animate-pulse' />
-        </div>
-      )}
+      {/* Text Label */}
+      <span className={textClasses}>
+        {isLoading
+          ? 'Updating...'
+          : isFavorite
+            ? 'Remove from favourites'
+            : 'Add to favourites'}
+      </span>
     </button>
   )
 }

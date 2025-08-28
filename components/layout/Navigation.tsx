@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation'
 import { useSession, signOut } from 'next-auth/react'
 import { HiMenu, HiX } from 'react-icons/hi'
 import { Button, ButtonLink } from '@/components/interactive/Button'
+import { Icon } from '@/components/interactive/Icon'
 
 /**
  * Navigation component with responsive design and auth integration
@@ -31,8 +32,6 @@ export interface NavigationAction {
 }
 
 export interface NavigationProps extends React.HTMLAttributes<HTMLElement> {
-  /** Navigation variant */
-  variant?: 'dashboard' | 'detail' | 'form'
   /** Optional custom class names */
   className?: string
   /** Right-side action buttons */
@@ -189,9 +188,17 @@ export function Navigation({
                 aria-label='Toggle mobile menu'
               >
                 {isMobileMenuOpen ? (
-                  <HiX className='h-6 w-6 transition-transform duration-200' />
+                  <Icon
+                    icon={HiX}
+                    size='xl'
+                    className='transition-transform duration-200'
+                  />
                 ) : (
-                  <HiMenu className='h-6 w-6 transition-transform duration-200' />
+                  <Icon
+                    icon={HiMenu}
+                    size='xl'
+                    className='transition-transform duration-200'
+                  />
                 )}
               </Button>
             )}

@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { eq, and } from 'drizzle-orm'
+import { eq, and, asc, isNull } from 'drizzle-orm'
 import type { ContentRelationship, Content } from '@/lib/db/schema'
 
 /**
@@ -19,7 +19,9 @@ export class RelationshipService {
    */
   async getByUniverse(
     universeId: string
-  ): Promise<Array<{ parentId: string; childId: string }>> {
+  ): Promise<
+    Array<{ parentId: string | null; childId: string; displayOrder: number }>
+  > {
     try {
       const { db } = await import('@/lib/db')
       const { contentRelationships } = await import('@/lib/db/schema')
@@ -28,9 +30,11 @@ export class RelationshipService {
         .select({
           parentId: contentRelationships.parentId,
           childId: contentRelationships.childId,
+          displayOrder: contentRelationships.displayOrder,
         })
         .from(contentRelationships)
         .where(eq(contentRelationships.universeId, universeId))
+        .orderBy(asc(contentRelationships.displayOrder))
 
       return relationships
     } catch (error) {
@@ -46,7 +50,7 @@ export class RelationshipService {
    */
   async getParents(
     contentId: string
-  ): Promise<Array<{ parentId: string; childId: string }>> {
+  ): Promise<Array<{ parentId: string | null; childId: string }>> {
     try {
       const { db } = await import('@/lib/db')
       const { contentRelationships } = await import('@/lib/db/schema')
@@ -72,19 +76,28 @@ export class RelationshipService {
    * Get child relationships for a content item
    */
   async getChildren(
-    parentId: string
-  ): Promise<Array<{ parentId: string; childId: string }>> {
+    parentId: string | null
+  ): Promise<
+    Array<{ parentId: string | null; childId: string; displayOrder: number }>
+  > {
     try {
       const { db } = await import('@/lib/db')
       const { contentRelationships } = await import('@/lib/db/schema')
+
+      const whereCondition =
+        parentId === null
+          ? isNull(contentRelationships.parentId)
+          : eq(contentRelationships.parentId, parentId)
 
       const childRelationships = await db
         .select({
           parentId: contentRelationships.parentId,
           childId: contentRelationships.childId,
+          displayOrder: contentRelationships.displayOrder,
         })
         .from(contentRelationships)
-        .where(eq(contentRelationships.parentId, parentId))
+        .where(whereCondition)
+        .orderBy(asc(contentRelationships.displayOrder))
 
       return childRelationships
     } catch (error) {
@@ -99,14 +112,22 @@ export class RelationshipService {
    * Create a new relationship
    */
   async create(
-    parentId: string,
+    parentId: string | null,
     childId: string,
     universeId: string,
-    userId: string
+    userId: string,
+    displayOrder?: number
   ): Promise<ContentRelationship> {
     try {
       const { db } = await import('@/lib/db')
       const { contentRelationships } = await import('@/lib/db/schema')
+
+      // If no displayOrder provided, get the next order number for this parent
+      let finalDisplayOrder = displayOrder
+      if (finalDisplayOrder === undefined) {
+        const siblings = await this.getChildren(parentId)
+        finalDisplayOrder = siblings.length
+      }
 
       const [relationship] = await db
         .insert(contentRelationships)
@@ -115,6 +136,7 @@ export class RelationshipService {
           childId,
           universeId,
           userId,
+          displayOrder: finalDisplayOrder,
           createdAt: new Date(),
         })
         .returning()
@@ -131,19 +153,23 @@ export class RelationshipService {
   /**
    * Delete a relationship
    */
-  async delete(parentId: string, childId: string): Promise<void> {
+  async delete(parentId: string | null, childId: string): Promise<void> {
     try {
       const { db } = await import('@/lib/db')
       const { contentRelationships } = await import('@/lib/db/schema')
 
-      await db
-        .delete(contentRelationships)
-        .where(
-          and(
-            eq(contentRelationships.parentId, parentId),
-            eq(contentRelationships.childId, childId)
-          )
-        )
+      const whereCondition =
+        parentId === null
+          ? and(
+              isNull(contentRelationships.parentId),
+              eq(contentRelationships.childId, childId)
+            )
+          : and(
+              eq(contentRelationships.parentId, parentId),
+              eq(contentRelationships.childId, childId)
+            )
+
+      await db.delete(contentRelationships).where(whereCondition)
     } catch (error) {
       if (process.env.NODE_ENV === 'development') {
         console.error('Error deleting relationship:', error)
@@ -182,7 +208,11 @@ export class RelationshipService {
    */
   buildHierarchyTree(
     contentItems: Content[],
-    relationships: Array<{ parentId: string; childId: string }>
+    relationships: Array<{
+      parentId: string | null
+      childId: string
+      displayOrder: number
+    }>
   ): Array<Content & { children: Array<Content & { children: Content[] }> }> {
     type TreeNode = Content & {
       children: Array<Content & { children: Content[] }>
@@ -203,6 +233,7 @@ export class RelationshipService {
         rel => rel.parentId === node.id
       )
       node.children = childRelations
+        .sort((a, b) => a.displayOrder - b.displayOrder) // Sort by displayOrder
         .map(rel => nodeMap.get(rel.childId))
         .filter((child): child is TreeNode => child !== undefined)
         .map(child => buildNode(child))
@@ -210,14 +241,15 @@ export class RelationshipService {
       return node
     }
 
-    // Find root nodes (nodes without parents) and build their trees
-    const rootNodes: TreeNode[] = []
-    nodeMap.forEach(node => {
-      const hasParent = relationships.some(rel => rel.childId === node.id)
-      if (!hasParent) {
-        rootNodes.push(buildNode(node))
-      }
-    })
+    // Find root nodes and their display order
+    const rootRelations = relationships
+      .filter(rel => rel.parentId === null)
+      .sort((a, b) => a.displayOrder - b.displayOrder)
+
+    const rootNodes: TreeNode[] = rootRelations
+      .map(rel => nodeMap.get(rel.childId))
+      .filter((node): node is TreeNode => node !== undefined)
+      .map(node => buildNode(node))
 
     return rootNodes
   }
@@ -292,7 +324,10 @@ export class RelationshipService {
         }
 
         // Recursively check if potentialAncestor is an ancestor of the parent
-        if (await this.isAncestor(potentialAncestor, parent.parentId)) {
+        if (
+          parent.parentId &&
+          (await this.isAncestor(potentialAncestor, parent.parentId))
+        ) {
           return true
         }
       }
@@ -303,6 +338,63 @@ export class RelationshipService {
         console.error('Error checking ancestor relationship:', error)
       }
       return false
+    }
+  }
+
+  /**
+   * Update display order for reordering
+   */
+  async updateDisplayOrder(
+    parentId: string | null,
+    childId: string,
+    newDisplayOrder: number
+  ): Promise<void> {
+    try {
+      const { db } = await import('@/lib/db')
+      const { contentRelationships } = await import('@/lib/db/schema')
+
+      const whereCondition =
+        parentId === null
+          ? and(
+              isNull(contentRelationships.parentId),
+              eq(contentRelationships.childId, childId)
+            )
+          : and(
+              eq(contentRelationships.parentId, parentId),
+              eq(contentRelationships.childId, childId)
+            )
+
+      await db
+        .update(contentRelationships)
+        .set({ displayOrder: newDisplayOrder })
+        .where(whereCondition)
+    } catch (error) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error updating display order:', error)
+      }
+      throw new Error('Failed to update display order')
+    }
+  }
+
+  /**
+   * Reorder children within a parent
+   */
+  async reorderChildren(
+    parentId: string | null,
+    childOrder: string[]
+  ): Promise<void> {
+    try {
+      // Update each child's display order based on new order
+      const updatePromises = childOrder.map((childId, index) =>
+        this.updateDisplayOrder(parentId, childId, index)
+      )
+
+      await Promise.all(updatePromises)
+    } catch (error) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error reordering children:', error)
+      }
+      throw new Error('Failed to reorder children')
     }
   }
 
@@ -323,7 +415,7 @@ export class RelationshipService {
         }
 
         // Take the first parent if multiple exist
-        currentId = parents[0].parentId
+        currentId = parents[0].parentId || ''
       }
 
       return path

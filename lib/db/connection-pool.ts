@@ -25,7 +25,7 @@ export function withPerformanceMonitoring<
       const duration = performance.now() - start
 
       // Log slow queries in development
-      if (duration > 500 && process.env.NODE_ENV === 'development') {
+      if (duration > 1000 && process.env.NODE_ENV === 'development') {
         console.warn(
           `Slow query detected: ${queryName} took ${duration.toFixed(2)}ms`
         )

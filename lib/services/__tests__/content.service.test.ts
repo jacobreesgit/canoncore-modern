@@ -29,7 +29,6 @@ const createMockContent = (overrides: Partial<Content> = {}): Content => ({
   mediaType: 'video',
   sourceLink: 'https://example.com/content',
   sourceLinkName: 'Example Source',
-  lastAccessedAt: new Date(),
   createdAt: new Date(),
   updatedAt: new Date(),
   ...overrides,

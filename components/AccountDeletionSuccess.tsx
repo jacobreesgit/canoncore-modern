@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { HiCheckCircle } from 'react-icons/hi'
 import { Button } from '@/components/interactive/Button'
+import { Icon } from '@/components/interactive/Icon'
 
 /**
  * Account Deletion Success Component
@@ -32,7 +33,7 @@ export function AccountDeletionSuccess() {
     <div className='mb-6 rounded-lg border border-success-200 bg-success-50 p-4'>
       <div className='flex'>
         <div className='flex-shrink-0'>
-          <HiCheckCircle className='h-5 w-5 text-success-400' />
+          <Icon icon={HiCheckCircle} size='lg' color='success' />
         </div>
         <div className='ml-3'>
           <h3 className='text-sm font-medium text-success-800'>

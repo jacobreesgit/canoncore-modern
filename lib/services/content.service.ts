@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { eq, and, desc, sql } from 'drizzle-orm'
+import { eq, and, desc, asc, sql } from 'drizzle-orm'
 import type { Content, NewContent } from '@/lib/db/schema'
 
 /**
@@ -166,7 +166,7 @@ export class ContentService {
         .select()
         .from(content)
         .where(eq(content.universeId, universeId))
-        .orderBy(desc(content.createdAt))
+        .orderBy(asc(content.createdAt))
 
       return universeContent
     } catch (error) {

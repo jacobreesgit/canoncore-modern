@@ -17,6 +17,37 @@ CanonCore Modern is a complete ground-up rebuild of CanonCore using 2025's best 
 - **Testing**: Vitest with comprehensive service layer testing
 - **Deployment**: Vercel with automated CI/CD
 
+## External Documentation
+
+### Headless Tree Library
+
+The Tree component (`components/content/Tree.tsx`) uses the [@headless-tree/react](https://headless-tree.lukasbach.com/) library for hierarchical content display. Documentation references:
+
+- **Quick Reference**: `HEADLESS_TREE_DOCS.md` - Implementation guide and feature overview
+- **Primary Documentation**: `headless-tree-docs.txt` - Comprehensive documentation table of contents
+- **Full Documentation**: `llms-full.txt` - Complete documentation (6,459 lines, use in sections)
+- **Online Documentation**: [headless-tree.lukasbach.com](https://headless-tree.lukasbach.com/)
+
+**Currently implemented features:**
+
+- Sync Data Loader for content hierarchy
+- Expand/collapse functionality (with proper event handling)
+- Search integration
+- Custom styling and theming
+- Progress tracking integration
+- **Prop Memoization** - Performance optimization for re-renders
+
+**Available but not yet implemented:**
+
+- Selection feature (multi-select with Ctrl/Shift)
+- Keyboard navigation (arrow keys, Enter, Space)
+- Drag & drop content reordering
+- Performance optimizations (prop memoization, virtualization)
+- Bulk operations with checkboxes
+- Built-in search with highlighting
+
+Refer to `HEADLESS_TREE_DOCS.md` for quick implementation examples, or the full documentation files for detailed feature information when enhancing the Tree component.
+
 ## Development Commands
 
 ### Essential Development Commands

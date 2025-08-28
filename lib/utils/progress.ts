@@ -152,18 +152,9 @@ export function calculateUniverseProgress(
 /**
  * Format progress as text
  */
-export function formatProgressText(
-  calculation: ProgressCalculation,
-  type: 'viewable' | 'organisational' = 'organisational'
-): string {
-  const { completedItems, totalItems, percentage } = calculation
-
-  if (totalItems === 0) {
-    return '0% complete'
-  }
-
-  const suffix = type === 'viewable' ? 'watched' : 'complete'
-  return `${Math.round(percentage)}% ${suffix} (${completedItems}/${totalItems})`
+export function formatProgressText(calculation: ProgressCalculation): string {
+  const { percentage } = calculation
+  return `${Math.round(percentage)}%`
 }
 
 /**

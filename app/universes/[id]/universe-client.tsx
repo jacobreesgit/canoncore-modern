@@ -7,18 +7,19 @@ import { PageLayout } from '@/components/layout/PageLayout'
 import { Button, ButtonLink } from '@/components/interactive/Button'
 import { FavouriteButton } from '@/components/interactive/FavouriteButton'
 import { Badge } from '@/components/content/Badge'
-import { ContentDisplay } from '@/components/content/ContentDisplay'
+import { ProgressBar } from '@/components/content/ProgressBar'
 import { Tree } from '@/components/content/Tree'
 import { useProgressStore } from '@/lib/stores/progress-store'
-import { formatProgressText, type HierarchyNode } from '@/lib/utils/progress'
+import { type HierarchyNode } from '@/lib/utils/progress'
 import { deleteUniverseAction } from '@/lib/actions/universe-actions'
 import {
   HiPencil,
   HiTrash,
+  HiExternalLink,
   HiEye,
   HiCollection,
-  HiExternalLink,
 } from 'react-icons/hi'
+import { Icon } from '@/components/interactive/Icon'
 
 interface UniverseWithFavourite extends Universe {
   isFavourite?: boolean
@@ -95,13 +96,13 @@ export function UniverseClient({
         type: 'secondary' as const,
         label: 'Edit Universe',
         href: `/universes/${universe.id}/edit`,
-        icon: <HiPencil className='h-4 w-4' />,
+        icon: <Icon icon={HiPencil} />,
       },
       {
         type: 'danger' as const,
         label: 'Delete Universe',
         onClick: () => setShowDeleteConfirm(true),
-        icon: <HiTrash className='h-4 w-4' />,
+        icon: <Icon icon={HiTrash} />,
       }
     )
   }
@@ -128,7 +129,7 @@ export function UniverseClient({
             variant='info'
             size='small'
             className='hover:bg-primary-200 transition-colors cursor-pointer'
-            icon={<HiExternalLink className='h-3 w-3' />}
+            icon={<Icon icon={HiExternalLink} size='sm' />}
           >
             {universe.sourceLinkName || 'Source'}
           </Badge>
@@ -155,6 +156,14 @@ export function UniverseClient({
     </div>
   )
 
+  const progressExtraContent = (
+    <ProgressBar
+      variant='organisational'
+      value={universeProgress.percentage}
+      showLabel={true}
+    />
+  )
+
   return (
     <PageLayout
       currentPage='dashboard'
@@ -167,88 +176,36 @@ export function UniverseClient({
           { label: 'Dashboard', href: '/dashboard' },
           { label: universe.name, href: `/universes/${universe.id}` },
         ],
+        extraContent: progressExtraContent,
       }}
     >
-      {/* Universe Progress */}
-      {content.length > 0 && (
-        <div className='mb-8 bg-white rounded-lg shadow-sm p-6 border border-neutral-200 hover:shadow-md transition-shadow'>
-          <div className='flex items-start justify-between'>
-            <div className='flex-1'>
-              <div className='mb-4'>
-                <div className='text-sm text-neutral-600 mb-2'>
-                  Overall Progress
-                </div>
-                <div className='flex items-center gap-3'>
-                  <div className='flex-1 bg-neutral-200 rounded-full h-2'>
-                    <div
-                      className='bg-primary-600 h-2 rounded-full transition-all duration-300'
-                      style={{
-                        width: `${Math.round(universeProgress.percentage)}%`,
-                      }}
-                    />
-                  </div>
-                  <div className='text-sm font-medium text-neutral-900'>
-                    {formatProgressText(universeProgress, 'viewable')}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Content Hierarchy Display */}
-      <ContentDisplay
-        items={content}
-        displayMode='tree'
+      <Tree
+        hierarchyTree={hierarchyTree}
+        content={content}
         title='Content Hierarchy'
+        searchable={true}
         searchPlaceholder='Search content...'
-        filterable={false}
-        getSearchText={(item: ContentWithFavourite) =>
-          `${item.name} ${item.description || ''}`
-        }
-        renderItem={() => <div />}
-        renderTree={(items: ContentWithFavourite[]) => (
-          <Tree
-            variant='full'
-            hierarchyTree={hierarchyTree}
-            content={items}
-            contentHref={content => `/content/${content.id}`}
-            searchQuery=''
-            filteredContent={items}
-          />
-        )}
-        emptyState={
-          <div className='text-center'>
-            <div className='max-w-md mx-auto'>
-              <h3 className='text-lg font-medium text-neutral-900 mb-2'>
-                No content yet
-              </h3>
-              <p className='text-neutral-600 mb-6'>
-                {isOwner
-                  ? 'Start adding content to organize this universe.'
-                  : "This universe doesn't have any content yet."}
-              </p>
-              {isOwner && (
-                <div className='flex justify-center gap-4'>
-                  <ButtonLink
-                    href={`/universes/${universe.id}/content/add-viewable`}
-                    variant='primary'
-                    icon={<HiEye className='h-4 w-4' />}
-                  >
-                    Add Viewable Content
-                  </ButtonLink>
-                  <ButtonLink
-                    href={`/universes/${universe.id}/content/organise`}
-                    variant='secondary'
-                    icon={<HiCollection className='h-4 w-4' />}
-                  >
-                    Add Organization
-                  </ButtonLink>
-                </div>
-              )}
+        enableBulkSelection={isOwner}
+        button={
+          isOwner ? (
+            <div className='flex gap-2'>
+              <ButtonLink
+                href={`/universes/${universe.id}/content/add-viewable`}
+                variant='primary'
+                icon={<HiEye className='h-4 w-4' />}
+              >
+                Add Viewable Content
+              </ButtonLink>
+              <ButtonLink
+                href={`/universes/${universe.id}/content/organise`}
+                variant='accent'
+                icon={<HiCollection className='h-4 w-4' />}
+              >
+                Add Organization
+              </ButtonLink>
             </div>
-          </div>
+          ) : undefined
         }
       />
 

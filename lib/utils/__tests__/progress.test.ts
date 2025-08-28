@@ -111,7 +111,7 @@ describe('Progress Utils', () => {
         percentage: 75,
       }
       const result = formatProgressText(calculation)
-      expect(result).toBe('75% complete (3/5)')
+      expect(result).toBe('75%')
     })
 
     it('should handle zero items', () => {
@@ -121,7 +121,7 @@ describe('Progress Utils', () => {
         percentage: 0,
       }
       const result = formatProgressText(calculation)
-      expect(result).toBe('0% complete')
+      expect(result).toBe('0%')
     })
   })
 })

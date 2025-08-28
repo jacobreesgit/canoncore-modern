@@ -17,7 +17,6 @@ export interface Universe {
 }
 
 export interface UniverseCardProps {
-  variant?: 'dashboard' | 'profile' | 'discover'
   className?: string
   universe: Universe
   href: string
@@ -60,7 +59,6 @@ export function UniverseCard({
                   targetId={universe.id}
                   targetType='universe'
                   className='flex-shrink-0'
-                  variant='subtle'
                 />
               )}
             </div>
@@ -98,7 +96,6 @@ export function UniverseCard({
             variant='organisational'
             value={progress}
             showLabel={true}
-            label='Progress'
           />
         </div>
       </div>

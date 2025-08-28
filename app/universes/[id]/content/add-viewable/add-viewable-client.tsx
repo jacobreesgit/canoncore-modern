@@ -51,8 +51,10 @@ export function AddViewableClient({
     suggestedParent?.id || ''
   )
 
-  // Filter content that can be parents (organizational content)
-  const potentialParents = existingContent.filter(c => !c.isViewable)
+  // Filter content that can be parents (ALL content can be parents for flexibility)
+  const potentialParents = existingContent.filter(
+    c => c.id !== suggestedParent?.id
+  )
 
   // React 19: useActionState for form management
   const [state, formAction, isPending] = useActionState(
@@ -115,7 +117,7 @@ export function AddViewableClient({
         </FormField>
 
         {potentialParents.length > 0 && (
-          <FormField label='Parent Organization (Optional)'>
+          <FormField label='Parent Content (Optional)'>
             <FormSelect
               name='parentId'
               value={selectedParentId}
@@ -125,12 +127,14 @@ export function AddViewableClient({
               <option value=''>No parent (top level)</option>
               {potentialParents.map(parent => (
                 <option key={parent.id} value={parent.id}>
-                  {parent.name}
+                  {parent.name} (
+                  {parent.isViewable ? 'Viewable' : 'Organizational'})
                 </option>
               ))}
             </FormSelect>
             <p className='text-sm text-neutral-600 mt-1'>
-              Organize this content under a series, phase, or collection
+              Organize this content under another content item (e.g., Episode
+              under Season)
             </p>
           </FormField>
         )}

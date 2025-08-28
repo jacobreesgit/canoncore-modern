@@ -2,6 +2,7 @@
 
 import { HiExclamationCircle, HiQuestionMarkCircle } from 'react-icons/hi'
 import { Button } from '@/components/interactive/Button'
+import { Icon } from '@/components/interactive/Icon'
 
 function getErrorMessage(error: unknown): string {
   if (typeof error === 'string') {
@@ -42,7 +43,7 @@ export function ErrorBoundary({ error }: ErrorBoundaryProps = {}) {
       <div className='min-h-screen flex items-center justify-center bg-surface'>
         <div className='max-w-2xl w-full bg-white shadow-lg rounded-lg p-6'>
           <div className='flex items-center justify-center w-12 h-12 mx-auto bg-error-100 rounded-full'>
-            <HiExclamationCircle className='w-6 h-6 text-error-600' />
+            <Icon icon={HiExclamationCircle} size='xl' color='error' />
           </div>
 
           <div className='mt-4 text-center'>
@@ -91,7 +92,7 @@ export function ErrorBoundary({ error }: ErrorBoundaryProps = {}) {
     <div className='min-h-screen flex items-center justify-center bg-surface'>
       <div className='max-w-md w-full bg-white shadow-lg rounded-lg p-6'>
         <div className='flex items-center justify-center w-12 h-12 mx-auto bg-warning-100 rounded-full'>
-          <HiQuestionMarkCircle className='w-6 h-6 text-warning-600' />
+          <Icon icon={HiQuestionMarkCircle} size='xl' color='warning' />
         </div>
 
         <div className='mt-4 text-center'>

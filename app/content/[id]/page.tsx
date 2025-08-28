@@ -60,9 +60,11 @@ export default async function ContentPage({
   // Fetch parent and child content details
   const parentContent = []
   for (const parent of parents) {
-    const parentItem = await contentService.getById(parent.parentId)
-    if (parentItem) {
-      parentContent.push(parentItem)
+    if (parent.parentId) {
+      const parentItem = await contentService.getById(parent.parentId)
+      if (parentItem) {
+        parentContent.push(parentItem)
+      }
     }
   }
 

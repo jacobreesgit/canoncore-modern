@@ -29,6 +29,17 @@ export async function createContentAction(formData: FormData) {
     const mediaType = formData.get('mediaType') as string
     const parentId = formData.get('parentId') as string
 
+    // Debug logging
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Content creation debug:', {
+        name,
+        universeId,
+        parentId: parentId || 'NO_PARENT',
+        isViewable,
+        mediaType,
+      })
+    }
+
     if (!name || name.trim().length === 0) {
       return { success: false, error: 'Content name is required' }
     }
@@ -58,12 +69,57 @@ export async function createContentAction(formData: FormData) {
 
     // Create relationship if parent is specified
     if (parentId && parentId.trim()) {
-      await relationshipService.create(
-        parentId.trim(),
-        newContent.id,
-        universeId,
-        user.id
-      )
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Creating parent-child relationship:', {
+          parentId: parentId.trim(),
+          childId: newContent.id,
+          universeId,
+          userId: user.id,
+        })
+      }
+
+      try {
+        await relationshipService.create(
+          parentId.trim(),
+          newContent.id,
+          universeId,
+          user.id
+        )
+
+        if (process.env.NODE_ENV === 'development') {
+          console.log('✅ Relationship created successfully')
+        }
+      } catch (error) {
+        if (process.env.NODE_ENV === 'development') {
+          console.error('❌ Failed to create relationship:', error)
+        }
+        // Don't fail the content creation if relationship fails
+      }
+    } else {
+      if (process.env.NODE_ENV === 'development') {
+        console.log(
+          'No parent specified - creating top-level content with null parent'
+        )
+      }
+
+      try {
+        // Create root-level relationship with null parent
+        await relationshipService.create(
+          null, // parentId is null for root-level content
+          newContent.id,
+          universeId,
+          user.id
+        )
+
+        if (process.env.NODE_ENV === 'development') {
+          console.log('✅ Root-level relationship created successfully')
+        }
+      } catch (error) {
+        if (process.env.NODE_ENV === 'development') {
+          console.error('❌ Failed to create root-level relationship:', error)
+        }
+        // Don't fail the content creation if relationship fails
+      }
     }
 
     // Using dynamic rendering for fresh data
@@ -178,4 +234,105 @@ export async function deleteContentAction(contentId: string) {
 
   // Redirect outside try/catch block as recommended by Next.js docs
   redirect(`/universes/${universeId}`)
+}
+
+export async function bulkDeleteContentAction(contentIds: string[]) {
+  try {
+    const user = await getCurrentUser()
+    if (!user || !user.id) {
+      return { success: false, error: 'Authentication required' }
+    }
+
+    if (!contentIds || contentIds.length === 0) {
+      return { success: false, error: 'No content items selected for deletion' }
+    }
+
+    // Validate input - ensure all IDs are strings and not empty
+    const validContentIds = contentIds.filter(
+      id => typeof id === 'string' && id.trim().length > 0
+    )
+    if (validContentIds.length === 0) {
+      return { success: false, error: 'No valid content IDs provided' }
+    }
+
+    let deletedCount = 0
+    const errors: string[] = []
+    const successfulDeletes: string[] = []
+
+    // Batch fetch content items first to verify ownership
+    const contentItems = await Promise.allSettled(
+      validContentIds.map(id => contentService.getById(id))
+    )
+
+    // Process each content item
+    for (let i = 0; i < validContentIds.length; i++) {
+      const contentId = validContentIds[i]
+      const contentResult = contentItems[i]
+
+      try {
+        // Check if content exists and user owns it
+        if (contentResult.status === 'rejected' || !contentResult.value) {
+          errors.push(`Content not found: ${contentId}`)
+          continue
+        }
+
+        const existingContent = contentResult.value
+        if (existingContent.userId !== user.id) {
+          errors.push(
+            `Permission denied for content: ${existingContent.name || contentId}`
+          )
+          continue
+        }
+
+        // Delete relationships first
+        await relationshipService.deleteAllForContent(contentId)
+
+        // Delete the content
+        await contentService.delete(contentId)
+        deletedCount++
+        successfulDeletes.push(contentId)
+
+        if (process.env.NODE_ENV === 'development') {
+          console.log(
+            `✅ Successfully deleted content: ${existingContent.name} (${contentId})`
+          )
+        }
+      } catch (error) {
+        if (process.env.NODE_ENV === 'development') {
+          console.error(`❌ Error deleting content ${contentId}:`, error)
+        }
+        errors.push(`Failed to delete content: ${contentId}`)
+      }
+    }
+
+    // Determine response based on results
+    if (errors.length > 0 && deletedCount === 0) {
+      return {
+        success: false,
+        error: 'Failed to delete any content items',
+        details: errors,
+      }
+    }
+
+    const message =
+      deletedCount === validContentIds.length
+        ? `Successfully deleted ${deletedCount} content item${deletedCount !== 1 ? 's' : ''}`
+        : `Deleted ${deletedCount} of ${validContentIds.length} content items. ${errors.length} failed.`
+
+    return {
+      success: true,
+      message,
+      deletedCount,
+      successfulDeletes,
+      errors: errors.length > 0 ? errors : undefined,
+    }
+  } catch (error) {
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error in bulk delete operation:', error)
+    }
+    return {
+      success: false,
+      error: 'Failed to delete content items. Please try again.',
+    }
+  }
 }

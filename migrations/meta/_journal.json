@@ -15,6 +15,20 @@
       "when": 1755893164094,
       "tag": "0001_high_lockheed",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1756384302974,
+      "tag": "0002_true_patch",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1756384667666,
+      "tag": "0003_boring_the_santerians",
+      "breakpoints": true
     }
   ]
 }

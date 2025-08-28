@@ -8,13 +8,8 @@ import { FavouriteButton } from '@/components/interactive/FavouriteButton'
 import { ProgressBar } from '@/components/content/ProgressBar'
 import { Badge } from '@/components/content/Badge'
 import { useProgressStore } from '@/lib/stores/progress-store'
-import {
-  HiPencil,
-  HiEye,
-  HiCollection,
-  HiChevronUp,
-  HiChevronDown,
-} from 'react-icons/hi'
+import { HiPencil, HiChevronUp, HiChevronDown } from 'react-icons/hi'
+import { Icon } from '@/components/interactive/Icon'
 
 interface ContentWithFavourite extends Content {
   isFavourite?: boolean
@@ -48,7 +43,7 @@ export function ContentClient({
       type: 'secondary' as const,
       label: 'Edit Content',
       href: `/universes/${content.universeId}/content/${content.id}/edit`,
-      icon: <HiPencil className='h-4 w-4' />,
+      icon: <Icon icon={HiPencil} />,
     })
   }
 
@@ -57,6 +52,10 @@ export function ContentClient({
       <span>{content.name}</span>
       <FavouriteButton targetId={content.id} targetType='content' size='xl' />
     </div>
+  )
+
+  const progressExtraContent = (
+    <ProgressBar value={currentProgress} variant='viewable' showLabel={true} />
   )
 
   return (
@@ -71,6 +70,7 @@ export function ContentClient({
           { label: universe.name, href: `/universes/${universe.id}` },
           { label: content.name, href: `/content/${content.id}` },
         ],
+        extraContent: progressExtraContent,
       }}
     >
       {/* Content Info */}
@@ -103,22 +103,6 @@ export function ContentClient({
             </div>
           </div>
         </div>
-
-        {/* Progress Tracking for Viewable Content */}
-        {content.isViewable && (
-          <div className='mb-6'>
-            <h3 className='text-lg font-medium text-neutral-900 mb-3'>
-              Progress
-            </h3>
-            <ProgressBar
-              value={currentProgress}
-              variant='viewable'
-              size='large'
-              showLabel={true}
-              label='Progress'
-            />
-          </div>
-        )}
       </div>
 
       {/* Parent Content */}
@@ -131,9 +115,9 @@ export function ContentClient({
               className='flex items-center gap-2 text-lg font-medium text-neutral-900 hover:text-neutral-700 p-0'
             >
               {showParents ? (
-                <HiChevronDown className='h-5 w-5' />
+                <Icon icon={HiChevronDown} size='lg' />
               ) : (
-                <HiChevronUp className='h-5 w-5' />
+                <Icon icon={HiChevronUp} size='lg' />
               )}
               Parent Organization ({parentContent.length})
             </Button>
@@ -184,9 +168,9 @@ export function ContentClient({
               className='flex items-center gap-2 text-lg font-medium text-neutral-900 hover:text-neutral-700 p-0'
             >
               {showChildren ? (
-                <HiChevronDown className='h-5 w-5' />
+                <Icon icon={HiChevronDown} size='lg' />
               ) : (
-                <HiChevronUp className='h-5 w-5' />
+                <Icon icon={HiChevronUp} size='lg' />
               )}
               Child Content ({childContent.length})
             </Button>
@@ -220,7 +204,6 @@ export function ContentClient({
                         <ProgressBar
                           value={getProgress(child.id)}
                           variant='viewable'
-                          size='default'
                           showLabel={false}
                         />
                       )}
@@ -237,40 +220,6 @@ export function ContentClient({
               </div>
             </div>
           )}
-        </div>
-      )}
-
-      {/* Quick Actions */}
-      {canEdit && (
-        <div className='bg-white rounded-lg shadow-sm p-6 border border-neutral-200 hover:shadow-md transition-shadow'>
-          <h3 className='text-lg font-medium text-neutral-900 mb-4'>
-            Quick Actions
-          </h3>
-          <div className='flex flex-wrap gap-4'>
-            <ButtonLink
-              href={`/universes/${content.universeId}/content/add-viewable?parent=${content.id}`}
-              variant='primary'
-              size='small'
-              icon={<HiEye className='h-4 w-4' />}
-            >
-              Add Child Content
-            </ButtonLink>
-            <ButtonLink
-              href={`/universes/${content.universeId}/content/organise?parent=${content.id}`}
-              variant='secondary'
-              size='small'
-              icon={<HiCollection className='h-4 w-4' />}
-            >
-              Add Organization
-            </ButtonLink>
-            <ButtonLink
-              href={`/universes/${content.universeId}`}
-              variant='secondary'
-              size='small'
-            >
-              Back to Universe
-            </ButtonLink>
-          </div>
         </div>
       )}
     </PageLayout>

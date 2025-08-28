@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import bcryptjs from 'bcryptjs'
 import { z } from 'zod'
 import { eq } from 'drizzle-orm'
+import { signIn } from '@/lib/auth'
 
 // Validation schema for registration
 const registerSchema = z.object({
@@ -46,7 +47,6 @@ export async function POST(request: NextRequest) {
         email,
         passwordHash,
         name: name || null,
-        emailVerified: null,
       })
       .returning({
         id: users.id,
@@ -55,10 +55,30 @@ export async function POST(request: NextRequest) {
         createdAt: users.createdAt,
       })
 
+    // Automatically sign in the user after successful registration
+    const signInResult = await signIn('credentials', {
+      email,
+      password,
+      redirect: false,
+    })
+
+    if (signInResult?.error) {
+      // User was created but sign-in failed - still return success
+      return NextResponse.json(
+        {
+          message: 'User created successfully, please sign in manually',
+          user: newUser,
+          autoLoginFailed: true,
+        },
+        { status: 201 }
+      )
+    }
+
     return NextResponse.json(
       {
-        message: 'User created successfully',
+        message: 'User created and logged in successfully',
         user: newUser,
+        autoLoginSuccess: true,
       },
       { status: 201 }
     )

@@ -153,3 +153,29 @@ body {
 .border-surface-100 {
   border-color: oklch(0.97 0.007 106.423); /* neutral-100 */
 }
+
+/* Tree Component Styles */
+.tree > div:hover {
+  border-color: #000;
+}
+
+.tree div[role='treeitem']:focus {
+  outline: none;
+}
+
+.tree .treeitem.selected {
+  background-color: #eee;
+}
+
+.tree .treeitem:hover {
+  background-color: #f5f5f5;
+}
+
+.tree div:focus-visible .treeitem.focused,
+.tree .treeitem.searchmatch.focused {
+  outline: 2px solid black;
+}
+
+.tree .treeitem.searchmatch {
+  background-color: #e1f8ff;
+}

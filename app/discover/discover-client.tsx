@@ -1,7 +1,7 @@
 'use client'
 
 import { UniverseCard } from '@/components/content/UniverseCard'
-import { ContentDisplay } from '@/components/content/ContentDisplay'
+import { ContentGrid } from '@/components/content/ContentGrid'
 import { ButtonLink } from '@/components/interactive/Button'
 import { PageLayout } from '@/components/layout/PageLayout'
 import type { Universe } from '@/lib/types'
@@ -61,9 +61,8 @@ export function DiscoverClient({
           'Explore public franchise universes created by the community',
       }}
     >
-      <ContentDisplay
+      <ContentGrid
         items={initialUniverses}
-        displayMode='grid'
         title='Public Universes'
         searchPlaceholder='Search public universes...'
         filterItems={sortUniverses}
@@ -79,7 +78,7 @@ export function DiscoverClient({
               showFavourite={!!currentUserId}
               showOwner={true}
               ownerName={owner?.name || owner?.email || 'Unknown User'}
-              showOwnerBadge={false}
+              showOwnerBadge={true}
               currentUserId={currentUserId}
             />
           )

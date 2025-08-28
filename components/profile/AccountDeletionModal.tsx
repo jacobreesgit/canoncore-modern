@@ -7,6 +7,7 @@ import { HiExclamationCircle } from 'react-icons/hi'
 import { deleteAccountAction } from '@/lib/actions/user-actions'
 import { Button } from '@/components/interactive/Button'
 import { FormInput } from '@/components/forms/FormInput'
+import { Icon } from '@/components/interactive/Icon'
 
 interface AccountDeletionModalProps {
   isOpen: boolean
@@ -99,7 +100,7 @@ export function AccountDeletionModal({
         <div className='relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6'>
           <div className='sm:flex sm:items-start'>
             <div className='mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-error-100 sm:mx-0 sm:h-10 sm:w-10'>
-              <HiExclamationCircle className='h-6 w-6 text-error-600' />
+              <Icon icon={HiExclamationCircle} size='xl' color='error' />
             </div>
             <div className='mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left w-full'>
               <h3 className='text-lg font-medium leading-6 text-neutral-900'>

@@ -2,7 +2,7 @@
 
 import { User, Universe } from '@/lib/db/schema'
 import { UniverseCard } from '@/components/content/UniverseCard'
-import { ContentDisplay } from '@/components/content/ContentDisplay'
+import { ContentGrid } from '@/components/content/ContentGrid'
 
 interface PublicUniversesDisplayProps {
   publicUniverses: Universe[]
@@ -44,9 +44,8 @@ export function PublicUniversesDisplay({
   }
 
   return (
-    <ContentDisplay
+    <ContentGrid
       items={publicUniverses}
-      displayMode='grid'
       searchPlaceholder='Search public universes...'
       filterItems={sortUniverses}
       getSearchText={(universe: Universe) =>

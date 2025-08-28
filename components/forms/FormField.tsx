@@ -9,7 +9,6 @@ export interface FormFieldProps extends React.HTMLAttributes<HTMLDivElement> {
   label?: string
   required?: boolean
   error?: string | string[]
-  description?: string
   className?: string
   children: React.ReactNode
 }
@@ -18,7 +17,6 @@ export function FormField({
   label,
   required = false,
   error,
-  description,
   className = '',
   children,
   ...props
@@ -30,9 +28,6 @@ export function FormField({
     <div className={cn('form-field', 'space-y-1', className)} {...props}>
       {label && <FormLabel variant={labelVariant}>{label}</FormLabel>}
       {children}
-      {description && !hasError && (
-        <div className='text-sm text-neutral-500'>{description}</div>
-      )}
       <FormError error={error} />
     </div>
   )

@@ -5,8 +5,6 @@ import { Button, ButtonLink } from '../interactive/Button'
 import { cn } from '@/lib/utils'
 
 export interface FormActionsProps extends React.HTMLAttributes<HTMLDivElement> {
-  variant?: 'create' | 'update' | 'add'
-  size?: 'default'
   className?: string
   cancelHref: string
   isSubmitting?: boolean
@@ -15,7 +13,6 @@ export interface FormActionsProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 export function FormActions({
-  variant = 'create',
   className = '',
   cancelHref,
   isSubmitting = false,
@@ -23,32 +20,10 @@ export function FormActions({
   submittingLabel,
   ...props
 }: FormActionsProps) {
-  const getLabels = () => {
-    switch (variant) {
-      case 'create':
-        return {
-          submit: submitLabel || 'Create Franchise',
-          submitting: submittingLabel || 'Creating...',
-        }
-      case 'update':
-        return {
-          submit: submitLabel || 'Save Changes',
-          submitting: submittingLabel || 'Saving...',
-        }
-      case 'add':
-        return {
-          submit: submitLabel || 'Add Content',
-          submitting: submittingLabel || 'Adding...',
-        }
-      default:
-        return {
-          submit: submitLabel || 'Submit',
-          submitting: submittingLabel || 'Submitting...',
-        }
-    }
+  const labels = {
+    submit: submitLabel || 'Submit',
+    submitting: submittingLabel || 'Submitting...',
   }
-
-  const labels = getLabels()
 
   return (
     <div

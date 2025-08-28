@@ -12,7 +12,6 @@ export interface User {
   id: string
   name: string | null
   email: string
-  emailVerified: Date | null
   image: string | null
   passwordHash: string | null
   createdAt: Date | null
@@ -22,7 +21,6 @@ export interface User {
 export interface NewUser {
   email: string
   name?: string | null
-  emailVerified?: Date | null
   image?: string | null
   passwordHash?: string | null
   createdAt?: Date | null
@@ -64,7 +62,6 @@ export interface Content {
   mediaType: string
   sourceLink: string | null
   sourceLinkName: string | null
-  lastAccessedAt: Date | null
   createdAt: Date
   updatedAt: Date
 }
@@ -78,7 +75,6 @@ export interface NewContent {
   mediaType: string
   sourceLink?: string | null
   sourceLinkName?: string | null
-  lastAccessedAt?: Date | null
   createdAt?: Date
   updatedAt?: Date
 }

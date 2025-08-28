@@ -31,8 +31,7 @@ const createMockRelationship = (
   childId: 'child-1',
   universeId: 'universe-1',
   userId: 'user-1',
-  displayOrder: null,
-  contextDescription: null,
+  displayOrder: 0,
   createdAt: new Date(),
   ...overrides,
 })
@@ -47,7 +46,6 @@ const createMockContent = (overrides: Partial<Content> = {}): Content => ({
   isViewable: true,
   sourceLink: 'https://example.com',
   sourceLinkName: null,
-  lastAccessedAt: null,
   createdAt: new Date(),
   updatedAt: new Date(),
   ...overrides,
@@ -62,7 +60,9 @@ describe('Relationship Service', () => {
     // Reset mock chain implementations
     mockDb.select.mockReturnValue({
       from: vi.fn().mockReturnValue({
-        where: vi.fn(),
+        where: vi.fn().mockReturnValue({
+          orderBy: vi.fn(),
+        }),
       }),
     })
     mockDb.insert.mockReturnValue({
@@ -82,7 +82,8 @@ describe('Relationship Service', () => {
         { parentId: 'parent-1', childId: 'child-2' },
       ]
 
-      const mockWhere = vi.fn().mockResolvedValue(mockRelationships)
+      const mockOrderBy = vi.fn().mockResolvedValue(mockRelationships)
+      const mockWhere = vi.fn().mockReturnValue({ orderBy: mockOrderBy })
       const mockFrom = vi.fn().mockReturnValue({ where: mockWhere })
       mockDb.select.mockReturnValue({ from: mockFrom })
 
@@ -93,7 +94,8 @@ describe('Relationship Service', () => {
     })
 
     it('should return empty array when no relationships exist', async () => {
-      const mockWhere = vi.fn().mockResolvedValue([])
+      const mockOrderBy = vi.fn().mockResolvedValue([])
+      const mockWhere = vi.fn().mockReturnValue({ orderBy: mockOrderBy })
       const mockFrom = vi.fn().mockReturnValue({ where: mockWhere })
       mockDb.select.mockReturnValue({ from: mockFrom })
 
@@ -107,7 +109,8 @@ describe('Relationship Service', () => {
         .spyOn(console, 'error')
         .mockImplementation(() => {})
 
-      const mockWhere = vi.fn().mockRejectedValue(new Error('Database error'))
+      const mockOrderBy = vi.fn().mockRejectedValue(new Error('Database error'))
+      const mockWhere = vi.fn().mockReturnValue({ orderBy: mockOrderBy })
       const mockFrom = vi.fn().mockReturnValue({ where: mockWhere })
       mockDb.select.mockReturnValue({ from: mockFrom })
 
@@ -174,7 +177,8 @@ describe('Relationship Service', () => {
         { parentId: 'parent-1', childId: 'child-1' },
         { parentId: 'parent-1', childId: 'child-2' },
       ]
-      const mockWhere = vi.fn().mockResolvedValue(mockChildren)
+      const mockOrderBy = vi.fn().mockResolvedValue(mockChildren)
+      const mockWhere = vi.fn().mockReturnValue({ orderBy: mockOrderBy })
       const mockFrom = vi.fn().mockReturnValue({ where: mockWhere })
       mockDb.select.mockReturnValue({ from: mockFrom })
 
@@ -184,7 +188,8 @@ describe('Relationship Service', () => {
     })
 
     it('should return empty array when no children exist', async () => {
-      const mockWhere = vi.fn().mockResolvedValue([])
+      const mockOrderBy = vi.fn().mockResolvedValue([])
+      const mockWhere = vi.fn().mockReturnValue({ orderBy: mockOrderBy })
       const mockFrom = vi.fn().mockReturnValue({ where: mockWhere })
       mockDb.select.mockReturnValue({ from: mockFrom })
 
@@ -197,7 +202,8 @@ describe('Relationship Service', () => {
       const consoleErrorSpy = vi
         .spyOn(console, 'error')
         .mockImplementation(() => {})
-      const mockWhere = vi.fn().mockRejectedValue(new Error('Database error'))
+      const mockOrderBy = vi.fn().mockRejectedValue(new Error('Database error'))
+      const mockWhere = vi.fn().mockReturnValue({ orderBy: mockOrderBy })
       const mockFrom = vi.fn().mockReturnValue({ where: mockWhere })
       mockDb.select.mockReturnValue({ from: mockFrom })
 
@@ -215,6 +221,9 @@ describe('Relationship Service', () => {
 
   describe('create', () => {
     it('should create a new relationship successfully', async () => {
+      // Mock getChildren call that happens inside create
+      vi.spyOn(service, 'getChildren').mockResolvedValue([])
+
       const mockCreatedRelationship = createMockRelationship({
         parentId: 'parent-1',
         childId: 'child-1',
@@ -237,6 +246,9 @@ describe('Relationship Service', () => {
     })
 
     it('should handle database errors during creation', async () => {
+      // Mock getChildren call that happens inside create
+      vi.spyOn(service, 'getChildren').mockResolvedValue([])
+
       const consoleErrorSpy = vi
         .spyOn(console, 'error')
         .mockImplementation(() => {})
@@ -326,8 +338,9 @@ describe('Relationship Service', () => {
         createMockContent({ id: 'child-2', name: 'Child 2' }),
       ]
       const relationships = [
-        { parentId: 'parent-1', childId: 'child-1' },
-        { parentId: 'parent-1', childId: 'child-2' },
+        { parentId: null, childId: 'parent-1', displayOrder: 0 }, // Make parent-1 a root node
+        { parentId: 'parent-1', childId: 'child-1', displayOrder: 0 },
+        { parentId: 'parent-1', childId: 'child-2', displayOrder: 1 },
       ]
 
       const tree = service.buildHierarchyTree(content, relationships)
@@ -346,8 +359,9 @@ describe('Relationship Service', () => {
         createMockContent({ id: 'level2', name: 'Level 2' }),
       ]
       const relationships = [
-        { parentId: 'root', childId: 'level1' },
-        { parentId: 'level1', childId: 'level2' },
+        { parentId: null, childId: 'root', displayOrder: 0 }, // Make root a root node
+        { parentId: 'root', childId: 'level1', displayOrder: 0 },
+        { parentId: 'level1', childId: 'level2', displayOrder: 0 },
       ]
 
       const tree = service.buildHierarchyTree(content, relationships)
@@ -368,8 +382,10 @@ describe('Relationship Service', () => {
         createMockContent({ id: 'child2', name: 'Child 2' }),
       ]
       const relationships = [
-        { parentId: 'root1', childId: 'child1' },
-        { parentId: 'root2', childId: 'child2' },
+        { parentId: null, childId: 'root1', displayOrder: 0 }, // Make root1 a root node
+        { parentId: null, childId: 'root2', displayOrder: 1 }, // Make root2 a root node
+        { parentId: 'root1', childId: 'child1', displayOrder: 0 },
+        { parentId: 'root2', childId: 'child2', displayOrder: 0 },
       ]
 
       const tree = service.buildHierarchyTree(content, relationships)
@@ -384,7 +400,14 @@ describe('Relationship Service', () => {
         createMockContent({ id: 'orphan1', name: 'Orphan 1' }),
         createMockContent({ id: 'orphan2', name: 'Orphan 2' }),
       ]
-      const relationships: Array<{ parentId: string; childId: string }> = []
+      const relationships: Array<{
+        parentId: string | null
+        childId: string
+        displayOrder: number
+      }> = [
+        { parentId: null, childId: 'orphan1', displayOrder: 0 }, // Orphan as root
+        { parentId: null, childId: 'orphan2', displayOrder: 1 }, // Orphan as root
+      ]
 
       const tree = service.buildHierarchyTree(content, relationships)
 
@@ -406,7 +429,10 @@ describe('Relationship Service', () => {
         createMockContent({ id: 'parent-1', name: 'Parent' }),
         createMockContent({ id: 'child-1', name: 'Child' }),
       ]
-      const mockRelationships = [{ parentId: 'parent-1', childId: 'child-1' }]
+      const mockRelationships = [
+        { parentId: null, childId: 'parent-1', displayOrder: 0 },
+        { parentId: 'parent-1', childId: 'child-1', displayOrder: 0 },
+      ]
 
       const mockWhere = vi.fn().mockResolvedValueOnce(mockContent)
       const mockFrom = vi.fn().mockReturnValue({ where: mockWhere })
@@ -592,12 +618,12 @@ describe('Relationship Service', () => {
       const mockValues = vi.fn().mockReturnValue({ returning: mockReturning })
       mockDb.insert.mockReturnValue({ values: mockValues })
 
-      // Mock querying
-      const mockWhere = vi
-        .fn()
-        .mockResolvedValueOnce([{ parentId: 'parent-1', childId: 'child-1' }])
-      const mockFrom = vi.fn().mockReturnValue({ where: mockWhere })
-      mockDb.select.mockReturnValue({ from: mockFrom })
+      // Mock getChildren: first call (inside create) returns [], second call returns the data
+      vi.spyOn(service, 'getChildren')
+        .mockResolvedValueOnce([]) // For create method
+        .mockResolvedValueOnce([
+          { parentId: 'parent-1', childId: 'child-1', displayOrder: 0 },
+        ]) // For test query
 
       // Create relationship
       const created = await service.create(
@@ -621,8 +647,9 @@ describe('Relationship Service', () => {
         createMockContent({ id: 'C', name: 'C' }),
       ]
       const mockRelationships = [
-        { parentId: 'A', childId: 'B' },
-        { parentId: 'B', childId: 'C' },
+        { parentId: null, childId: 'A', displayOrder: 0 },
+        { parentId: 'A', childId: 'B', displayOrder: 0 },
+        { parentId: 'B', childId: 'C', displayOrder: 0 },
       ]
 
       // Build hierarchy

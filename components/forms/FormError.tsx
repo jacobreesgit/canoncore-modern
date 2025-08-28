@@ -3,6 +3,7 @@
 import React from 'react'
 import { HiExclamationCircle } from 'react-icons/hi'
 import { cn } from '@/lib/utils'
+import { Icon } from '@/components/interactive/Icon'
 
 export interface FormErrorProps extends React.HTMLAttributes<HTMLDivElement> {
   error?: string | string[]
@@ -25,11 +26,7 @@ export function FormError({ error, className = '', ...props }: FormErrorProps) {
     >
       {errors.map((err, index) => (
         <div key={index} className='flex items-center gap-1'>
-          <HiExclamationCircle
-            className='w-4 h-4 flex-shrink-0'
-            role='img'
-            aria-label='Error'
-          />
+          <Icon icon={HiExclamationCircle} color='error' aria-label='Error' />
           <span>{err}</span>
         </div>
       ))}

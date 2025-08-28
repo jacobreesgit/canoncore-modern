@@ -33,7 +33,6 @@ const createMockUser = (): User => ({
   id: 'user-1',
   name: 'Test User',
   email: 'test@example.com',
-  emailVerified: null,
   image: null,
   passwordHash: null,
   createdAt: new Date(),
@@ -50,7 +49,6 @@ const createMockContent = (): Content => ({
   mediaType: 'video',
   sourceLink: null,
   sourceLinkName: null,
-  lastAccessedAt: null,
   createdAt: new Date(),
   updatedAt: new Date(),
 })
@@ -98,8 +96,7 @@ describe('Service Integration Tests', () => {
         childId: 'content-1',
         universeId: 'universe-1',
         userId: 'user-1',
-        displayOrder: null,
-        contextDescription: null,
+        displayOrder: 0,
         createdAt: new Date(),
       }
 
@@ -129,6 +126,9 @@ describe('Service Integration Tests', () => {
 
       expect(createdContent).toEqual(mockContent)
       expect(mockDb.insert).toHaveBeenCalled()
+
+      // Mock getChildren call that happens inside relationshipService.create
+      vi.spyOn(relationshipService, 'getChildren').mockResolvedValueOnce([])
 
       // Test relationship creation
       const createdRelationship = await relationshipService.create(

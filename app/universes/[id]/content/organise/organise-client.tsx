@@ -61,8 +61,10 @@ export function OrganiseClient({
     suggestedParent?.id || ''
   )
 
-  // Filter content that can be parents (organizational content)
-  const potentialParents = existingContent.filter(c => !c.isViewable)
+  // Filter content that can be parents (ALL content can be parents for flexibility)
+  const potentialParents = existingContent.filter(
+    c => c.id !== suggestedParent?.id
+  )
 
   // React 19: useActionState for form management
   const [state, formAction, isPending] = useActionState(

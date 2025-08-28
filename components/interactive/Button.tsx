@@ -4,10 +4,11 @@ import React from 'react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { AiOutlineLoading3Quarters } from 'react-icons/ai'
+import { Icon } from './Icon'
 
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'danger' | 'clear'
+  variant?: 'primary' | 'secondary' | 'danger' | 'clear' | 'accent'
   size?: 'small' | 'default' | 'large'
   loading?: boolean
   icon?: React.ReactNode
@@ -17,7 +18,7 @@ export interface ButtonProps
 
 export interface ButtonLinkProps
   extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
-  variant?: 'primary' | 'secondary' | 'danger' | 'clear'
+  variant?: 'primary' | 'secondary' | 'danger' | 'clear' | 'accent'
   size?: 'small' | 'default' | 'large'
   href: string
   external?: boolean
@@ -27,7 +28,13 @@ export interface ButtonLinkProps
 }
 
 function LoadingSpinner({ className }: { className?: string }) {
-  return <AiOutlineLoading3Quarters className={cn('animate-spin', className)} />
+  return (
+    <Icon
+      icon={AiOutlineLoading3Quarters}
+      animate='spin'
+      className={className}
+    />
+  )
 }
 
 export function Button({
@@ -54,6 +61,8 @@ export function Button({
           'button-variant-danger bg-error-600 hover:bg-error-700 text-white focus-visible:ring-error-500',
         variant === 'clear' &&
           'button-variant-clear bg-transparent hover:bg-surface-100 text-surface-700 focus-visible:ring-surface-500',
+        variant === 'accent' &&
+          'button-variant-accent bg-purple-600 hover:bg-purple-700 text-white focus-visible:ring-purple-500',
         size === 'small' && 'px-3 py-1.5 text-sm',
         size === 'default' && 'px-4 py-2 text-sm',
         size === 'large' && 'px-6 py-3 text-base',
@@ -91,6 +100,8 @@ export function ButtonLink({
       'button-variant-danger bg-error-600 hover:bg-error-700 text-white focus-visible:ring-error-500',
     variant === 'clear' &&
       'button-variant-clear bg-transparent hover:bg-surface-100 text-surface-700 focus-visible:ring-surface-500',
+    variant === 'accent' &&
+      'button-variant-accent bg-purple-600 hover:bg-purple-700 text-white focus-visible:ring-purple-500',
     size === 'small' && 'px-3 py-1.5 text-sm',
     size === 'default' && 'px-4 py-2 text-sm',
     size === 'large' && 'px-6 py-3 text-base',

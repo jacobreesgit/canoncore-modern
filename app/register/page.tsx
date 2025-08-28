@@ -36,10 +36,24 @@ export default function RegisterPage() {
       const data = await response.json()
 
       if (response.ok) {
-        setSuccess('Account created successfully! You can now sign in.')
-        setTimeout(() => {
-          router.push('/signin')
-        }, 2000)
+        if (data.autoLoginSuccess) {
+          setSuccess(
+            'Account created and logged in successfully! Redirecting to dashboard...'
+          )
+          setTimeout(() => {
+            router.push('/dashboard')
+          }, 1500)
+        } else if (data.autoLoginFailed) {
+          setSuccess('Account created successfully! Please sign in manually.')
+          setTimeout(() => {
+            router.push('/signin')
+          }, 2000)
+        } else {
+          setSuccess('Account created successfully! You can now sign in.')
+          setTimeout(() => {
+            router.push('/signin')
+          }, 2000)
+        }
       } else {
         setError(data.error || 'Registration failed')
       }

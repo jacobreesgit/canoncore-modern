@@ -2,6 +2,7 @@ import React from 'react'
 import Link from 'next/link'
 import { HiChevronRight } from 'react-icons/hi'
 import { Button, ButtonLink } from '@/components/interactive/Button'
+import { Icon } from '@/components/interactive/Icon'
 
 /**
  * PageHeader component with consistent styling and behavior
@@ -35,7 +36,7 @@ export interface PageHeaderBreadcrumb {
 export interface PageHeaderProps
   extends Omit<React.HTMLAttributes<HTMLDivElement>, 'title'> {
   /** Header variant */
-  variant?: 'dashboard' | 'detail' | 'form' | 'centered'
+  variant?: 'dashboard'
   /** Optional custom class names */
   className?: string
   /** Page title */
@@ -64,9 +65,6 @@ const baseStyles = 'bg-surface-elevated border-b border-surface-200'
  */
 const variantStyles = {
   dashboard: 'py-6',
-  detail: 'py-4',
-  form: 'py-4',
-  centered: 'py-8 text-center',
 }
 
 /**
@@ -104,7 +102,11 @@ export function PageHeader({
               {breadcrumbs.map((breadcrumb, index) => (
                 <li key={index} className='flex items-center'>
                   {index > 0 && (
-                    <HiChevronRight className='h-4 w-4 mx-2 text-neutral-400' />
+                    <Icon
+                      icon={HiChevronRight}
+                      color='neutral'
+                      className='mx-2'
+                    />
                   )}
                   {breadcrumb.isCurrentPage ? (
                     <span className='text-neutral-900 font-medium'>
@@ -127,22 +129,14 @@ export function PageHeader({
         )}
 
         {/* Header content */}
-        <div className={`${variant === 'centered' ? 'text-center' : ''}`}>
+        <div>
           {/* Title and Actions Row */}
-          <div
-            className={`flex ${variant === 'centered' ? 'flex-col items-center' : 'items-start justify-between'} gap-4 mb-4`}
-          >
-            <div className='flex items-start gap-3'>
+          <div className='flex items-center justify-between gap-4 mb-2'>
+            <div className='flex items-center gap-3 min-w-0 flex-1'>
               {icon && <div className='flex-shrink-0'>{icon}</div>}
-              <div>
-                <h1 className='text-2xl font-bold text-neutral-900 sm:text-3xl'>
-                  {title}
-                </h1>
-                {description && (
-                  <div className='mt-2 text-neutral-600'>{description}</div>
-                )}
-                {metadata && <div className='mt-3'>{metadata}</div>}
-              </div>
+              <h1 className='text-2xl font-bold text-neutral-900 sm:text-3xl truncate'>
+                {title}
+              </h1>
             </div>
 
             {/* Actions */}
@@ -171,6 +165,14 @@ export function PageHeader({
               </div>
             )}
           </div>
+
+          {/* Description - Full Width */}
+          {description && (
+            <div className='text-neutral-600 mb-4'>{description}</div>
+          )}
+
+          {/* Metadata */}
+          {metadata && <div className='mb-4'>{metadata}</div>}
 
           {/* Extra Content */}
           {extraContent && <div>{extraContent}</div>}

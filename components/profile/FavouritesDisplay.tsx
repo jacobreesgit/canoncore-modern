@@ -9,7 +9,7 @@ import {
 } from '@/lib/actions/favourites-actions'
 import { UniverseCard } from '@/components/content/UniverseCard'
 import { Button } from '@/components/interactive/Button'
-import { ContentDisplay } from '@/components/content/ContentDisplay'
+import { ContentGrid } from '@/components/content/ContentGrid'
 
 interface FavouritesDisplayProps {
   user: User
@@ -165,9 +165,8 @@ export function FavouritesDisplay({ user, canEdit }: FavouritesDisplayProps) {
 
       {/* Overall Empty State */}
       {totalFavorites === 0 && (
-        <ContentDisplay
+        <ContentGrid
           items={[]}
-          displayMode='grid'
           renderItem={() => <div />}
           emptyState={
             <div className='text-center py-8'>
@@ -194,9 +193,8 @@ export function FavouritesDisplay({ user, canEdit }: FavouritesDisplayProps) {
 
       {/* Favourites Content */}
       {totalFavorites > 0 && favouritesActiveTab === 'universes' && (
-        <ContentDisplay
+        <ContentGrid
           items={favoriteUniverses}
-          displayMode='grid'
           searchable={true}
           searchPlaceholder='Search favourite universes...'
           filterItems={sortUniverses}
@@ -237,9 +235,9 @@ export function FavouritesDisplay({ user, canEdit }: FavouritesDisplayProps) {
       )}
 
       {totalFavorites > 0 && favouritesActiveTab === 'content' && (
-        <ContentDisplay
+        <ContentGrid
           items={favoriteContent}
-          displayMode='list'
+          gridClasses='space-y-4'
           searchable={true}
           searchPlaceholder='Search favourite content...'
           getSearchText={content =>
