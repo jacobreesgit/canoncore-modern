@@ -68,7 +68,10 @@ export const content = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
     isViewable: boolean('isViewable').default(false).notNull(),
-    mediaType: varchar('mediaType', { length: 50 }).notNull(), // 'video', 'audio', 'text', 'character', 'location', 'item', 'event', 'collection'
+    itemType: varchar('itemType', { length: 50 }).notNull(), // 'video', 'audio', 'text', 'character', 'location', 'item', 'event', 'collection'
+    sourceId: text('sourceId').references(() => sources.id, {
+      onDelete: 'set null',
+    }),
     sourceLink: varchar('sourceLink', { length: 500 }),
     sourceLinkName: varchar('sourceLinkName', { length: 255 }),
     createdAt: timestamp('createdAt', { mode: 'date' }).defaultNow().notNull(),
@@ -79,7 +82,7 @@ export const content = pgTable(
     index('content_universeId_idx').on(table.universeId),
     index('content_userId_idx').on(table.userId),
     index('content_isViewable_idx').on(table.isViewable),
-    index('content_mediaType_idx').on(table.mediaType),
+    index('content_itemType_idx').on(table.itemType),
     index('content_createdAt_idx').on(table.createdAt),
   ]
 )
@@ -103,7 +106,6 @@ export const contentRelationships = pgTable(
     userId: text('userId')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
-    displayOrder: integer('displayOrder').notNull().default(0),
     createdAt: timestamp('createdAt', { mode: 'date' }).defaultNow().notNull(),
   },
   table => [
@@ -152,6 +154,36 @@ export const userProgress = pgTable(
   ]
 )
 
+// Content sources (for origin tracking with custom colors)
+export const sources = pgTable(
+  'sources',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    name: varchar('name', { length: 100 }).notNull(),
+    backgroundColor: varchar('backgroundColor', { length: 7 }).notNull(), // hex color like #ff0000
+    textColor: varchar('textColor', { length: 7 }).notNull(), // hex color like #000000
+    universeId: text('universeId')
+      .notNull()
+      .references(() => universes.id, { onDelete: 'cascade' }),
+    userId: text('userId')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('createdAt', { mode: 'date' }).defaultNow().notNull(),
+  },
+  table => [
+    // Indexes for performance
+    index('sources_universeId_idx').on(table.universeId),
+    index('sources_userId_idx').on(table.userId),
+    // Unique constraint to prevent duplicate source names per universe
+    uniqueIndex('sources_name_universe_unique').on(
+      table.name,
+      table.universeId
+    ),
+  ]
+)
+
 // User favourites (for universes and content)
 export const favorites = pgTable(
   'favorites',
@@ -195,3 +227,5 @@ export type UserProgress = typeof userProgress.$inferSelect
 export type NewUserProgress = typeof userProgress.$inferInsert
 export type Favorite = typeof favorites.$inferSelect
 export type NewFavorite = typeof favorites.$inferInsert
+export type Source = typeof sources.$inferSelect
+export type NewSource = typeof sources.$inferInsert

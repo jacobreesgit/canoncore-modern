@@ -4,22 +4,14 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Universe, Content, User } from '@/lib/types'
 import { PageLayout } from '@/components/layout/PageLayout'
-import { Button, ButtonLink } from '@/components/interactive/Button'
-import { FavouriteButton } from '@/components/interactive/FavouriteButton'
-import { Badge } from '@/components/content/Badge'
-import { ProgressBar } from '@/components/content/ProgressBar'
-import { Tree } from '@/components/content/Tree'
 import { useProgressStore } from '@/lib/stores/progress-store'
 import { type HierarchyNode } from '@/lib/utils/progress'
 import { deleteUniverseAction } from '@/lib/actions/universe-actions'
-import {
-  HiPencil,
-  HiTrash,
-  HiExternalLink,
-  HiEye,
-  HiCollection,
-} from 'react-icons/hi'
-import { Icon } from '@/components/interactive/Icon'
+import { ConfirmModal } from '@/components/interactive/ConfirmModal'
+import { UniverseHeader } from '@/components/universe/UniverseHeader'
+import { UniverseActions } from '@/components/universe/UniverseActions'
+import { UniverseContent } from '@/components/universe/UniverseContent'
+import { HiEye, HiCollection } from 'react-icons/hi'
 
 interface UniverseWithFavourite extends Universe {
   isFavourite?: boolean
@@ -47,6 +39,7 @@ export function UniverseClient({
   const router = useRouter()
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [viewMode, setViewMode] = useState<'tree' | 'flat'>('tree')
 
   const { getUniverseProgress, loadUniverseProgress } = useProgressStore()
 
@@ -88,158 +81,64 @@ export function UniverseClient({
     }
   }
 
-  const pageActions = []
+  const headerConfig = UniverseHeader({
+    universe,
+    universeOwner,
+    universeProgress,
+  })
 
-  if (isOwner) {
-    pageActions.push(
-      {
-        type: 'secondary' as const,
-        label: 'Edit Universe',
-        href: `/universes/${universe.id}/edit`,
-        icon: <Icon icon={HiPencil} />,
-      },
-      {
-        type: 'danger' as const,
-        label: 'Delete Universe',
-        onClick: () => setShowDeleteConfirm(true),
-        icon: <Icon icon={HiTrash} />,
-      }
-    )
-  }
+  // Create add content buttons for page header
+  const addContentActions = isOwner
+    ? [
+        {
+          type: 'primary' as const,
+          label: 'Add Viewable Content',
+          href: `/universes/${universe.id}/content/add-viewable`,
+          icon: <HiEye className='h-4 w-4' />,
+        },
+        {
+          type: 'secondary' as const,
+          label: 'Add Organization',
+          href: `/universes/${universe.id}/content/organise`,
+          icon: <HiCollection className='h-4 w-4' />,
+        },
+      ]
+    : []
 
-  const headerMetadata = (
-    <div className='flex items-center gap-3'>
-      {universe.isPublic ? (
-        <Badge variant='public' size='small'>
-          Public
-        </Badge>
-      ) : (
-        <Badge variant='private' size='small'>
-          Private
-        </Badge>
-      )}
-      {universe.sourceLink && (
-        <a
-          href={universe.sourceLink}
-          target='_blank'
-          rel='noopener noreferrer'
-          className='inline-block'
-        >
-          <Badge
-            variant='info'
-            size='small'
-            className='hover:bg-primary-200 transition-colors cursor-pointer'
-            icon={<Icon icon={HiExternalLink} size='sm' />}
-          >
-            {universe.sourceLinkName || 'Source'}
-          </Badge>
-        </a>
-      )}
-      {universeOwner && (
-        <span className='text-sm text-neutral-600'>
-          Created by {universeOwner.name || universeOwner.email}
-          {universe.createdAt && (
-            <span suppressHydrationWarning>
-              {' '}
-              on {new Date(universe.createdAt).toLocaleDateString()}
-            </span>
-          )}
-        </span>
-      )}
-    </div>
-  )
+  const universeActions = UniverseActions({
+    universe,
+    isOwner,
+    onDelete: () => setShowDeleteConfirm(true),
+  })
 
-  const titleWithFavourite = (
-    <div className='flex items-center gap-2'>
-      <span>{universe.name}</span>
-      <FavouriteButton targetId={universe.id} targetType='universe' size='xl' />
-    </div>
-  )
-
-  const progressExtraContent = (
-    <ProgressBar
-      variant='organisational'
-      value={universeProgress.percentage}
-      showLabel={true}
-    />
-  )
+  const pageActions = [...addContentActions, ...universeActions]
 
   return (
     <PageLayout
       currentPage='dashboard'
       header={{
-        title: titleWithFavourite,
-        description: universe.description || undefined,
-        metadata: headerMetadata,
+        ...headerConfig,
         actions: pageActions,
-        breadcrumbs: [
-          { label: 'Dashboard', href: '/dashboard' },
-          { label: universe.name, href: `/universes/${universe.id}` },
-        ],
-        extraContent: progressExtraContent,
       }}
     >
       {/* Content Hierarchy Display */}
-      <Tree
-        hierarchyTree={hierarchyTree}
+      <UniverseContent
         content={content}
-        title='Content Hierarchy'
-        searchable={true}
-        searchPlaceholder='Search content...'
-        enableBulkSelection={isOwner}
-        button={
-          isOwner ? (
-            <div className='flex gap-2'>
-              <ButtonLink
-                href={`/universes/${universe.id}/content/add-viewable`}
-                variant='primary'
-                icon={<HiEye className='h-4 w-4' />}
-              >
-                Add Viewable Content
-              </ButtonLink>
-              <ButtonLink
-                href={`/universes/${universe.id}/content/organise`}
-                variant='accent'
-                icon={<HiCollection className='h-4 w-4' />}
-              >
-                Add Organization
-              </ButtonLink>
-            </div>
-          ) : undefined
-        }
+        hierarchyTree={hierarchyTree}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
       />
 
       {/* Delete Confirmation Modal */}
-      {showDeleteConfirm && (
-        <div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50'>
-          <div className='bg-white rounded-lg p-6 w-full max-w-md'>
-            <h3 className='text-lg font-medium text-neutral-900 mb-4'>
-              Delete Universe?
-            </h3>
-            <p className='text-neutral-600 mb-6'>
-              Are you sure you want to delete {`"${universe.name}"`}? This
-              action cannot be undone and will delete all content in this
-              universe.
-            </p>
-            <div className='flex justify-end gap-4'>
-              <Button
-                variant='danger'
-                onClick={() => setShowDeleteConfirm(false)}
-                disabled={isDeleting}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant='danger'
-                onClick={handleDeleteUniverse}
-                disabled={isDeleting}
-              >
-                {isDeleting ? 'Deleting...' : 'Delete Universe'}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmModal
+        isOpen={showDeleteConfirm}
+        title='Delete Universe?'
+        message={`Are you sure you want to delete "${universe.name}"? This action cannot be undone and will delete all content in this universe.`}
+        confirmText='Delete Universe'
+        isLoading={isDeleting}
+        onConfirm={handleDeleteUniverse}
+        onCancel={() => setShowDeleteConfirm(false)}
+      />
     </PageLayout>
   )
 }

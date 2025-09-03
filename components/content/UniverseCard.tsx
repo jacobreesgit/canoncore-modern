@@ -27,7 +27,7 @@ export interface UniverseCardProps {
   currentUserId?: string
 }
 
-export function UniverseCard({
+export const UniverseCard = React.memo(function UniverseCard({
   className = '',
   universe,
   href,
@@ -42,7 +42,7 @@ export function UniverseCard({
     <Link
       href={href}
       className={cn(
-        'block bg-white border border-neutral-200 rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer p-6 h-full',
+        'block bg-white border border-neutral-200 rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer p-4 h-full',
         className
       )}
     >
@@ -101,6 +101,6 @@ export function UniverseCard({
       </div>
     </Link>
   )
-}
+})
 
 export default UniverseCard

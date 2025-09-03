@@ -1,6 +1,6 @@
 {
-  "id": "b0316d4b-82c9-4f6d-9b45-952a169480ac",
-  "prevId": "4551d762-9fd3-45f7-9114-052c05188c6b",
+  "id": "487edfbe-2949-4971-95d0-6e3893df5d91",
+  "prevId": "9b369784-f839-4a8a-9cbb-20df9cb236dc",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -45,11 +45,17 @@
           "notNull": true,
           "default": false
         },
-        "mediaType": {
-          "name": "mediaType",
+        "itemType": {
+          "name": "itemType",
           "type": "varchar(50)",
           "primaryKey": false,
           "notNull": true
+        },
+        "sourceId": {
+          "name": "sourceId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
         },
         "sourceLink": {
           "name": "sourceLink",
@@ -60,12 +66,6 @@
         "sourceLinkName": {
           "name": "sourceLinkName",
           "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "lastAccessedAt": {
-          "name": "lastAccessedAt",
-          "type": "timestamp",
           "primaryKey": false,
           "notNull": false
         },
@@ -130,11 +130,11 @@
           "method": "btree",
           "with": {}
         },
-        "content_mediaType_idx": {
-          "name": "content_mediaType_idx",
+        "content_itemType_idx": {
+          "name": "content_itemType_idx",
           "columns": [
             {
-              "expression": "mediaType",
+              "expression": "itemType",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -179,6 +179,15 @@
           "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
+        },
+        "content_sourceId_sources_id_fk": {
+          "name": "content_sourceId_sources_id_fk",
+          "tableFrom": "content",
+          "tableTo": "sources",
+          "columnsFrom": ["sourceId"],
+          "columnsTo": ["id"],
+          "onDelete": "set null",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -201,7 +210,7 @@
           "name": "parentId",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "childId": {
           "name": "childId",
@@ -220,18 +229,6 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true
-        },
-        "displayOrder": {
-          "name": "displayOrder",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "contextDescription": {
-          "name": "contextDescription",
-          "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": false
         },
         "createdAt": {
           "name": "createdAt",
@@ -480,6 +477,133 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.sources": {
+      "name": "sources",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "backgroundColor": {
+          "name": "backgroundColor",
+          "type": "varchar(7)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "textColor": {
+          "name": "textColor",
+          "type": "varchar(7)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "universeId": {
+          "name": "universeId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "userId": {
+          "name": "userId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "sources_universeId_idx": {
+          "name": "sources_universeId_idx",
+          "columns": [
+            {
+              "expression": "universeId",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "sources_userId_idx": {
+          "name": "sources_userId_idx",
+          "columns": [
+            {
+              "expression": "userId",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "sources_name_universe_unique": {
+          "name": "sources_name_universe_unique",
+          "columns": [
+            {
+              "expression": "name",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "universeId",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "sources_universeId_universes_id_fk": {
+          "name": "sources_universeId_universes_id_fk",
+          "tableFrom": "sources",
+          "tableTo": "universes",
+          "columnsFrom": ["universeId"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "sources_userId_user_id_fk": {
+          "name": "sources_userId_user_id_fk",
+          "tableFrom": "sources",
+          "tableTo": "user",
+          "columnsFrom": ["userId"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.universes": {
       "name": "universes",
       "schema": "",
@@ -641,13 +765,6 @@
           "notNull": true,
           "default": 0
         },
-        "lastAccessedAt": {
-          "name": "lastAccessedAt",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
         "createdAt": {
           "name": "createdAt",
           "type": "timestamp",
@@ -787,12 +904,6 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true
-        },
-        "emailVerified": {
-          "name": "emailVerified",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": false
         },
         "image": {
           "name": "image",

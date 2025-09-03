@@ -34,7 +34,14 @@ export async function createUniverseAction(formData: FormData) {
     // Basic URL validation if provided
     if (sourceLink && sourceLink.trim()) {
       try {
-        new URL(sourceLink.trim())
+        let urlToValidate = sourceLink.trim()
+        if (
+          !urlToValidate.startsWith('http://') &&
+          !urlToValidate.startsWith('https://')
+        ) {
+          urlToValidate = 'https://' + urlToValidate
+        }
+        new URL(urlToValidate)
       } catch {
         return { success: false, error: 'Please enter a valid source URL' }
       }
@@ -94,7 +101,14 @@ export async function updateUniverseAction(
     // Basic URL validation if provided
     if (sourceLink && sourceLink.trim()) {
       try {
-        new URL(sourceLink.trim())
+        let urlToValidate = sourceLink.trim()
+        if (
+          !urlToValidate.startsWith('http://') &&
+          !urlToValidate.startsWith('https://')
+        ) {
+          urlToValidate = 'https://' + urlToValidate
+        }
+        new URL(urlToValidate)
       } catch {
         return { success: false, error: 'Please enter a valid source URL' }
       }

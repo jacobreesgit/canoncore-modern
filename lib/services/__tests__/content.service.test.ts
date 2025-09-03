@@ -26,7 +26,8 @@ const createMockContent = (overrides: Partial<Content> = {}): Content => ({
   universeId: 'test-universe-123',
   userId: 'test-user-123',
   isViewable: true,
-  mediaType: 'video',
+  itemType: 'video',
+  sourceId: null,
   sourceLink: 'https://example.com/content',
   sourceLinkName: 'Example Source',
   createdAt: new Date(),
@@ -121,7 +122,7 @@ describe('Content Service', () => {
         universeId: 'universe-123',
         userId: 'user-123',
         isViewable: true,
-        mediaType: 'video',
+        itemType: 'video',
       }
       const createdContent = createMockContent(newContent)
       const mockReturning = vi.fn().mockResolvedValue([createdContent])
@@ -146,7 +147,7 @@ describe('Content Service', () => {
         universeId: 'universe-123',
         userId: 'user-123',
         isViewable: true,
-        mediaType: 'video',
+        itemType: 'video',
       }
       const mockReturning = vi
         .fn()

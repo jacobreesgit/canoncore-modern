@@ -155,10 +155,6 @@ body {
 }
 
 /* Tree Component Styles */
-.tree > div:hover {
-  border-color: #000;
-}
-
 .tree div[role='treeitem']:focus {
   outline: none;
 }
@@ -177,5 +173,9 @@ body {
 }
 
 .tree .treeitem.searchmatch {
-  background-color: #e1f8ff;
+  background-color: oklch(0.97 0.013 264.052); /* primary-50 */
+}
+
+.tree .treeitem.checked {
+  background-color: oklch(0.97 0.013 264.052); /* primary-50 */
 }

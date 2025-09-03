@@ -1,5 +1,9 @@
 import { getCurrentUser } from '@/lib/auth-helpers'
-import { universeService, contentService } from '@/lib/services'
+import {
+  universeService,
+  contentService,
+  relationshipService,
+} from '@/lib/services'
 import { PageLayout } from '@/components/layout/PageLayout'
 import { OrganiseClient } from './organise-client'
 import { redirect, notFound } from 'next/navigation'
@@ -43,6 +47,9 @@ export default async function OrganisePage({
   // Fetch existing content for parent selection
   const existingContent = await contentService.getByUniverse(id)
 
+  // Fetch relationships for hierarchical display
+  const relationships = await relationshipService.getByUniverse(id)
+
   // Get suggested parent from query params
   const parentId = resolvedSearchParams.parent as string | undefined
   const suggestedParent = parentId
@@ -69,6 +76,7 @@ export default async function OrganisePage({
       <OrganiseClient
         universe={universe}
         existingContent={existingContent}
+        relationships={relationships}
         suggestedParent={suggestedParent}
       />
     </PageLayout>

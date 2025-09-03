@@ -31,7 +31,6 @@ const createMockRelationship = (
   childId: 'child-1',
   universeId: 'universe-1',
   userId: 'user-1',
-  displayOrder: 0,
   createdAt: new Date(),
   ...overrides,
 })
@@ -42,8 +41,9 @@ const createMockContent = (overrides: Partial<Content> = {}): Content => ({
   userId: 'user-1',
   name: 'Test Content',
   description: 'Test Description',
-  mediaType: 'text',
+  itemType: 'text',
   isViewable: true,
+  sourceId: null,
   sourceLink: 'https://example.com',
   sourceLinkName: null,
   createdAt: new Date(),
@@ -338,9 +338,9 @@ describe('Relationship Service', () => {
         createMockContent({ id: 'child-2', name: 'Child 2' }),
       ]
       const relationships = [
-        { parentId: null, childId: 'parent-1', displayOrder: 0 }, // Make parent-1 a root node
-        { parentId: 'parent-1', childId: 'child-1', displayOrder: 0 },
-        { parentId: 'parent-1', childId: 'child-2', displayOrder: 1 },
+        { parentId: null, childId: 'parent-1' }, // Make parent-1 a root node
+        { parentId: 'parent-1', childId: 'child-1' },
+        { parentId: 'parent-1', childId: 'child-2' },
       ]
 
       const tree = service.buildHierarchyTree(content, relationships)
@@ -359,9 +359,9 @@ describe('Relationship Service', () => {
         createMockContent({ id: 'level2', name: 'Level 2' }),
       ]
       const relationships = [
-        { parentId: null, childId: 'root', displayOrder: 0 }, // Make root a root node
-        { parentId: 'root', childId: 'level1', displayOrder: 0 },
-        { parentId: 'level1', childId: 'level2', displayOrder: 0 },
+        { parentId: null, childId: 'root' }, // Make root a root node
+        { parentId: 'root', childId: 'level1' },
+        { parentId: 'level1', childId: 'level2' },
       ]
 
       const tree = service.buildHierarchyTree(content, relationships)
@@ -382,10 +382,10 @@ describe('Relationship Service', () => {
         createMockContent({ id: 'child2', name: 'Child 2' }),
       ]
       const relationships = [
-        { parentId: null, childId: 'root1', displayOrder: 0 }, // Make root1 a root node
-        { parentId: null, childId: 'root2', displayOrder: 1 }, // Make root2 a root node
-        { parentId: 'root1', childId: 'child1', displayOrder: 0 },
-        { parentId: 'root2', childId: 'child2', displayOrder: 0 },
+        { parentId: null, childId: 'root1' }, // Make root1 a root node
+        { parentId: null, childId: 'root2' }, // Make root2 a root node
+        { parentId: 'root1', childId: 'child1' },
+        { parentId: 'root2', childId: 'child2' },
       ]
 
       const tree = service.buildHierarchyTree(content, relationships)
@@ -403,10 +403,9 @@ describe('Relationship Service', () => {
       const relationships: Array<{
         parentId: string | null
         childId: string
-        displayOrder: number
       }> = [
-        { parentId: null, childId: 'orphan1', displayOrder: 0 }, // Orphan as root
-        { parentId: null, childId: 'orphan2', displayOrder: 1 }, // Orphan as root
+        { parentId: null, childId: 'orphan1' }, // Orphan as root
+        { parentId: null, childId: 'orphan2' }, // Orphan as root
       ]
 
       const tree = service.buildHierarchyTree(content, relationships)
@@ -430,8 +429,8 @@ describe('Relationship Service', () => {
         createMockContent({ id: 'child-1', name: 'Child' }),
       ]
       const mockRelationships = [
-        { parentId: null, childId: 'parent-1', displayOrder: 0 },
-        { parentId: 'parent-1', childId: 'child-1', displayOrder: 0 },
+        { parentId: null, childId: 'parent-1' },
+        { parentId: 'parent-1', childId: 'child-1' },
       ]
 
       const mockWhere = vi.fn().mockResolvedValueOnce(mockContent)
@@ -618,13 +617,6 @@ describe('Relationship Service', () => {
       const mockValues = vi.fn().mockReturnValue({ returning: mockReturning })
       mockDb.insert.mockReturnValue({ values: mockValues })
 
-      // Mock getChildren: first call (inside create) returns [], second call returns the data
-      vi.spyOn(service, 'getChildren')
-        .mockResolvedValueOnce([]) // For create method
-        .mockResolvedValueOnce([
-          { parentId: 'parent-1', childId: 'child-1', displayOrder: 0 },
-        ]) // For test query
-
       // Create relationship
       const created = await service.create(
         'parent-1',
@@ -633,6 +625,13 @@ describe('Relationship Service', () => {
         'user-1'
       )
       expect(created).toEqual(mockRelationship)
+
+      // Mock query for getChildren - setup new mock chain for the query
+      const mockChildrenResult = [{ parentId: 'parent-1', childId: 'child-1' }]
+      const mockOrderBy = vi.fn().mockResolvedValue(mockChildrenResult)
+      const mockWhere = vi.fn().mockReturnValue({ orderBy: mockOrderBy })
+      const mockFrom = vi.fn().mockReturnValue({ where: mockWhere })
+      mockDb.select.mockReturnValue({ from: mockFrom })
 
       // Query it back
       const children = await service.getChildren('parent-1')
@@ -647,9 +646,9 @@ describe('Relationship Service', () => {
         createMockContent({ id: 'C', name: 'C' }),
       ]
       const mockRelationships = [
-        { parentId: null, childId: 'A', displayOrder: 0 },
-        { parentId: 'A', childId: 'B', displayOrder: 0 },
-        { parentId: 'B', childId: 'C', displayOrder: 0 },
+        { parentId: null, childId: 'A' },
+        { parentId: 'A', childId: 'B' },
+        { parentId: 'B', childId: 'C' },
       ]
 
       // Build hierarchy

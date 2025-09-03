@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Universe, Content } from '@/lib/types'
+import { Universe, Content, Source } from '@/lib/types'
 import {
   createContentAction,
   ContentActionResult,
@@ -11,10 +11,12 @@ import { FormField } from '@/components/forms/FormField'
 import { FormInput } from '@/components/forms/FormInput'
 import { FormTextarea } from '@/components/forms/FormTextarea'
 import { FormSelect } from '@/components/forms/FormSelect'
+import { HierarchicalSelect } from '@/components/forms/HierarchicalSelect'
+import { SourceSelect } from '@/components/forms/SourceSelect'
 import { FormActions } from '@/components/forms/FormActions'
 import { FormError } from '@/components/forms/FormError'
 
-const viewableMediaTypes = [
+const viewableItemTypes = [
   {
     value: 'video',
     label: 'Movies & Episodes',
@@ -35,7 +37,9 @@ const viewableMediaTypes = [
 interface AddViewableClientProps {
   universe: Universe
   existingContent: Content[]
+  relationships: { parentId: string | null; childId: string }[]
   suggestedParent: Content | null
+  sources: Source[]
 }
 
 /**
@@ -44,17 +48,18 @@ interface AddViewableClientProps {
 export function AddViewableClient({
   universe,
   existingContent,
+  relationships,
   suggestedParent,
+  sources,
 }: AddViewableClientProps) {
   const router = useRouter()
   const [selectedParentId, setSelectedParentId] = useState(
     suggestedParent?.id || ''
   )
+  const [selectedSourceId, setSelectedSourceId] = useState('')
+  const [currentSources, setCurrentSources] = useState(sources)
 
-  // Filter content that can be parents (ALL content can be parents for flexibility)
-  const potentialParents = existingContent.filter(
-    c => c.id !== suggestedParent?.id
-  )
+  // We'll show all content in hierarchy now, with viewable content disabled
 
   // React 19: useActionState for form management
   const [state, formAction, isPending] = useActionState(
@@ -66,7 +71,7 @@ export function AddViewableClient({
       }
       enhancedFormData.append('universeId', universe.id)
       enhancedFormData.append('isViewable', 'true')
-      enhancedFormData.append('mediaType', formData.get('mediaType') as string)
+      enhancedFormData.append('itemType', formData.get('itemType') as string)
 
       return createContentAction(enhancedFormData)
     },
@@ -104,8 +109,8 @@ export function AddViewableClient({
         </FormField>
 
         <FormField label='Content Type' required>
-          <FormSelect name='mediaType' disabled={isPending} required>
-            {viewableMediaTypes.map(type => (
+          <FormSelect name='itemType' disabled={isPending} required>
+            {viewableItemTypes.map(type => (
               <option key={type.value} value={type.value}>
                 {type.label}
               </option>
@@ -116,25 +121,39 @@ export function AddViewableClient({
           </p>
         </FormField>
 
-        {potentialParents.length > 0 && (
+        <FormField label='Source/Origin (Optional)'>
+          <SourceSelect
+            name='sourceId'
+            universeId={universe.id}
+            sources={currentSources}
+            value={selectedSourceId}
+            onChange={e => setSelectedSourceId(e.target.value)}
+            disabled={isPending}
+            onSourceCreated={newSource => {
+              setCurrentSources(prev => [...prev, newSource])
+              setSelectedSourceId(newSource.id)
+            }}
+          />
+          <p className='text-sm text-neutral-600 mt-1'>
+            Tag where this content originates from (e.g., Disney+, Television).
+            Badges show only in Flat View.
+          </p>
+        </FormField>
+
+        {existingContent.length > 0 && (
           <FormField label='Parent Content (Optional)'>
-            <FormSelect
+            <HierarchicalSelect
               name='parentId'
               value={selectedParentId}
               onChange={e => setSelectedParentId(e.target.value)}
               disabled={isPending}
-            >
-              <option value=''>No parent (top level)</option>
-              {potentialParents.map(parent => (
-                <option key={parent.id} value={parent.id}>
-                  {parent.name} (
-                  {parent.isViewable ? 'Viewable' : 'Organizational'})
-                </option>
-              ))}
-            </FormSelect>
+              allContent={existingContent}
+              relationships={relationships}
+              noneOptionLabel='No parent (top level)'
+            />
             <p className='text-sm text-neutral-600 mt-1'>
-              Organize this content under another content item (e.g., Episode
-              under Season)
+              Organize this content under another content item. Viewable content
+              is shown for context but disabled.
             </p>
           </FormField>
         )}

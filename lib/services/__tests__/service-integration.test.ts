@@ -46,7 +46,8 @@ const createMockContent = (): Content => ({
   universeId: 'universe-1',
   userId: 'user-1',
   isViewable: true,
-  mediaType: 'video',
+  itemType: 'video',
+  sourceId: null,
   sourceLink: null,
   sourceLinkName: null,
   createdAt: new Date(),
@@ -96,7 +97,6 @@ describe('Service Integration Tests', () => {
         childId: 'content-1',
         universeId: 'universe-1',
         userId: 'user-1',
-        displayOrder: 0,
         createdAt: new Date(),
       }
 
@@ -121,7 +121,7 @@ describe('Service Integration Tests', () => {
         universeId: mockContent.universeId,
         userId: mockContent.userId,
         isViewable: mockContent.isViewable,
-        mediaType: mockContent.mediaType,
+        itemType: mockContent.itemType,
       })
 
       expect(createdContent).toEqual(mockContent)
@@ -189,7 +189,7 @@ describe('Service Integration Tests', () => {
         universeId: mockContent.universeId,
         userId: mockUser.id,
         isViewable: mockContent.isViewable,
-        mediaType: mockContent.mediaType,
+        itemType: mockContent.itemType,
       })
 
       expect(content?.userId).toBe(user?.id)

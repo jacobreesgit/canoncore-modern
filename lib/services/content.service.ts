@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { eq, and, desc, asc, sql } from 'drizzle-orm'
+import { eq, and, desc, asc, sql, inArray } from 'drizzle-orm'
 import type { Content, NewContent } from '@/lib/db/schema'
 
 /**
@@ -176,6 +176,101 @@ export class ContentService {
   }
 
   /**
+   * Get content by universe ID with sources and user progress
+   */
+  async getByUniverseWithSourcesAndProgress(
+    universeId: string,
+    userId: string
+  ): Promise<
+    (Content & {
+      progress?: number
+      sourceName?: string | null
+      sourceBackgroundColor?: string | null
+      sourceTextColor?: string | null
+    })[]
+  > {
+    try {
+      const { db } = await import('@/lib/db')
+      const { content, sources, userProgress } = await import('@/lib/db/schema')
+
+      // Get all content with sources
+      const contentWithSources = await db
+        .select({
+          id: content.id,
+          name: content.name,
+          description: content.description,
+          universeId: content.universeId,
+          userId: content.userId,
+          isViewable: content.isViewable,
+          itemType: content.itemType,
+          sourceId: content.sourceId,
+          sourceLink: content.sourceLink,
+          sourceLinkName: content.sourceLinkName,
+          createdAt: content.createdAt,
+          updatedAt: content.updatedAt,
+          sourceName: sources.name,
+          sourceBackgroundColor: sources.backgroundColor,
+          sourceTextColor: sources.textColor,
+        })
+        .from(content)
+        .leftJoin(sources, eq(content.sourceId, sources.id))
+        .where(eq(content.universeId, universeId))
+        .orderBy(asc(content.createdAt))
+
+      // Get user progress for all content in this universe
+      const progressData = await db
+        .select({
+          contentId: userProgress.contentId,
+          progress: userProgress.progress,
+        })
+        .from(userProgress)
+        .where(
+          and(
+            eq(userProgress.universeId, universeId),
+            eq(userProgress.userId, userId)
+          )
+        )
+
+      const progressMap = new Map(
+        progressData.map(p => [p.contentId, p.progress])
+      )
+
+      // Calculate progress for each content item
+      const contentWithProgress = await Promise.all(
+        contentWithSources.map(async contentItem => {
+          let progress = 0
+
+          if (contentItem.isViewable) {
+            // Direct progress for viewable content
+            progress = progressMap.get(contentItem.id) || 0
+          } else {
+            // Calculated progress for organisational content
+            progress = await this.calculateOrganisationalProgress(
+              contentItem.id,
+              userId
+            )
+          }
+
+          return {
+            ...contentItem,
+            progress,
+          }
+        })
+      )
+
+      return contentWithProgress
+    } catch (error) {
+      console.error(
+        'Error fetching universe content with sources and progress:',
+        error
+      )
+      throw new Error(
+        'Failed to fetch universe content with sources and progress'
+      )
+    }
+  }
+
+  /**
    * Get content by universe ID with user progress
    */
   async getByUniverseWithUserProgress(
@@ -313,7 +408,9 @@ export class ContentService {
         .from(content)
         .where(
           and(
-            sql`${content.id} = ANY(${childIds})`,
+            childIds.length === 1
+              ? eq(content.id, childIds[0])
+              : inArray(content.id, childIds),
             eq(content.isViewable, true)
           )
         )
@@ -323,12 +420,15 @@ export class ContentService {
       }
 
       // Get progress for viewable children
+      const viewableChildIds = viewableChildren.map(c => c.id)
       const childProgress = await db
         .select({ progress: userProgress.progress })
         .from(userProgress)
         .where(
           and(
-            sql`${userProgress.contentId} = ANY(${viewableChildren.map(c => c.id)})`,
+            viewableChildIds.length === 1
+              ? eq(userProgress.contentId, viewableChildIds[0])
+              : inArray(userProgress.contentId, viewableChildIds),
             eq(userProgress.userId, userId)
           )
         )
@@ -350,6 +450,40 @@ export class ContentService {
     } catch (error) {
       console.error('Error calculating organisational progress:', error)
       return 0
+    }
+  }
+
+  /**
+   * Get universe by content ID
+   */
+  async getUniverse(contentId: string) {
+    try {
+      const { db } = await import('@/lib/db')
+      const { content, universes } = await import('@/lib/db/schema')
+
+      const [result] = await db
+        .select({
+          id: universes.id,
+          name: universes.name,
+          description: universes.description,
+          isPublic: universes.isPublic,
+          userId: universes.userId,
+          createdAt: universes.createdAt,
+          updatedAt: universes.updatedAt,
+          sourceLink: universes.sourceLink,
+          sourceLinkName: universes.sourceLinkName,
+        })
+        .from(content)
+        .innerJoin(universes, eq(content.universeId, universes.id))
+        .where(eq(content.id, contentId))
+        .limit(1)
+
+      return result || null
+    } catch (error) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error fetching universe for content:', error)
+      }
+      throw new Error('Failed to fetch universe for content')
     }
   }
 
@@ -379,6 +513,32 @@ export class ContentService {
     } catch (error) {
       console.error('Error searching content:', error)
       throw new Error('Failed to search content')
+    }
+  }
+
+  /**
+   * Get source information for content
+   */
+  async getContentSource(contentId: string) {
+    try {
+      const { db } = await import('@/lib/db')
+      const { content, sources } = await import('@/lib/db/schema')
+
+      const [result] = await db
+        .select({
+          sourceName: sources.name,
+          sourceBackgroundColor: sources.backgroundColor,
+          sourceTextColor: sources.textColor,
+        })
+        .from(content)
+        .leftJoin(sources, eq(content.sourceId, sources.id))
+        .where(eq(content.id, contentId))
+        .limit(1)
+
+      return result || null
+    } catch (error) {
+      console.error('Error fetching content source:', error)
+      return null
     }
   }
 }

@@ -8,6 +8,7 @@ export interface ProgressBarProps extends React.HTMLAttributes<HTMLDivElement> {
   className?: string
   value: number
   showLabel?: boolean
+  showBar?: boolean
 }
 
 const variantColors = {
@@ -20,27 +21,36 @@ export function ProgressBar({
   className = '',
   value,
   showLabel = true,
+  showBar = true,
   ...props
 }: ProgressBarProps) {
   const normalizedValue = Math.min(Math.max(value || 0, 0), 100)
   const progressColor = variantColors[variant]
 
+  const shouldShowLabel = showLabel || !showBar
+  const shouldShowBar = showBar || !showLabel
+
   return (
-    <div className={cn('progress-bar w-full', className)} {...props}>
-      {showLabel && (
-        <div className='flex justify-end items-center text-sm text-neutral-600 mb-1'>
+    <div
+      className={cn('progress-bar', shouldShowBar && 'w-full', className)}
+      {...props}
+    >
+      {shouldShowLabel && (
+        <div className='flex justify-start items-center text-sm text-neutral-600 mb-1'>
           <span>{Math.round(normalizedValue)}%</span>
         </div>
       )}
-      <div className='w-full bg-neutral-200 rounded-full h-2'>
-        <div
-          className={cn(
-            progressColor,
-            'h-2 rounded-full transition-all duration-300 ease-in-out'
-          )}
-          style={{ width: `${normalizedValue}%` }}
-        />
-      </div>
+      {shouldShowBar && (
+        <div className='w-full bg-neutral-200 rounded-full h-2'>
+          <div
+            className={cn(
+              progressColor,
+              'h-2 rounded-full transition-all duration-300 ease-in-out'
+            )}
+            style={{ width: `${normalizedValue}%` }}
+          />
+        </div>
+      )}
     </div>
   )
 }

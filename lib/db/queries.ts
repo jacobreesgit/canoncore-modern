@@ -132,7 +132,7 @@ export class DatabaseQueries {
       universeId: string
       userId: string
       isViewable: boolean
-      mediaType: string | null
+      itemType: string | null
       createdAt: Date
       updatedAt: Date
       isCompleted?: boolean
@@ -146,7 +146,7 @@ export class DatabaseQueries {
         universeId: content.universeId,
         userId: content.userId,
         isViewable: content.isViewable,
-        mediaType: content.mediaType,
+        itemType: content.itemType,
         createdAt: content.createdAt,
         updatedAt: content.updatedAt,
         isCompleted: sql<boolean>`${userProgress.progress} >= 100`,

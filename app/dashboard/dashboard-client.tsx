@@ -1,5 +1,6 @@
 'use client'
 
+import { useCallback } from 'react'
 import { Universe } from '@/lib/db/schema'
 import { PageLayout } from '@/components/layout/PageLayout'
 import { UniverseCard } from '@/components/content/UniverseCard'
@@ -17,27 +18,30 @@ interface DashboardClientProps {
 }
 
 export function DashboardClient({ user, universes }: DashboardClientProps) {
-  // Sort universes function
-  const sortUniverses = (universes: Universe[], sortBy: string): Universe[] => {
-    const sorted = [...universes]
-    switch (sortBy) {
-      case 'oldest':
-        return sorted.sort(
-          (a, b) =>
-            new Date(a.createdAt || 0).getTime() -
-            new Date(b.createdAt || 0).getTime()
-        )
-      case 'name':
-        return sorted.sort((a, b) => a.name.localeCompare(b.name))
-      case 'newest':
-      default:
-        return sorted.sort(
-          (a, b) =>
-            new Date(b.createdAt || 0).getTime() -
-            new Date(a.createdAt || 0).getTime()
-        )
-    }
-  }
+  // Sort universes function - memoized to prevent unnecessary re-renders
+  const sortUniverses = useCallback(
+    (universes: Universe[], sortBy: string): Universe[] => {
+      const sorted = [...universes]
+      switch (sortBy) {
+        case 'oldest':
+          return sorted.sort(
+            (a, b) =>
+              new Date(a.createdAt || 0).getTime() -
+              new Date(b.createdAt || 0).getTime()
+          )
+        case 'name':
+          return sorted.sort((a, b) => a.name.localeCompare(b.name))
+        case 'newest':
+        default:
+          return sorted.sort(
+            (a, b) =>
+              new Date(b.createdAt || 0).getTime() -
+              new Date(a.createdAt || 0).getTime()
+          )
+      }
+    },
+    []
+  )
 
   return (
     <PageLayout
@@ -66,7 +70,7 @@ export function DashboardClient({ user, universes }: DashboardClientProps) {
         )}
         emptyStateTitle='No universes yet'
         emptyStateDescription="Start organizing your favorite franchises by creating your first universe using the 'Create Universe' button above."
-        button={
+        actions={
           <ButtonLink href='/universes/create' variant='primary'>
             Create Universe
           </ButtonLink>

@@ -1,5 +1,10 @@
 import { getCurrentUser } from '@/lib/auth-helpers'
-import { universeService, contentService } from '@/lib/services'
+import {
+  universeService,
+  contentService,
+  relationshipService,
+  sourceService,
+} from '@/lib/services'
 import { PageLayout } from '@/components/layout/PageLayout'
 import { AddViewableClient } from './add-viewable-client'
 import { redirect, notFound } from 'next/navigation'
@@ -43,6 +48,12 @@ export default async function AddViewablePage({
   // Fetch existing content for parent selection
   const existingContent = await contentService.getByUniverse(id)
 
+  // Fetch relationships for hierarchical display
+  const relationships = await relationshipService.getByUniverse(id)
+
+  // Fetch sources for the universe
+  const sources = await sourceService.getByUniverse(id, user.id)
+
   // Get suggested parent from query params
   const parentId = resolvedSearchParams.parent as string | undefined
   const suggestedParent = parentId
@@ -68,7 +79,9 @@ export default async function AddViewablePage({
       <AddViewableClient
         universe={universe}
         existingContent={existingContent}
+        relationships={relationships}
         suggestedParent={suggestedParent}
+        sources={sources}
       />
     </PageLayout>
   )

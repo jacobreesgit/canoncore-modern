@@ -5,55 +5,39 @@ import { ContentDisplay } from './ContentDisplay'
 import { SearchBar } from '@/components/interactive/SearchBar'
 import { Button } from '@/components/interactive/Button'
 
-export interface FilterOption {
-  key: string
-  label: string
-  value: string
-}
-
 export interface ContentGridProps<T = unknown> {
   /** Items to display */
   items: T[]
   /** Whether to show search functionality */
   searchable?: boolean
-  /** Whether to show filter functionality */
-  filterable?: boolean
-  /** Filter options configuration */
-  filterOptions?: FilterOption[]
-  /** Current filter state */
-  currentFilter?: string
   /** Search placeholder text */
   searchPlaceholder?: string
   /** Function to render each item */
   renderItem: (item: T, index: number) => ReactNode
   /** Function to extract searchable text from items */
   getSearchText?: (item: T) => string
-  /** Function to filter items */
-  filterItems?: (items: T[], filterKey: string) => T[]
+  /** Function to filter items (for sorting/filtering) */
+  filterItems?: (items: T[], sortBy: string) => T[]
   /** Empty state content */
   emptyState?: ReactNode
   /** Empty state title */
   emptyStateTitle?: string
   /** Empty state description */
   emptyStateDescription?: string
-  /** Button that appears in header when items exist, or in empty state when no items */
-  button?: ReactNode
+  /** Actions that appear in header when items exist, or in empty state when no items */
+  actions?: ReactNode
   /** No results state content */
   noResultsState?: ReactNode
   /** Section title */
   title?: string
   /** Section description */
   description?: string
-  /** Additional header actions */
-  headerActions?: ReactNode
   /** Container className */
   className?: string
   /** Grid layout classes */
   gridClasses?: string
   /** Callback when search changes */
   onSearchChange?: (query: string) => void
-  /** Callback when filter changes */
-  onFilterChange?: (filter: string) => void
 }
 
 /**
@@ -65,41 +49,25 @@ export interface ContentGridProps<T = unknown> {
 export function ContentGrid<T>({
   items,
   searchable = true,
-  filterable = true,
-  filterOptions = [
-    { key: 'newest', label: 'Newest', value: 'newest' },
-    { key: 'oldest', label: 'Oldest', value: 'oldest' },
-    { key: 'name', label: 'Name (A-Z)', value: 'name' },
-  ],
-  currentFilter = 'newest',
   searchPlaceholder = 'Search...',
   renderItem,
   getSearchText = (item: T) => (item as { name?: string }).name || String(item),
-  filterItems,
   emptyState,
   emptyStateTitle = 'No items yet',
   emptyStateDescription = 'Get started by adding your first item.',
-  button,
+  actions,
   noResultsState,
   title,
   description,
-  headerActions,
   className = '',
   gridClasses = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6',
   onSearchChange,
-  onFilterChange,
 }: ContentGridProps<T>) {
   const [searchQuery, setSearchQuery] = useState('')
-  const [activeFilter, setActiveFilter] = useState(currentFilter)
 
-  // Filter and search items
+  // Search items
   const processedItems = useMemo(() => {
     let result = items
-
-    // Apply custom filter if provided
-    if (filterItems && activeFilter) {
-      result = filterItems(result, activeFilter)
-    }
 
     // Apply search filter
     if (searchQuery.trim()) {
@@ -110,16 +78,11 @@ export function ContentGrid<T>({
     }
 
     return result
-  }, [items, searchQuery, activeFilter, filterItems, getSearchText])
+  }, [items, searchQuery, getSearchText])
 
   const handleSearchChange = (query: string) => {
     setSearchQuery(query)
     onSearchChange?.(query)
-  }
-
-  const handleFilterChange = (filter: string) => {
-    setActiveFilter(filter)
-    onFilterChange?.(filter)
   }
 
   const clearSearch = () => {
@@ -130,14 +93,13 @@ export function ContentGrid<T>({
   const hasItems = items.length > 0
   const hasResults = processedItems.length > 0
   const isSearching = searchQuery.trim().length > 0
-  const showControls = searchable || filterable
+  const showControls = searchable
 
   return (
     <ContentDisplay
       title={title}
       description={description}
-      button={hasItems ? button : undefined}
-      headerActions={headerActions}
+      actions={actions}
       className={className}
     >
       {/* Search and Filter Controls */}
@@ -152,29 +114,6 @@ export function ContentGrid<T>({
                   onChange={e => handleSearchChange(e.target.value)}
                   placeholder={searchPlaceholder}
                 />
-              </div>
-            )}
-
-            {/* Filter Section */}
-            {filterable && (
-              <div className='flex items-center gap-4 flex-wrap'>
-                <span className='text-sm font-medium text-neutral-700 whitespace-nowrap'>
-                  Sort by:
-                </span>
-                <div className='flex gap-1.5'>
-                  {filterOptions.map(option => (
-                    <Button
-                      key={option.key}
-                      variant={
-                        activeFilter === option.value ? 'primary' : 'secondary'
-                      }
-                      size='small'
-                      onClick={() => handleFilterChange(option.value)}
-                    >
-                      {option.label}
-                    </Button>
-                  ))}
-                </div>
               </div>
             )}
           </div>
@@ -192,7 +131,7 @@ export function ContentGrid<T>({
                   {emptyStateTitle}
                 </h3>
                 <p className='text-neutral-600 mb-6'>{emptyStateDescription}</p>
-                {button && <div>{button}</div>}
+                {actions && <div>{actions}</div>}
               </>
             )}
           </div>

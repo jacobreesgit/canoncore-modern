@@ -1,16 +1,20 @@
 import { getCurrentUser } from '@/lib/auth-helpers'
+import {
+  contentService,
+  userService,
+  relationshipService,
+} from '@/lib/services'
+import { ContentClient } from './content-client'
+import { redirect, notFound } from 'next/navigation'
+import type { HierarchyNode } from '@/lib/utils/progress'
 
 // Force dynamic rendering - no caching
 export const dynamic = 'force-dynamic'
-import {
-  contentService,
-  universeService,
-  relationshipService,
-  userService,
-} from '@/lib/services'
-import { Navigation } from '@/components/layout/Navigation'
-import { ContentClient } from './content-client'
-import { redirect, notFound } from 'next/navigation'
+
+interface RawHierarchyNode {
+  id: string
+  children?: RawHierarchyNode[]
+}
 
 /**
  * Content Detail Page
@@ -29,64 +33,78 @@ export default async function ContentPage({
     redirect('/')
   }
 
-  // Fetch content data
+  // Fetch content data with source info - no caching
   const content = await contentService.getById(id)
   if (!content) {
     notFound()
   }
 
-  // Fetch universe data
-  const universe = await universeService.getById(content.universeId)
+  // Get source information for this content
+  const sourceInfo = await contentService.getContentSource(id)
+
+  // Get the universe to check permissions
+  const universe = await contentService.getUniverse(id)
   if (!universe) {
     notFound()
   }
 
-  // Check permissions - must be public universe or owned by user
+  // Check permissions - must be public or owned by user
   if (!universe.isPublic && universe.userId !== user.id) {
-    throw new Error('You do not have permission to view this content')
+    notFound()
   }
 
-  // Get user's favourites to add favourite status
+  // Fetch content owner - no caching
+  const contentOwner = await userService.getById(content.userId)
+
+  // Get user's favourites - no caching
   const favourites = await userService.getUserFavourites(user.id)
   const contentWithFavourite = {
     ...content,
     isFavourite: favourites.content.includes(content.id),
+    // Add source info
+    sourceName: sourceInfo?.sourceName,
+    sourceBackgroundColor: sourceInfo?.sourceBackgroundColor,
+    sourceTextColor: sourceInfo?.sourceTextColor,
   }
 
-  // Get parent and child relationships
-  const parents = await relationshipService.getParents(id)
-  const children = await relationshipService.getChildren(id)
+  // Get all content in the same universe for hierarchy context with sources
+  const universeContent =
+    await contentService.getByUniverseWithSourcesAndProgress(
+      universe.id,
+      user.id
+    )
+  const universeContentWithFavourites = universeContent.map(item => ({
+    ...item,
+    isFavourite: favourites.content.includes(item.id),
+  }))
 
-  // Fetch parent and child content details
-  const parentContent = []
-  for (const parent of parents) {
-    if (parent.parentId) {
-      const parentItem = await contentService.getById(parent.parentId)
-      if (parentItem) {
-        parentContent.push(parentItem)
-      }
-    }
+  // Build hierarchy relationships for context
+  const relationships = await relationshipService.getByUniverse(universe.id)
+  const rawHierarchyTree = relationshipService.buildHierarchyTree(
+    universeContentWithFavourites,
+    relationships
+  )
+
+  // Convert to HierarchyNode format for Tree component
+  const transformToHierarchyNodes = (
+    nodes: RawHierarchyNode[]
+  ): HierarchyNode[] => {
+    return nodes.map(node => ({
+      contentId: node.id,
+      children: node.children ? transformToHierarchyNodes(node.children) : [],
+    }))
   }
 
-  const childContent = []
-  for (const child of children) {
-    const childItem = await contentService.getById(child.childId)
-    if (childItem) {
-      childContent.push(childItem)
-    }
-  }
+  const hierarchyTree = transformToHierarchyNodes(rawHierarchyTree)
 
   return (
-    <div className='min-h-screen bg-surface'>
-      <Navigation showNavigationMenu={true} currentPage='dashboard' />
-
-      <ContentClient
-        content={contentWithFavourite}
-        universe={universe}
-        parentContent={parentContent}
-        childContent={childContent}
-        canEdit={universe.userId === user.id}
-      />
-    </div>
+    <ContentClient
+      content={contentWithFavourite}
+      contentOwner={contentOwner}
+      universe={universe}
+      universeContent={universeContentWithFavourites}
+      hierarchyTree={hierarchyTree}
+      userId={user.id}
+    />
   )
 }

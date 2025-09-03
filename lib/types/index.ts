@@ -59,7 +59,8 @@ export interface Content {
   universeId: string
   userId: string
   isViewable: boolean
-  mediaType: string
+  itemType: string
+  sourceId: string | null
   sourceLink: string | null
   sourceLinkName: string | null
   createdAt: Date
@@ -72,7 +73,8 @@ export interface NewContent {
   universeId: string
   userId: string
   isViewable?: boolean
-  mediaType: string
+  itemType: string
+  sourceId?: string | null
   sourceLink?: string | null
   sourceLinkName?: string | null
   createdAt?: Date
@@ -132,9 +134,35 @@ export interface NewFavorite {
   createdAt?: Date
 }
 
+// Source types
+export interface Source {
+  id: string
+  name: string
+  backgroundColor: string
+  textColor: string
+  universeId: string
+  userId: string
+  createdAt: Date
+}
+
+export interface NewSource {
+  name: string
+  backgroundColor: string
+  textColor: string
+  universeId: string
+  userId: string
+  createdAt?: Date
+}
+
 // Extended types with relationships
 export interface ContentWithProgress extends Content {
   progress?: number
+}
+
+export interface ContentWithSource extends Content {
+  sourceName?: string | null
+  sourceBackgroundColor?: string | null
+  sourceTextColor?: string | null
 }
 
 export interface UniverseWithProgress extends Universe {

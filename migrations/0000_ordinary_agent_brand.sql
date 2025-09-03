@@ -5,22 +5,19 @@ CREATE TABLE "content" (
 	"universeId" text NOT NULL,
 	"userId" text NOT NULL,
 	"isViewable" boolean DEFAULT false NOT NULL,
-	"mediaType" varchar(50) NOT NULL,
+	"itemType" varchar(50) NOT NULL,
 	"sourceLink" varchar(500),
 	"sourceLinkName" varchar(255),
-	"lastAccessedAt" timestamp,
 	"createdAt" timestamp DEFAULT now() NOT NULL,
 	"updatedAt" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "contentRelationships" (
 	"id" text PRIMARY KEY NOT NULL,
-	"parentId" text NOT NULL,
+	"parentId" text,
 	"childId" text NOT NULL,
 	"universeId" text NOT NULL,
 	"userId" text NOT NULL,
-	"displayOrder" integer,
-	"contextDescription" varchar(255),
 	"createdAt" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
@@ -50,9 +47,19 @@ CREATE TABLE "userProgress" (
 	"contentId" text NOT NULL,
 	"universeId" text NOT NULL,
 	"progress" integer DEFAULT 0 NOT NULL,
-	"lastAccessedAt" timestamp DEFAULT now() NOT NULL,
 	"createdAt" timestamp DEFAULT now() NOT NULL,
 	"updatedAt" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "user" (
+	"id" text PRIMARY KEY NOT NULL,
+	"name" text,
+	"email" text NOT NULL,
+	"image" text,
+	"passwordHash" text,
+	"createdAt" timestamp DEFAULT now(),
+	"updatedAt" timestamp DEFAULT now(),
+	CONSTRAINT "user_email_unique" UNIQUE("email")
 );
 --> statement-breakpoint
 ALTER TABLE "content" ADD CONSTRAINT "content_universeId_universes_id_fk" FOREIGN KEY ("universeId") REFERENCES "public"."universes"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
@@ -69,7 +76,7 @@ ALTER TABLE "userProgress" ADD CONSTRAINT "userProgress_universeId_universes_id_
 CREATE INDEX "content_universeId_idx" ON "content" USING btree ("universeId");--> statement-breakpoint
 CREATE INDEX "content_userId_idx" ON "content" USING btree ("userId");--> statement-breakpoint
 CREATE INDEX "content_isViewable_idx" ON "content" USING btree ("isViewable");--> statement-breakpoint
-CREATE INDEX "content_mediaType_idx" ON "content" USING btree ("mediaType");--> statement-breakpoint
+CREATE INDEX "content_itemType_idx" ON "content" USING btree ("itemType");--> statement-breakpoint
 CREATE INDEX "content_createdAt_idx" ON "content" USING btree ("createdAt");--> statement-breakpoint
 CREATE INDEX "contentRelationships_parentId_idx" ON "contentRelationships" USING btree ("parentId");--> statement-breakpoint
 CREATE INDEX "contentRelationships_childId_idx" ON "contentRelationships" USING btree ("childId");--> statement-breakpoint

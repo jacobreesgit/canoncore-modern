@@ -27,6 +27,8 @@ export interface IconProps
     | 'current'
   /** Animation type */
   animate?: 'pulse' | 'spin' | 'bounce' | 'none'
+  /** Remove padding */
+  noPadding?: boolean
   /** Additional CSS classes */
   className?: string
   /** Accessibility label */
@@ -39,6 +41,7 @@ export function Icon({
   color = 'current',
   hoverColor,
   animate = 'none',
+  noPadding = false,
   className,
   'aria-label': ariaLabel,
   ...props
@@ -121,6 +124,7 @@ export function Icon({
 
   const iconClasses = cn(
     'flex-shrink-0 transition-colors duration-200',
+    !noPadding && 'p-0',
     getSizeClasses(),
     getColorClasses(),
     getHoverColorClasses(),

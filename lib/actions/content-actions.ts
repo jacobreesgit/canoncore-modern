@@ -26,8 +26,9 @@ export async function createContentAction(formData: FormData) {
     const description = formData.get('description') as string
     const universeId = formData.get('universeId') as string
     const isViewable = formData.get('isViewable') === 'true'
-    const mediaType = formData.get('mediaType') as string
+    const itemType = formData.get('itemType') as string
     const parentId = formData.get('parentId') as string
+    const sourceId = formData.get('sourceId') as string
 
     // Debug logging
     if (process.env.NODE_ENV === 'development') {
@@ -36,7 +37,7 @@ export async function createContentAction(formData: FormData) {
         universeId,
         parentId: parentId || 'NO_PARENT',
         isViewable,
-        mediaType,
+        itemType,
       })
     }
 
@@ -49,7 +50,7 @@ export async function createContentAction(formData: FormData) {
     }
 
     // Validate media type for viewable content
-    if (isViewable && !mediaType) {
+    if (isViewable && !itemType) {
       return {
         success: false,
         error: 'Media type is required for viewable content',
@@ -62,7 +63,9 @@ export async function createContentAction(formData: FormData) {
       universeId,
       userId: user.id,
       isViewable,
-      mediaType: isViewable ? mediaType : '',
+      itemType: itemType || '',
+      sourceId:
+        isViewable && sourceId && sourceId.trim() ? sourceId.trim() : null,
     }
 
     const newContent = await contentService.create(contentData)
@@ -158,14 +161,14 @@ export async function updateContentAction(
 
     const name = formData.get('name') as string
     const description = formData.get('description') as string
-    const mediaType = formData.get('mediaType') as string
+    const itemType = formData.get('itemType') as string
 
     if (!name || name.trim().length === 0) {
       return { success: false, error: 'Content name is required' }
     }
 
     // Validate media type for viewable content
-    if (existingContent.isViewable && !mediaType) {
+    if (existingContent.isViewable && !itemType) {
       return {
         success: false,
         error: 'Media type is required for viewable content',
@@ -175,7 +178,7 @@ export async function updateContentAction(
     const updateData = {
       name: name.trim(),
       description: description?.trim() || '',
-      ...(existingContent.isViewable && { mediaType }),
+      ...(existingContent.isViewable && { itemType }),
     }
 
     await contentService.update(contentId, updateData)
@@ -234,105 +237,4 @@ export async function deleteContentAction(contentId: string) {
 
   // Redirect outside try/catch block as recommended by Next.js docs
   redirect(`/universes/${universeId}`)
-}
-
-export async function bulkDeleteContentAction(contentIds: string[]) {
-  try {
-    const user = await getCurrentUser()
-    if (!user || !user.id) {
-      return { success: false, error: 'Authentication required' }
-    }
-
-    if (!contentIds || contentIds.length === 0) {
-      return { success: false, error: 'No content items selected for deletion' }
-    }
-
-    // Validate input - ensure all IDs are strings and not empty
-    const validContentIds = contentIds.filter(
-      id => typeof id === 'string' && id.trim().length > 0
-    )
-    if (validContentIds.length === 0) {
-      return { success: false, error: 'No valid content IDs provided' }
-    }
-
-    let deletedCount = 0
-    const errors: string[] = []
-    const successfulDeletes: string[] = []
-
-    // Batch fetch content items first to verify ownership
-    const contentItems = await Promise.allSettled(
-      validContentIds.map(id => contentService.getById(id))
-    )
-
-    // Process each content item
-    for (let i = 0; i < validContentIds.length; i++) {
-      const contentId = validContentIds[i]
-      const contentResult = contentItems[i]
-
-      try {
-        // Check if content exists and user owns it
-        if (contentResult.status === 'rejected' || !contentResult.value) {
-          errors.push(`Content not found: ${contentId}`)
-          continue
-        }
-
-        const existingContent = contentResult.value
-        if (existingContent.userId !== user.id) {
-          errors.push(
-            `Permission denied for content: ${existingContent.name || contentId}`
-          )
-          continue
-        }
-
-        // Delete relationships first
-        await relationshipService.deleteAllForContent(contentId)
-
-        // Delete the content
-        await contentService.delete(contentId)
-        deletedCount++
-        successfulDeletes.push(contentId)
-
-        if (process.env.NODE_ENV === 'development') {
-          console.log(
-            `✅ Successfully deleted content: ${existingContent.name} (${contentId})`
-          )
-        }
-      } catch (error) {
-        if (process.env.NODE_ENV === 'development') {
-          console.error(`❌ Error deleting content ${contentId}:`, error)
-        }
-        errors.push(`Failed to delete content: ${contentId}`)
-      }
-    }
-
-    // Determine response based on results
-    if (errors.length > 0 && deletedCount === 0) {
-      return {
-        success: false,
-        error: 'Failed to delete any content items',
-        details: errors,
-      }
-    }
-
-    const message =
-      deletedCount === validContentIds.length
-        ? `Successfully deleted ${deletedCount} content item${deletedCount !== 1 ? 's' : ''}`
-        : `Deleted ${deletedCount} of ${validContentIds.length} content items. ${errors.length} failed.`
-
-    return {
-      success: true,
-      message,
-      deletedCount,
-      successfulDeletes,
-      errors: errors.length > 0 ? errors : undefined,
-    }
-  } catch (error) {
-    if (process.env.NODE_ENV === 'development') {
-      console.error('Error in bulk delete operation:', error)
-    }
-    return {
-      success: false,
-      error: 'Failed to delete content items. Please try again.',
-    }
-  }
 }

@@ -55,8 +55,25 @@ export default async function UniversePage({
     isFavourite: favourites.universes.includes(universe.id),
   }
 
-  // Fetch content for this universe - no caching
-  const content = await contentService.getByUniverse(id)
+  // Fetch content for this universe with sources - no caching
+  const content = await contentService.getByUniverseWithSourcesAndProgress(
+    id,
+    user.id
+  )
+  console.log(
+    `🔍 Debug - Content fetched for universe ${id}:`,
+    content.length,
+    'items'
+  )
+  console.log(
+    '📝 Content items:',
+    content.map(c => ({
+      id: c.id,
+      name: c.name,
+      itemType: c.itemType,
+      isViewable: c.isViewable,
+    }))
+  )
 
   // Add favourite status to content
   const contentWithFavourites = content.map(item => ({
@@ -66,10 +83,21 @@ export default async function UniversePage({
 
   // Build hierarchy relationships
   const relationships = await relationshipService.getByUniverse(id)
+  console.log(
+    `🔗 Debug - Relationships fetched for universe ${id}:`,
+    relationships.length,
+    'relationships'
+  )
+  console.log(
+    '📊 Relationships:',
+    relationships.map(r => ({ parentId: r.parentId, childId: r.childId }))
+  )
+
   const rawHierarchyTree = relationshipService.buildHierarchyTree(
     contentWithFavourites,
     relationships
   )
+  console.log(`🌳 Debug - Raw hierarchy tree:`, rawHierarchyTree)
 
   // Convert to HierarchyNode format for Tree component
   const transformToHierarchyNodes = (

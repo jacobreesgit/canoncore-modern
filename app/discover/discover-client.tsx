@@ -1,5 +1,6 @@
 'use client'
 
+import { useCallback } from 'react'
 import { UniverseCard } from '@/components/content/UniverseCard'
 import { ContentGrid } from '@/components/content/ContentGrid'
 import { ButtonLink } from '@/components/interactive/Button'
@@ -27,30 +28,33 @@ export function DiscoverClient({
   universeOwners,
   currentUserId,
 }: DiscoverClientProps) {
-  // Sort universes function
-  const sortUniverses = (
-    universes: UniverseWithFavorite[],
-    sortBy: string
-  ): UniverseWithFavorite[] => {
-    const sorted = [...universes]
-    switch (sortBy) {
-      case 'oldest':
-        return sorted.sort(
-          (a, b) =>
-            new Date(a.createdAt || 0).getTime() -
-            new Date(b.createdAt || 0).getTime()
-        )
-      case 'name':
-        return sorted.sort((a, b) => a.name.localeCompare(b.name))
-      case 'newest':
-      default:
-        return sorted.sort(
-          (a, b) =>
-            new Date(b.createdAt || 0).getTime() -
-            new Date(a.createdAt || 0).getTime()
-        )
-    }
-  }
+  // Sort universes function - memoized to prevent unnecessary re-renders
+  const sortUniverses = useCallback(
+    (
+      universes: UniverseWithFavorite[],
+      sortBy: string
+    ): UniverseWithFavorite[] => {
+      const sorted = [...universes]
+      switch (sortBy) {
+        case 'oldest':
+          return sorted.sort(
+            (a, b) =>
+              new Date(a.createdAt || 0).getTime() -
+              new Date(b.createdAt || 0).getTime()
+          )
+        case 'name':
+          return sorted.sort((a, b) => a.name.localeCompare(b.name))
+        case 'newest':
+        default:
+          return sorted.sort(
+            (a, b) =>
+              new Date(b.createdAt || 0).getTime() -
+              new Date(a.createdAt || 0).getTime()
+          )
+      }
+    },
+    []
+  )
 
   return (
     <PageLayout
@@ -85,7 +89,7 @@ export function DiscoverClient({
         }}
         emptyStateTitle='No public universes yet'
         emptyStateDescription='Be the first to create a public universe for others to discover.'
-        button={
+        actions={
           currentUserId ? (
             <ButtonLink href='/universes/create' variant='primary'>
               Create Universe

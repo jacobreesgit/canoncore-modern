@@ -7,10 +7,14 @@ export interface ContentDisplayProps {
   title?: string
   /** Section description */
   description?: string
-  /** Button that appears in header */
-  button?: ReactNode
-  /** Additional header actions */
-  headerActions?: ReactNode
+  /** Actions that appear in header when content exists, or in empty state when no content */
+  actions?: ReactNode
+  /** Whether the content is empty - controls where actions are displayed */
+  isEmpty?: boolean
+  /** Empty state title */
+  emptyStateTitle?: string
+  /** Empty state description */
+  emptyStateDescription?: string
   /** Content to display */
   children: ReactNode
   /** Container className */
@@ -26,8 +30,10 @@ export interface ContentDisplayProps {
 export function ContentDisplay({
   title,
   description,
-  button,
-  headerActions,
+  actions,
+  isEmpty = false,
+  emptyStateTitle = 'No content yet',
+  emptyStateDescription = 'Add some content to get started.',
   children,
   className = '',
 }: ContentDisplayProps) {
@@ -37,7 +43,7 @@ export function ContentDisplay({
     >
       <div className='p-6'>
         {/* Header */}
-        {(title || description || button || headerActions) && (
+        {(title || description || (!isEmpty && actions)) && (
           <div className='flex justify-between items-start mb-6'>
             <div>
               {title && (
@@ -47,15 +53,32 @@ export function ContentDisplay({
               )}
               {description && <p className='text-neutral-600'>{description}</p>}
             </div>
-            <div className='flex items-center gap-3 flex-shrink-0'>
-              {button && <div>{button}</div>}
-              {headerActions && <div>{headerActions}</div>}
-            </div>
+            {!isEmpty && actions && (
+              <div className='flex items-center gap-3 flex-shrink-0'>
+                {actions}
+              </div>
+            )}
           </div>
         )}
 
-        {/* Content */}
-        <div className='content-display-body'>{children}</div>
+        {/* Content or Empty State */}
+        {isEmpty ? (
+          <div className='text-center py-12'>
+            <div className='max-w-md mx-auto'>
+              <h3 className='text-lg font-medium text-neutral-900 mb-2'>
+                {emptyStateTitle}
+              </h3>
+              <p className='text-neutral-600 mb-6'>{emptyStateDescription}</p>
+              {actions && (
+                <div className='flex justify-center gap-3 flex-shrink-0'>
+                  {actions}
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className='content-display-body'>{children}</div>
+        )}
       </div>
     </div>
   )

@@ -48,6 +48,217 @@ The Tree component (`components/content/Tree.tsx`) uses the [@headless-tree/reac
 
 Refer to `HEADLESS_TREE_DOCS.md` for quick implementation examples, or the full documentation files for detailed feature information when enhancing the Tree component.
 
+## Phase 1: Source/Origin Tracking Implementation
+
+**Implementation Prompt for Claude Code:**
+
+Implement source/origin tracking for **viewable content only** with user-selectable colors and universe-specific source management. This allows users to create custom source labels (e.g., "Disney+", "Phase 1", "Netflix") with custom colors that display as badges on viewable content items in Flat View.
+
+**Context**: CanonCore franchise management app built with Next.js 15, PostgreSQL, Drizzle ORM. Content can be viewable or organizational, organized in hierarchical or flat structures. Users need to track where **viewable content** originates from with visual color-coded badges that appear only in Flat View, not hierarchical Tree view.
+
+**Required Implementation Steps:**
+
+1. **Install Dependencies:**
+
+   ```bash
+   pnpm add react-colorful
+   ```
+
+2. **Database Schema Changes:**
+   Add sources table to `lib/db/schema.ts` following existing table patterns:
+
+   ```typescript
+   export const sources = pgTable(
+     'sources',
+     {
+       id: text('id')
+         .primaryKey()
+         .$defaultFn(() => crypto.randomUUID()),
+       name: varchar('name', { length: 100 }).notNull(),
+       color: varchar('color', { length: 7 }).notNull(), // hex color like #ff0000
+       universeId: text('universeId')
+         .notNull()
+         .references(() => universes.id, { onDelete: 'cascade' }),
+       userId: text('userId')
+         .notNull()
+         .references(() => users.id, { onDelete: 'cascade' }),
+       createdAt: timestamp('createdAt', { mode: 'date' })
+         .defaultNow()
+         .notNull(),
+     },
+     table => [
+       index('sources_universeId_idx').on(table.universeId),
+       index('sources_userId_idx').on(table.userId),
+       uniqueIndex('sources_name_universe_unique').on(
+         table.name,
+         table.universeId
+       ),
+     ]
+   )
+   ```
+
+   Add sourceId field to existing content table:
+
+   ```typescript
+   // Add this field to content table definition
+   sourceId: text('sourceId').references(() => sources.id, { onDelete: 'set null' }),
+   ```
+
+   Export types: `export type Source = typeof sources.$inferSelect`
+
+3. **Create Source Service:**
+   Create `lib/services/source.service.ts` following existing service patterns with these methods:
+   - `getByUniverse(universeId: string, userId: string)` - Get all sources for universe
+   - `create(data: { name: string, color: string, universeId: string, userId: string })` - Create new source
+   - `update(id: string, data: Partial<Source>)` - Update source
+   - `delete(id: string, userId: string)` - Delete source
+     Include proper error handling and authentication checks like other services.
+
+4. **Enhance Badge Component:**
+   Update `components/content/Badge.tsx` to support custom colors:
+
+   ```typescript
+   // Add to BadgeProps interface
+   customColor?: string
+
+   // In Badge component, use custom color when provided:
+   style={customColor ? {
+     backgroundColor: customColor + '20',
+     color: customColor,
+     borderColor: customColor + '40'
+   } : undefined}
+   ```
+
+5. **Create Source Selection Component:**
+   Create `components/forms/SourceSelect.tsx` with:
+   - Dropdown showing existing sources with color preview
+   - "Create New Source" option that opens modal
+   - Modal with name input and constrained HSL color picker for pastel colors
+   - Follow FormField wrapper pattern from existing forms
+   - Use constrained HSL picker for better brand consistency:
+
+   ```typescript
+   import { HslColorPicker, HslColor } from "react-colorful";
+
+   const [color, setColor] = useState({ h: 200, s: 50, l: 80 });
+
+   const handleColorChange = (newColor: HslColor) => {
+     // Constrain to pastel range for better visual consistency
+     const constrainedColor = {
+       h: newColor.h, // Allow full hue range 0-360
+       s: Math.min(Math.max(newColor.s, 30), 70), // Saturation: 30-70%
+       l: Math.min(Math.max(newColor.l, 70), 90)  // Lightness: 70-90%
+     };
+     setColor(constrainedColor);
+   };
+
+   return <HslColorPicker color={color} onChange={handleColorChange} />;
+   ```
+
+6. **Update Content Forms:**
+   Add SourceSelect to `app/universes/[id]/content/add-viewable/add-viewable-client.tsx`:
+
+   ```typescript
+   <FormField label='Source/Origin (Optional)'>
+     <SourceSelect
+       name='sourceId'
+       universeId={universe.id}
+       disabled={isPending}
+     />
+     <p className='text-sm text-neutral-600 mt-1'>
+       Tag where this content originates from (e.g., Disney+, Phase 1)
+     </p>
+   </FormField>
+   ```
+
+7. **Update Server Actions:**
+   Modify `lib/actions/content-actions.ts` to handle sourceId field in form processing.
+
+8. **Update Tree Component:**
+   Modify `components/content/Tree.tsx` to display source badges using the enhanced Badge component with custom colors.
+
+9. **Run Migrations and Tests:**
+   ```bash
+   pnpm db:generate
+   pnpm db:push
+   pnpm db:clear  # Clear existing data instead of migrating old data
+   pnpm type-check && pnpm lint && pnpm test
+   ```
+
+**Key Implementation Patterns:**
+
+- Follow existing database relationship patterns (foreign keys, indexes, cascade deletes)
+- Use FormField wrapper for all form inputs with consistent styling
+- Include proper TypeScript types following existing schema type exports
+- Use server actions pattern for form submission with authentication checks
+- Follow existing service layer patterns with comprehensive error handling
+- Use react-colorful's HexColorPicker with simple useState pattern
+- Apply custom colors to Badge component via style prop override
+
+**Testing Requirements:**
+
+- Create comprehensive tests for source service following existing test patterns
+- Test source creation, selection, and badge display functionality
+- Verify database constraints and relationships work correctly
+- Test form validation and error states
+
+## Phase 2: Flat View Implementation
+
+**Implementation Prompt for Claude Code:**
+
+Create ContentList component displaying **viewable content only** chronologically with user-customized source badges. Build on existing source/origin tracking from Phase 1 to show viewable content in flat chronological views through user-selected badge colors. **Source badges only appear in Flat View, not hierarchical Tree view.**
+
+**Context**: Building on Phase 1 source/origin tracking, create flat chronological content views that show **viewable content only** like "Iron Man [Phase 1] ●" with user-chosen Phase 1 color, "Loki Ep 1 [Disney+] ●" with user-chosen Disney+ color. Organizational content does not display source badges.
+
+**Required Implementation Steps:**
+
+1. **Create ContentList Component:**
+   Create `components/content/ContentList.tsx` for flat chronological display:
+   - List view of **viewable content only** with source badges
+   - Chronological sorting options (release date vs in-universe chronological)
+   - Source badge integration using Phase 1 badge system (viewable content only)
+
+2. **Add Flat View Toggle:**
+   Update universe pages to toggle between Tree (hierarchical) and ContentList (flat) views:
+   - Add view mode toggle button in universe header
+   - State management for view preference
+   - Consistent data passing to both components
+
+3. **Enhance Search/Filter:**
+   Extend search functionality to work with flat views:
+   - Source-based filtering (show only Disney+ content, etc.)
+   - Combined search across content name and source
+   - Visual filter indicators
+
+4. **Update Universe Page:**
+   Modify `app/universes/[id]/universe-client.tsx` to support dual view modes:
+   - Toggle between Tree and ContentList components
+   - Maintain search and filter state across view switches
+   - Consistent header and actions for both views
+
+**References:**
+
+- DEMO_UNIVERSE_STRUCTURES.md flat universe structure for badge patterns
+- Phase 1 source/origin tracking implementation
+- Existing Tree component patterns for consistency
+
+## Future Enhancement Plans
+
+### Content Management & Discovery Features
+
+The following features are planned for future development to enhance the content organization and discovery experience:
+
+**Advanced Content Features:**
+
+- **Character appearance tracking** - Track which characters appear across different content items
+- **Advanced search features** - Enhanced search with filters, faceted search, and content type filtering
+
+**Implementation Priority:**
+These features would build on the existing Tree component and search infrastructure, leveraging the @headless-tree/react library's advanced capabilities and extending the current content service layer.
+
+**Demo Implementation Reference:**
+Refer to `DEMO_UNIVERSE_STRUCTURES.md` for detailed specifications of two demo universes that showcase both hierarchical and flat organizational approaches. These demos provide concrete implementation examples and feature testing scenarios for all current and future enhancements.
+
 ## Development Commands
 
 ### Essential Development Commands

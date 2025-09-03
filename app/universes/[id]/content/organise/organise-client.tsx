@@ -11,6 +11,7 @@ import { FormField } from '@/components/forms/FormField'
 import { FormInput } from '@/components/forms/FormInput'
 import { FormTextarea } from '@/components/forms/FormTextarea'
 import { FormSelect } from '@/components/forms/FormSelect'
+import { HierarchicalSelect } from '@/components/forms/HierarchicalSelect'
 import { FormActions } from '@/components/forms/FormActions'
 import { FormError } from '@/components/forms/FormError'
 
@@ -45,6 +46,7 @@ const organizationalTypes = [
 interface OrganiseClientProps {
   universe: Universe
   existingContent: Content[]
+  relationships: { parentId: string | null; childId: string }[]
   suggestedParent: Content | null
 }
 
@@ -54,6 +56,7 @@ interface OrganiseClientProps {
 export function OrganiseClient({
   universe,
   existingContent,
+  relationships,
   suggestedParent,
 }: OrganiseClientProps) {
   const router = useRouter()
@@ -61,10 +64,7 @@ export function OrganiseClient({
     suggestedParent?.id || ''
   )
 
-  // Filter content that can be parents (ALL content can be parents for flexibility)
-  const potentialParents = existingContent.filter(
-    c => c.id !== suggestedParent?.id
-  )
+  // We'll show all content in hierarchy now, with viewable content disabled
 
   // React 19: useActionState for form management
   const [state, formAction, isPending] = useActionState(
@@ -113,7 +113,7 @@ export function OrganiseClient({
         </FormField>
 
         <FormField label='Organization Type' required>
-          <FormSelect name='organizationType' disabled={isPending} required>
+          <FormSelect name='itemType' disabled={isPending} required>
             {organizationalTypes.map(type => (
               <option key={type.value} value={type.value}>
                 {type.label}
@@ -125,23 +125,20 @@ export function OrganiseClient({
           </p>
         </FormField>
 
-        {potentialParents.length > 0 && (
+        {existingContent.length > 0 && (
           <FormField label='Parent Organization (Optional)'>
-            <FormSelect
+            <HierarchicalSelect
               name='parentId'
               value={selectedParentId}
               onChange={e => setSelectedParentId(e.target.value)}
               disabled={isPending}
-            >
-              <option value=''>No parent (top level)</option>
-              {potentialParents.map(parent => (
-                <option key={parent.id} value={parent.id}>
-                  {parent.name}
-                </option>
-              ))}
-            </FormSelect>
+              allContent={existingContent}
+              relationships={relationships}
+              noneOptionLabel='No parent (top level)'
+            />
             <p className='text-sm text-neutral-600 mt-1'>
-              Nest this organization under another organizational group
+              Nest this organization under another group. Viewable content is
+              shown for context but disabled.
             </p>
           </FormField>
         )}
