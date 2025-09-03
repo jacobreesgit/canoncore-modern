@@ -30,8 +30,8 @@ export function ContentListItem({ item }: ContentListItemProps) {
     >
       <div className='flex items-center justify-between w-full'>
         <div className='flex items-center gap-3'>
-          <div className='flex items-center gap-2'>
-            <h3 className='text-lg font-medium text-neutral-900 truncate'>
+          <div className='flex items-center'>
+            <h3 className='text-md font-medium text-neutral-900 truncate'>
               {item.name}
             </h3>
             <FavouriteButton
@@ -74,7 +74,7 @@ export function ContentListItem({ item }: ContentListItemProps) {
                   backgroundColor={item.sourceBackgroundColor}
                   textColor={item.sourceTextColor}
                 >
-                  From: {item.sourceName}
+                  Source: {item.sourceName}
                 </Badge>
               )}
           </div>

@@ -47,17 +47,19 @@ export function TreeItem({ item, itemData }: TreeItemProps) {
                   className='flex-shrink-0 cursor-pointer'
                 />
               )}
-              <Link
-                href={`/content/${itemData.id}`}
-                className='truncate hover:text-primary-600 transition-colors cursor-pointer'
-              >
-                {item.getItemName()}
-              </Link>
-              <FavouriteButton
-                targetId={itemData.id}
-                targetType='content'
-                size='default'
-              />
+              <div className='flex items-center'>
+                <Link
+                  href={`/content/${itemData.id}`}
+                  className='truncate hover:text-primary-600 transition-colors cursor-pointer'
+                >
+                  {item.getItemName()}
+                </Link>
+                <FavouriteButton
+                  targetId={itemData.id}
+                  targetType='content'
+                  size='default'
+                />
+              </div>
             </div>
 
             {/* Badges */}

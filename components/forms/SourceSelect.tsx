@@ -7,6 +7,7 @@ import { FormInput } from './FormInput'
 import { FormField } from './FormField'
 import { Button } from '../interactive/Button'
 import { Badge } from '../content/Badge'
+import { Modal } from '../interactive/Modal'
 import { createSourceAction } from '@/lib/actions/source-actions'
 import type { Source } from '@/lib/types'
 
@@ -106,76 +107,70 @@ export function SourceSelect({
       </FormSelect>
 
       {/* Create Source Modal */}
-      {isModalOpen && (
-        <div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50'>
-          <div
-            className='bg-white rounded-lg p-6 w-full max-w-md'
-            role='dialog'
-            aria-modal='true'
-            aria-labelledby='create-source-title'
-          >
-            <h3
-              id='create-source-title'
-              className='text-lg font-medium text-neutral-900 mb-4'
-            >
-              Create New Source
-            </h3>
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        size='md'
+        closeOnBackdropClick={!isCreating}
+        closeOnEscape={!isCreating}
+      >
+        <Modal.Header>Create New Source</Modal.Header>
 
-            <div className='space-y-4'>
-              <FormField label='Source Name' required>
-                <FormInput
-                  value={newSourceName}
-                  onChange={e => setNewSourceName(e.target.value)}
-                  placeholder='e.g., Disney+, Torchwood, Television'
-                  disabled={isCreating}
-                />
-              </FormField>
-
-              <FormField label='Background Color'>
-                <div className='space-y-3'>
-                  <HexColorPicker
-                    color={backgroundColor}
-                    onChange={setBackgroundColor}
-                  />
-                  <span className='text-sm text-neutral-600'>
-                    {backgroundColor}
-                  </span>
-                </div>
-              </FormField>
-
-              <FormField label='Text Color'>
-                <div className='space-y-3'>
-                  <HexColorPicker color={textColor} onChange={setTextColor} />
-                  <span className='text-sm text-neutral-600'>{textColor}</span>
-                </div>
-              </FormField>
-
-              <FormField label='Preview'>
-                <Badge backgroundColor={backgroundColor} textColor={textColor}>
-                  {newSourceName || 'Preview'}
-                </Badge>
-              </FormField>
-            </div>
-
-            <div className='flex justify-end gap-4 mt-6'>
-              <Button
-                variant='secondary'
-                onClick={() => setIsModalOpen(false)}
+        <Modal.Body>
+          <div className='space-y-4'>
+            <FormField label='Source Name' required>
+              <FormInput
+                value={newSourceName}
+                onChange={e => setNewSourceName(e.target.value)}
+                placeholder='e.g., Disney+, Torchwood, Television'
                 disabled={isCreating}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant='primary'
-                onClick={handleCreateSource}
-                disabled={isCreating || !newSourceName.trim()}
-              >
-                {isCreating ? 'Creating...' : 'Create Source'}
-              </Button>
-            </div>
+              />
+            </FormField>
+
+            <FormField label='Background Color'>
+              <div className='space-y-3'>
+                <HexColorPicker
+                  color={backgroundColor}
+                  onChange={setBackgroundColor}
+                />
+                <span className='text-sm text-neutral-600'>
+                  {backgroundColor}
+                </span>
+              </div>
+            </FormField>
+
+            <FormField label='Text Color'>
+              <div className='space-y-3'>
+                <HexColorPicker color={textColor} onChange={setTextColor} />
+                <span className='text-sm text-neutral-600'>{textColor}</span>
+              </div>
+            </FormField>
+
+            <FormField label='Preview'>
+              <Badge backgroundColor={backgroundColor} textColor={textColor}>
+                {newSourceName || 'Preview'}
+              </Badge>
+            </FormField>
           </div>
-        </div>
-      )}
+        </Modal.Body>
+
+        <Modal.Footer>
+          <Button
+            variant='secondary'
+            onClick={() => setIsModalOpen(false)}
+            disabled={isCreating}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant='primary'
+            onClick={handleCreateSource}
+            disabled={isCreating || !newSourceName.trim()}
+          >
+            {isCreating ? 'Creating...' : 'Create Source'}
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </>
   )
 }

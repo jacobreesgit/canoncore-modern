@@ -108,7 +108,7 @@ export function ContentHeader({
             backgroundColor={content.sourceBackgroundColor || undefined}
             textColor={content.sourceTextColor || undefined}
           >
-            From: {content.sourceName}
+            Source: {content.sourceName}
           </Badge>
         )}
         {content.sourceLink && (

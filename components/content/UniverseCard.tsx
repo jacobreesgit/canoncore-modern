@@ -50,8 +50,8 @@ export const UniverseCard = React.memo(function UniverseCard({
         {/* Header */}
         <div className='mb-3'>
           <div className='flex items-center justify-between mb-2'>
-            <div className='flex items-center space-x-2 min-w-0 flex-1'>
-              <h3 className='text-lg font-medium text-neutral-900 truncate'>
+            <div className='flex items-center min-w-0 flex-1'>
+              <h3 className='text-md font-medium text-neutral-900 truncate'>
                 {universe.name}
               </h3>
               {showFavourite && (
