@@ -1,19 +1,21 @@
 'use client'
 
 import { useState } from 'react'
+import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert } from '@/components/ui/alert'
-import { Eye, EyeOff, UserPlus, Check } from 'lucide-react'
-import Link from 'next/link'
-import { signIn } from 'next-auth/react'
+import { Eye, EyeOff, LogIn, UserPlus, Check } from 'lucide-react'
 import { userValidation } from '@/lib/validations'
 import { z } from 'zod'
 
-export function SignUpForm() {
+type AuthMode = 'signin' | 'signup'
+
+export function AuthForm() {
+  const [mode, setMode] = useState<AuthMode>('signin')
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -32,16 +34,31 @@ export function SignUpForm() {
     setFormData(prev => ({ ...prev, [name]: value }))
   }
 
-  const validateForm = () => {
+  const validateSignIn = () => {
     try {
-      // Use consistent validation schema from UserService
+      userValidation.signIn.parse({
+        email: formData.email,
+        password: formData.password
+      })
+      return true
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        setError(error.issues[0].message)
+        return false
+      }
+      setError('Invalid form data')
+      return false
+    }
+  }
+
+  const validateSignUp = () => {
+    try {
       userValidation.signUp.parse({
         name: formData.name,
         email: formData.email,
         password: formData.password
       })
       
-      // Additional frontend validation for password confirmation
       if (formData.password !== formData.confirmPassword) {
         setError('Passwords do not match')
         return false
@@ -58,18 +75,27 @@ export function SignUpForm() {
     }
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError('')
-    
-    if (!validateForm()) {
-      return
+  const handleSignIn = async () => {
+    if (!validateSignIn()) return
+
+    const result = await signIn('credentials', {
+      email: formData.email,
+      password: formData.password,
+      redirect: false,
+    })
+
+    if (result?.error) {
+      setError('Invalid email or password')
+    } else if (result?.ok) {
+      router.push('/dashboard')
+      router.refresh()
     }
-    
-    setIsLoading(true)
+  }
+
+  const handleSignUp = async () => {
+    if (!validateSignUp()) return
 
     try {
-      // Call the registration API
       const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: {
@@ -105,11 +131,39 @@ export function SignUpForm() {
       }, 1000)
 
     } catch (error) {
-      console.error('Registration error:', error)
       setError(error instanceof Error ? error.message : 'An error occurred. Please try again.')
+    }
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+    setIsLoading(true)
+
+    try {
+      if (mode === 'signin') {
+        await handleSignIn()
+      } else {
+        await handleSignUp()
+      }
+    } catch (error) {
+      console.error(`${mode} error:`, error)
+      setError('An error occurred. Please try again.')
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const switchMode = (newMode: AuthMode) => {
+    setMode(newMode)
+    setError('')
+    setSuccess(false)
+    setFormData({
+      name: '',
+      email: '',
+      password: '',
+      confirmPassword: ''
+    })
   }
 
   if (success) {
@@ -136,10 +190,13 @@ export function SignUpForm() {
     <Card className="w-full max-w-md">
       <CardHeader className="space-y-1">
         <CardTitle className="text-2xl font-bold text-center">
-          Create your account
+          {mode === 'signin' ? 'Sign in to CanonCore' : 'Create your account'}
         </CardTitle>
         <CardDescription className="text-center">
-          Join CanonCore to start organizing your content universes
+          {mode === 'signin' 
+            ? 'Enter your credentials to access your universes'
+            : 'Join CanonCore to start organizing your content universes'
+          }
         </CardDescription>
       </CardHeader>
       
@@ -151,19 +208,21 @@ export function SignUpForm() {
             </Alert>
           )}
           
-          <div className="space-y-2">
-            <Label htmlFor="name">Full Name</Label>
-            <Input
-              id="name"
-              name="name"
-              type="text"
-              placeholder="Enter your full name"
-              value={formData.name}
-              onChange={handleInputChange}
-              required
-              disabled={isLoading}
-            />
-          </div>
+          {mode === 'signup' && (
+            <div className="space-y-2">
+              <Label htmlFor="name">Full Name</Label>
+              <Input
+                id="name"
+                name="name"
+                type="text"
+                placeholder="Enter your full name"
+                value={formData.name}
+                onChange={handleInputChange}
+                required
+                disabled={isLoading}
+              />
+            </div>
+          )}
           
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
@@ -186,7 +245,7 @@ export function SignUpForm() {
                 id="password"
                 name="password"
                 type={showPassword ? 'text' : 'password'}
-                placeholder="Create a password (min. 6 characters)"
+                placeholder={mode === 'signin' ? 'Enter your password' : 'Create a password (min. 6 characters)'}
                 value={formData.password}
                 onChange={handleInputChange}
                 required
@@ -208,34 +267,36 @@ export function SignUpForm() {
             </div>
           </div>
           
-          <div className="space-y-2">
-            <Label htmlFor="confirmPassword">Confirm Password</Label>
-            <div className="relative">
-              <Input
-                id="confirmPassword"
-                name="confirmPassword"
-                type={showConfirmPassword ? 'text' : 'password'}
-                placeholder="Confirm your password"
-                value={formData.confirmPassword}
-                onChange={handleInputChange}
-                required
-                disabled={isLoading}
-                className="pr-10"
-              />
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                disabled={isLoading}
-              >
-                {showConfirmPassword ? (
-                  <EyeOff className="h-4 w-4" />
-                ) : (
-                  <Eye className="h-4 w-4" />
-                )}
-              </button>
+          {mode === 'signup' && (
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <div className="relative">
+                <Input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  placeholder="Confirm your password"
+                  value={formData.confirmPassword}
+                  onChange={handleInputChange}
+                  required
+                  disabled={isLoading}
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  disabled={isLoading}
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
             </div>
-          </div>
+          )}
           
           <Button 
             type="submit" 
@@ -245,12 +306,15 @@ export function SignUpForm() {
             {isLoading ? (
               <>
                 <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                Creating account...
+                {mode === 'signin' ? 'Signing in...' : 'Creating account...'}
               </>
             ) : (
               <>
-                <UserPlus className="mr-2 h-4 w-4" />
-                Create Account
+                {mode === 'signin' ? (
+                  <><LogIn className="mr-2 h-4 w-4" />Sign In</>
+                ) : (
+                  <><UserPlus className="mr-2 h-4 w-4" />Create Account</>
+                )}
               </>
             )}
           </Button>
@@ -258,13 +322,31 @@ export function SignUpForm() {
         
         <div className="mt-6 text-center">
           <p className="text-sm text-muted-foreground">
-            Already have an account?{' '}
-            <Link 
-              href="/" 
-              className="font-medium text-primary hover:underline"
-            >
-              Sign in
-            </Link>
+            {mode === 'signin' ? (
+              <>
+                Don&apos;t have an account?{' '}
+                <button
+                  type="button"
+                  onClick={() => switchMode('signup')}
+                  className="font-medium text-primary hover:underline"
+                  disabled={isLoading}
+                >
+                  Sign up
+                </button>
+              </>
+            ) : (
+              <>
+                Already have an account?{' '}
+                <button
+                  type="button"
+                  onClick={() => switchMode('signin')}
+                  className="font-medium text-primary hover:underline"
+                  disabled={isLoading}
+                >
+                  Sign in
+                </button>
+              </>
+            )}
           </p>
         </div>
       </CardContent>

@@ -27,13 +27,54 @@ export interface TreeItemData extends BaseTreeItem {
   releaseDate?: Date | null
 }
 
-// Hierarchy data structure from services
+// Specific entity interfaces for hierarchy data
+export interface CollectionItem {
+  id: string
+  name: string
+  description: string
+  order: number
+  universeId: string
+}
+
+export interface GroupItem {
+  id: string
+  name: string
+  description: string
+  order: number
+  collectionId: string
+  itemType: string
+}
+
+export interface ContentItem {
+  id: string
+  name: string
+  description: string
+  order: number
+  groupId: string
+  isViewable: boolean
+  itemType: string
+  releaseDate: Date | null
+}
+
+export interface GroupRelationship {
+  id: string
+  parentGroupId: string
+  childGroupId: string
+}
+
+export interface ContentRelationship {
+  id: string
+  parentContentId: string
+  childContentId: string
+}
+
+// Hierarchy data structure from services with specific types
 export interface HierarchyData {
-  collections?: any[]
-  groups?: any[]
-  content?: any[]
-  groupRelationships?: any[]
-  contentRelationships?: any[]
+  collections?: CollectionItem[]
+  groups?: GroupItem[]
+  content?: ContentItem[]
+  groupRelationships?: GroupRelationship[]
+  contentRelationships?: ContentRelationship[]
 }
 
 // Tree component props

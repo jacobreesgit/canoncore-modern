@@ -11,6 +11,7 @@ import {
   selectionFeature,
   hotkeysCoreFeature,
   createOnDropHandler,
+  ItemInstance,
 } from '@headless-tree/core'
 import { cn } from '@/lib/utils'
 import { TreeItemData, HierarchyData } from './tree-types'
@@ -99,7 +100,7 @@ export function BaseTree({
     ],
   })
 
-  const TreeItem = ({ item }: { item: any }) => {
+  const TreeItem = ({ item }: { item: ItemInstance<TreeItemData> }) => {
     const itemData = item.getItemData()
     const isExpanded = item.isExpanded()
     const isFocused = item.isFocused()

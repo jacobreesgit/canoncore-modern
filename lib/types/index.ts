@@ -4,7 +4,7 @@
  */
 
 import { z } from 'zod'
-import { userValidation } from '@/lib/services/user.service'
+import { userValidation } from '@/lib/validations'
 
 // Database entity types (inferred from schema)
 export type User = {
@@ -237,4 +237,4 @@ export type Optional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>
 export type RequiredFields<T, K extends keyof T> = Omit<T, K> & Required<Pick<T, K>>
 
 // Export common schema types for reuse
-export { userValidation } from '@/lib/services/user.service'
+export { userValidation } from '@/lib/validations'

@@ -3,23 +3,7 @@ import { users } from '@/lib/db/schema'
 import { eq } from 'drizzle-orm'
 import bcrypt from 'bcryptjs'
 import { z } from 'zod'
-
-// Shared validation schemas - used on both frontend and backend
-export const userValidation = {
-  signUp: z.object({
-    name: z.string().min(1, 'Name is required').max(255, 'Name too long'),
-    email: z.string().email('Invalid email address').toLowerCase(),
-    password: z.string().min(6, 'Password must be at least 6 characters').max(100, 'Password too long'),
-  }),
-  signIn: z.object({
-    email: z.string().email('Invalid email address').toLowerCase(),
-    password: z.string().min(1, 'Password is required'),
-  }),
-  updateProfile: z.object({
-    name: z.string().min(1, 'Name is required').max(255, 'Name too long').optional(),
-    email: z.string().email('Invalid email address').toLowerCase().optional(),
-  }),
-}
+import { userValidation } from '@/lib/validations'
 
 // Consistent error types
 export class UserServiceError extends Error {

@@ -22,197 +22,6 @@ Comprehensive implementation plan for completing the CanonCore application using
 4. **Error Pages** - Custom authentication error handling
 5. **Loading States** - User feedback during operations
 
-## Phase 1: Authentication Implementation (Priority 1)
-
-### 1.1 Homepage Replacement
-**Context7 Best Practice**: Use proper authentication flow with session checks
-
-```typescript
-// app/page.tsx implementation
-import { auth } from '@/auth'
-import { redirect } from 'next/navigation'
-import { SignInForm } from '@/components/auth/sign-in-form'
-
-export default async function HomePage() {
-  const session = await auth()
-  
-  if (session?.user?.id) {
-    redirect('/dashboard')
-  }
-  
-  return <SignInForm />
-}
-```
-
-### 1.2 Sign-In Page Implementation
-**Following Context7 NextAuth.js best practices**:
-
-**File**: `app/signin/page.tsx`
-```typescript
-import { auth, signIn } from '@/auth'
-import { redirect } from 'next/navigation'
-import { AuthError } from 'next-auth'
-
-export default async function SignInPage(props: {
-  searchParams: { callbackUrl?: string, error?: string }
-}) {
-  const session = await auth()
-  
-  if (session?.user?.id) {
-    redirect('/dashboard')
-  }
-  
-  return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="max-w-md w-full space-y-8">
-        <div className="text-center">
-          <h2 className="text-3xl font-bold">Sign in to CanonCore</h2>
-          <p className="text-muted-foreground">
-            Organize your content universes
-          </p>
-        </div>
-        
-        {props.searchParams.error && (
-          <div className="bg-destructive/15 text-destructive p-3 rounded-md text-sm">
-            Authentication failed. Please try again.
-          </div>
-        )}
-        
-        <form
-          action={async (formData) => {
-            "use server"
-            try {
-              await signIn("credentials", {
-                email: formData.get("email"),
-                password: formData.get("password"),
-                redirectTo: props.searchParams?.callbackUrl ?? "/dashboard",
-              })
-            } catch (error) {
-              if (error instanceof AuthError) {
-                return redirect(`/signin?error=${error.type}`)
-              }
-              throw error
-            }
-          }}
-        >
-          <div className="space-y-4">
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium">
-                Email
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                required
-                className="w-full px-3 py-2 border rounded-md"
-              />
-            </div>
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium">
-                Password
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                required
-                className="w-full px-3 py-2 border rounded-md"
-              />
-            </div>
-            <button
-              type="submit"
-              className="w-full bg-primary text-primary-foreground py-2 px-4 rounded-md"
-            >
-              Sign In
-            </button>
-          </div>
-        </form>
-        
-        <div className="text-center">
-          <a href="/signup" className="text-primary hover:underline">
-            Don't have an account? Sign up
-          </a>
-        </div>
-      </div>
-    </div>
-  )
-}
-```
-
-### 1.3 Sign-Up Page Implementation
-**File**: `app/signup/page.tsx`
-```typescript
-// Similar structure to sign-in but with registration logic
-// Include password confirmation, validation, and user creation
-```
-
-### 1.4 Update Auth Configuration
-**File**: `auth.ts` (enhance existing configuration)
-```typescript
-import NextAuth from "next-auth"
-import Credentials from "next-auth/providers/credentials"
-import { DrizzleAdapter } from "@auth/drizzle-adapter"
-import { db } from "@/lib/db"
-import bcrypt from "bcryptjs"
-
-export const { handlers, auth, signIn, signOut } = NextAuth({
-  adapter: DrizzleAdapter(db),
-  providers: [
-    Credentials({
-      credentials: {
-        email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" }
-      },
-      async authorize(credentials) {
-        if (!credentials.email || !credentials.password) return null
-        
-        // Implement user lookup and password verification
-        const user = await db.query.users.findFirst({
-          where: eq(users.email, credentials.email)
-        })
-        
-        if (!user || !user.passwordHash) return null
-        
-        const isValid = await bcrypt.compare(
-          credentials.password as string, 
-          user.passwordHash
-        )
-        
-        if (!isValid) return null
-        
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          image: user.image
-        }
-      }
-    })
-  ],
-  pages: {
-    signIn: '/signin',
-    error: '/auth/error'
-  },
-  session: {
-    strategy: 'jwt'
-  },
-  callbacks: {
-    jwt({ token, user }) {
-      if (user) {
-        token.sub = user.id
-      }
-      return token
-    },
-    session({ session, token }) {
-      if (session.user && token.sub) {
-        session.user.id = token.sub
-      }
-      return session
-    }
-  }
-})
-```
 
 ## Phase 2: Content Creation Implementation
 
@@ -336,39 +145,30 @@ Test Workflow:
 
 ## Implementation Priority Order
 
-### Week 1: Critical Authentication
-1. ✅ Fix NextAuth.js JWT strategy (COMPLETED)
-2. 🔄 Replace default homepage with authentication flow
-3. 🔄 Create sign-in page following Context7 best practices
-4. 🔄 Create sign-up page with registration logic
-5. 🔄 Test authentication flow end-to-end
 
-### Week 2: Content Management
+### Week 1: Content Management
 1. Create content creation forms
 2. Implement content detail pages
 3. Enhance tree component for content management
 4. Test CRUD operations
 
-### Week 3: MCP Testing Framework
+### Week 2: MCP Testing Framework
 1. Design MCP tool testing framework
 2. Implement systematic tests for each MCP function
 3. Create Doctor Who demo universe as test case
 4. Document MCP tool capabilities and limitations
 
-### Week 4: Polish & Documentation
+### Week 3: Polish & Documentation
 1. Implement error handling
 2. Add loading states
 3. Performance optimization
 4. Comprehensive documentation
 5. Final testing and validation
 
+### Week 4: Ask me how to improve the design
+
 ## Success Metrics
 
-### Authentication Flow
-- [ ] Users can sign up with email/password
-- [ ] Users can sign in and are redirected to dashboard
-- [ ] Unauthenticated users are redirected to sign-in
-- [ ] Session management works correctly
 
 ### Content Management
 - [ ] Complete four-tier hierarchy creation works

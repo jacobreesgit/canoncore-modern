@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Alert } from '@/components/ui/alert'
 import { Eye, EyeOff, LogIn } from 'lucide-react'
 import Link from 'next/link'
-import { userValidation } from '@/lib/services/user.service'
+import { userValidation } from '@/lib/validations'
 import { z } from 'zod'
 
 export function SignInForm() {

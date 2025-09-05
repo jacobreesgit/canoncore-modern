@@ -4,6 +4,23 @@
  */
 
 import { z } from 'zod'
+import type { User, Universe, Collection, Group, Content } from '@/lib/types'
+
+// Specific data types that can be returned by services
+export type ServiceData = 
+  | User 
+  | Universe 
+  | Collection 
+  | Group 
+  | Content
+  | User[]
+  | Universe[]
+  | Collection[]
+  | Group[]
+  | Content[]
+  | { id: string; name: string; email: string }
+  | { id: string; name: string; email: string; image: string | null }
+  | void
 
 // Standard error codes used throughout the application
 export type ErrorCode = 
@@ -22,15 +39,15 @@ export interface ErrorResponse {
   details?: Record<string, unknown>
 }
 
-// Consistent success response format
-export interface SuccessResponse<T = any> {
+// Consistent success response format with specific types
+export interface SuccessResponse {
   success: true
-  data: T
+  data: ServiceData
   message?: string
 }
 
-// Union type for service responses
-export type ServiceResponse<T = unknown> = SuccessResponse<T> | ErrorResponse
+// Union type for service responses with specific types
+export type ServiceResponse = SuccessResponse | ErrorResponse
 
 /**
  * Create standardized error response
@@ -50,10 +67,10 @@ export function createError(
 /**
  * Create standardized success response
  */
-export function createSuccess<T>(
-  data: T, 
+export function createSuccess(
+  data: ServiceData, 
   message?: string
-): SuccessResponse<T> {
+): SuccessResponse {
   return {
     success: true,
     data,
@@ -71,7 +88,7 @@ export function isError(response: ServiceResponse): response is ErrorResponse {
 /**
  * Check if response is successful
  */
-export function isSuccess<T>(response: ServiceResponse<T>): response is SuccessResponse<T> {
+export function isSuccess(response: ServiceResponse): response is SuccessResponse {
   return 'success' in response && response.success === true
 }
 
@@ -138,9 +155,9 @@ export function parseError(error: unknown): ErrorResponse {
 /**
  * Handle async operations with consistent error handling
  */
-export async function handleAsync<T>(
-  operation: () => Promise<T>
-): Promise<ServiceResponse<T>> {
+export async function handleAsync(
+  operation: () => Promise<ServiceData>
+): Promise<ServiceResponse> {
   try {
     const result = await operation()
     return createSuccess(result)
