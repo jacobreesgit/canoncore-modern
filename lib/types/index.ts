@@ -1,193 +1,240 @@
 /**
- * Shared types for client and server components
- *
- * This file contains type definitions that can be safely imported
- * by both client and server components without causing build issues.
- * These types are inferred from the database schema but don't import
- * server-only modules.
+ * Shared TypeScript types for consistent frontend/backend data models
+ * Following Context7 best practices for type safety
  */
 
-// User types
-export interface User {
+import { z } from 'zod'
+import { userValidation } from '@/lib/services/user.service'
+
+// Database entity types (inferred from schema)
+export type User = {
   id: string
-  name: string | null
+  name: string
   email: string
   image: string | null
-  passwordHash: string | null
-  createdAt: Date | null
-  updatedAt: Date | null
+  createdAt: Date
+  updatedAt: Date
 }
 
-export interface NewUser {
-  email: string
-  name?: string | null
-  image?: string | null
-  passwordHash?: string | null
-  createdAt?: Date | null
-  updatedAt?: Date | null
-}
-
-// Universe types
-export interface Universe {
+export type Universe = {
   id: string
   name: string
   description: string
   userId: string
   isPublic: boolean
-  sourceLink: string | null
-  sourceLinkName: string | null
+  order: number
   createdAt: Date
   updatedAt: Date
 }
 
-export interface NewUniverse {
-  name: string
-  description: string
-  userId: string
-  isPublic?: boolean
-  sourceLink?: string | null
-  sourceLinkName?: string | null
-  createdAt?: Date
-  updatedAt?: Date
-}
-
-// Content types
-export interface Content {
+export type Collection = {
   id: string
   name: string
   description: string
   universeId: string
+  userId: string
+  order: number
+  createdAt: Date
+  updatedAt: Date
+}
+
+export type Group = {
+  id: string
+  name: string
+  description: string
+  collectionId: string
+  userId: string
+  itemType: string
+  order: number
+  createdAt: Date
+  updatedAt: Date
+}
+
+export type Content = {
+  id: string
+  name: string
+  description: string
+  groupId: string
   userId: string
   isViewable: boolean
   itemType: string
-  sourceId: string | null
-  sourceLink: string | null
-  sourceLinkName: string | null
+  releaseDate: Date | null
+  order: number
   createdAt: Date
   updatedAt: Date
 }
 
-export interface NewContent {
-  name: string
-  description: string
-  universeId: string
-  userId: string
-  isViewable?: boolean
-  itemType: string
-  sourceId?: string | null
-  sourceLink?: string | null
-  sourceLinkName?: string | null
-  createdAt?: Date
-  updatedAt?: Date
-}
+// API request/response types
+export type UserSignUpRequest = z.infer<typeof userValidation.signUp>
+export type UserSignInRequest = z.infer<typeof userValidation.signIn>
+export type UserUpdateRequest = z.infer<typeof userValidation.updateProfile>
 
-// User Progress types
-export interface UserProgress {
-  userId: string
-  contentId: string
-  universeId: string
-  progress: number
-  updatedAt: Date
-}
-
-export interface NewUserProgress {
-  userId: string
-  contentId: string
-  universeId: string
-  progress: number
-  updatedAt?: Date
-}
-
-// Content Relationships types
-export interface ContentRelationship {
-  id: string
-  parentId: string
-  childId: string
-  universeId: string
-  userId: string
-  createdAt: Date
-  updatedAt: Date
-}
-
-export interface NewContentRelationship {
-  parentId: string
-  childId: string
-  universeId: string
-  userId: string
-  createdAt?: Date
-  updatedAt?: Date
-}
-
-// Favorites types
-export interface Favorite {
-  id: string
-  userId: string
-  targetId: string
-  targetType: 'universe' | 'content'
-  createdAt: Date
-}
-
-export interface NewFavorite {
-  userId: string
-  targetId: string
-  targetType: 'universe' | 'content'
-  createdAt?: Date
-}
-
-// Source types
-export interface Source {
+export type UserResponse = {
   id: string
   name: string
-  backgroundColor: string
-  textColor: string
-  universeId: string
-  userId: string
-  createdAt: Date
-}
-
-export interface NewSource {
-  name: string
-  backgroundColor: string
-  textColor: string
-  universeId: string
-  userId: string
-  createdAt?: Date
-}
-
-// Extended types with relationships
-export interface ContentWithProgress extends Content {
-  progress?: number
-}
-
-export interface ContentWithSource extends Content {
-  sourceName?: string | null
-  sourceBackgroundColor?: string | null
-  sourceTextColor?: string | null
-}
-
-export interface UniverseWithProgress extends Universe {
-  progress?: number
-}
-
-// Form validation types
-export interface UserRegistrationData {
   email: string
-  displayName: string
+  image: string | null
+}
+
+export type AuthSession = {
+  user: UserResponse
+  expires: string
+}
+
+// Form state types for consistent component interfaces
+export type SignUpFormData = {
+  name: string
+  email: string
+  password: string
+  confirmPassword: string
+}
+
+export type SignInFormData = {
+  email: string
   password: string
 }
 
-export interface UniverseFormData {
-  name: string
-  description?: string
-  isPublic?: boolean
-  sourceLink?: string
-  sourceLinkName?: string
+// Component prop types for consistency
+export type FormFieldProps = {
+  label: string
+  error?: string
+  required?: boolean
+  disabled?: boolean
 }
 
-export interface ContentFormData {
-  title: string
-  description?: string
-  contentType: 'viewable' | 'organisational'
-  isViewable?: boolean
-  parentId?: string
+export type InputFieldProps = FormFieldProps & {
+  type?: 'text' | 'email' | 'password'
+  placeholder?: string
+  value: string
+  onChange: (value: string) => void
 }
+
+export type ButtonProps = {
+  variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link'
+  size?: 'default' | 'sm' | 'lg' | 'icon'
+  loading?: boolean
+  disabled?: boolean
+  children: React.ReactNode
+  onClick?: () => void
+  type?: 'button' | 'submit' | 'reset'
+}
+
+// Tree component types for hierarchical data
+export type TreeNode = {
+  id: string
+  name: string
+  type: 'universe' | 'collection' | 'group' | 'content'
+  children?: TreeNode[]
+  parent?: string
+  order: number
+  metadata?: Record<string, unknown>
+}
+
+export type HierarchyData = {
+  collections: Array<{
+    id: string
+    name: string
+    description: string
+    order: number
+    universeId: string
+  }>
+  groups: Array<{
+    id: string
+    name: string
+    description: string
+    order: number
+    collectionId: string
+    itemType: string
+  }>
+  content: Array<{
+    id: string
+    name: string
+    description: string
+    order: number
+    groupId: string
+    isViewable: boolean
+    itemType: string
+    releaseDate: Date | null
+  }>
+  groupRelationships: Array<{
+    id: string
+    parentGroupId: string
+    childGroupId: string
+  }>
+  contentRelationships: Array<{
+    id: string
+    parentContentId: string
+    childContentId: string
+  }>
+}
+
+// Action result types for consistent server actions
+export type ActionResult<T = void> = {
+  success: true
+  data: T
+  message?: string
+} | {
+  success: false
+  error: string
+  code: string
+}
+
+// Search and filter types
+export type SearchFilters = {
+  query?: string
+  type?: 'universe' | 'collection' | 'group' | 'content'
+  isPublic?: boolean
+  userId?: string
+}
+
+export type SortOptions = {
+  field: string
+  direction: 'asc' | 'desc'
+}
+
+export type PaginationOptions = {
+  page: number
+  limit: number
+}
+
+// Navigation types
+export type NavItem = {
+  title: string
+  href: string
+  icon?: React.ComponentType
+  active?: boolean
+  children?: NavItem[]
+}
+
+export type BreadcrumbItem = {
+  title: string
+  href?: string
+  active?: boolean
+}
+
+// Modal and dialog types
+export type ModalProps = {
+  open: boolean
+  onClose: () => void
+  title?: string
+  description?: string
+  children: React.ReactNode
+}
+
+export type ConfirmDialogProps = {
+  open: boolean
+  onClose: () => void
+  onConfirm: () => void
+  title: string
+  description: string
+  confirmText?: string
+  cancelText?: string
+  variant?: 'default' | 'destructive'
+}
+
+// Generic utility types
+export type Optional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>
+export type RequiredFields<T, K extends keyof T> = Omit<T, K> & Required<Pick<T, K>>
+
+// Export common schema types for reuse
+export { userValidation } from '@/lib/services/user.service'

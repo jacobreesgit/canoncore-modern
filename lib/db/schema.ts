@@ -1,16 +1,18 @@
 import {
   boolean,
   timestamp,
+  date,
   pgTable,
   text,
-  primaryKey, // eslint-disable-line @typescript-eslint/no-unused-vars
   integer,
   varchar,
   index,
   uniqueIndex,
+  primaryKey,
 } from 'drizzle-orm/pg-core'
+import type { AdapterAccountType } from 'next-auth/adapters'
 
-// User accounts table
+// Users table (NextAuth.js compatible)
 export const users = pgTable('user', {
   id: text('id')
     .primaryKey()
@@ -18,15 +20,12 @@ export const users = pgTable('user', {
   name: text('name'),
   email: text('email').unique().notNull(),
   image: text('image'),
-  // Custom field for credentials authentication
   passwordHash: text('passwordHash'),
   createdAt: timestamp('createdAt', { mode: 'date' }).defaultNow(),
   updatedAt: timestamp('updatedAt', { mode: 'date' }).defaultNow(),
 })
 
-// CanonCore application tables
-
-// Universes (top-level franchise containers)
+// Universes (top level - franchise containers)
 export const universes = pgTable(
   'universes',
   {
@@ -39,22 +38,19 @@ export const universes = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
     isPublic: boolean('isPublic').default(false).notNull(),
-    sourceLink: varchar('sourceLink', { length: 500 }),
-    sourceLinkName: varchar('sourceLinkName', { length: 255 }),
+    order: integer('order').notNull().default(0),
     createdAt: timestamp('createdAt', { mode: 'date' }).defaultNow().notNull(),
     updatedAt: timestamp('updatedAt', { mode: 'date' }).defaultNow().notNull(),
   },
   table => [
-    // Indexes for performance
     index('universes_userId_idx').on(table.userId),
-    index('universes_isPublic_idx').on(table.isPublic),
-    index('universes_createdAt_idx').on(table.createdAt),
+    index('universes_order_idx').on(table.order),
   ]
 )
 
-// Content (both viewable and organisational content within universes)
-export const content = pgTable(
-  'content',
+// Collections (chronological containers within universes)
+export const collections = pgTable(
+  'collections',
   {
     id: text('id')
       .primaryKey()
@@ -67,165 +63,202 @@ export const content = pgTable(
     userId: text('userId')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
-    isViewable: boolean('isViewable').default(false).notNull(),
-    itemType: varchar('itemType', { length: 50 }).notNull(), // 'video', 'audio', 'text', 'character', 'location', 'item', 'event', 'collection'
-    sourceId: text('sourceId').references(() => sources.id, {
-      onDelete: 'set null',
-    }),
-    sourceLink: varchar('sourceLink', { length: 500 }),
-    sourceLinkName: varchar('sourceLinkName', { length: 255 }),
+    order: integer('order').notNull().default(0),
     createdAt: timestamp('createdAt', { mode: 'date' }).defaultNow().notNull(),
     updatedAt: timestamp('updatedAt', { mode: 'date' }).defaultNow().notNull(),
   },
   table => [
-    // Indexes for performance
-    index('content_universeId_idx').on(table.universeId),
+    index('collections_universeId_idx').on(table.universeId),
+    index('collections_userId_idx').on(table.userId),
+    index('collections_order_idx').on(table.order),
+  ]
+)
+
+// Groups (organizational categories within collections)
+export const groups = pgTable(
+  'groups',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    name: varchar('name', { length: 255 }).notNull(),
+    description: text('description').notNull(),
+    collectionId: text('collectionId')
+      .notNull()
+      .references(() => collections.id, { onDelete: 'cascade' }),
+    userId: text('userId')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    itemType: varchar('itemType', { length: 50 }).notNull().default('series'),
+    order: integer('order').notNull().default(0),
+    createdAt: timestamp('createdAt', { mode: 'date' }).defaultNow().notNull(),
+    updatedAt: timestamp('updatedAt', { mode: 'date' }).defaultNow().notNull(),
+  },
+  table => [
+    index('groups_collectionId_idx').on(table.collectionId),
+    index('groups_userId_idx').on(table.userId),
+    index('groups_order_idx').on(table.order),
+  ]
+)
+
+// Content (individual items within groups)
+export const content = pgTable(
+  'content',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    name: varchar('name', { length: 255 }).notNull(),
+    description: text('description').notNull(),
+    groupId: text('groupId')
+      .notNull()
+      .references(() => groups.id, { onDelete: 'cascade' }),
+    userId: text('userId')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    isViewable: boolean('isViewable').default(true).notNull(),
+    itemType: varchar('itemType', { length: 50 }).notNull().default('video'),
+    releaseDate: date('releaseDate'),
+    order: integer('order').notNull().default(0),
+    createdAt: timestamp('createdAt', { mode: 'date' }).defaultNow().notNull(),
+    updatedAt: timestamp('updatedAt', { mode: 'date' }).defaultNow().notNull(),
+  },
+  table => [
+    index('content_groupId_idx').on(table.groupId),
     index('content_userId_idx').on(table.userId),
+    index('content_order_idx').on(table.order),
     index('content_isViewable_idx').on(table.isViewable),
-    index('content_itemType_idx').on(table.itemType),
-    index('content_createdAt_idx').on(table.createdAt),
   ]
 )
 
-// Content relationships (for hierarchical organization)
+// Group relationships (for hierarchical groups within collections)
+export const groupRelationships = pgTable(
+  'group_relationships',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    parentGroupId: text('parentGroupId')
+      .notNull()
+      .references(() => groups.id, { onDelete: 'cascade' }),
+    childGroupId: text('childGroupId')
+      .notNull()
+      .references(() => groups.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('createdAt', { mode: 'date' }).defaultNow().notNull(),
+  },
+  table => [
+    index('group_relationships_parent_idx').on(table.parentGroupId),
+    index('group_relationships_child_idx').on(table.childGroupId),
+    uniqueIndex('group_relationships_unique').on(
+      table.parentGroupId,
+      table.childGroupId
+    ),
+  ]
+)
+
+// Content relationships (for hierarchical content within groups)
 export const contentRelationships = pgTable(
-  'contentRelationships',
+  'content_relationships',
   {
     id: text('id')
       .primaryKey()
       .$defaultFn(() => crypto.randomUUID()),
-    parentId: text('parentId').references(() => content.id, {
-      onDelete: 'cascade',
-    }),
-    childId: text('childId')
+    parentContentId: text('parentContentId')
       .notNull()
       .references(() => content.id, { onDelete: 'cascade' }),
-    universeId: text('universeId')
-      .notNull()
-      .references(() => universes.id, { onDelete: 'cascade' }),
-    userId: text('userId')
-      .notNull()
-      .references(() => users.id, { onDelete: 'cascade' }),
-    createdAt: timestamp('createdAt', { mode: 'date' }).defaultNow().notNull(),
-  },
-  table => [
-    // Indexes for performance
-    index('contentRelationships_parentId_idx').on(table.parentId),
-    index('contentRelationships_childId_idx').on(table.childId),
-    index('contentRelationships_universeId_idx').on(table.universeId),
-    // Unique constraint to prevent duplicate relationships
-    uniqueIndex('contentRelationships_parent_child_unique').on(
-      table.parentId,
-      table.childId
-    ),
-  ]
-)
-
-// User progress tracking (individual per user, per content)
-export const userProgress = pgTable(
-  'userProgress',
-  {
-    id: text('id')
-      .primaryKey()
-      .$defaultFn(() => crypto.randomUUID()),
-    userId: text('userId')
-      .notNull()
-      .references(() => users.id, { onDelete: 'cascade' }),
-    contentId: text('contentId')
+    childContentId: text('childContentId')
       .notNull()
       .references(() => content.id, { onDelete: 'cascade' }),
-    universeId: text('universeId')
-      .notNull()
-      .references(() => universes.id, { onDelete: 'cascade' }),
-    progress: integer('progress').default(0).notNull(), // 0-100 percentage
     createdAt: timestamp('createdAt', { mode: 'date' }).defaultNow().notNull(),
-    updatedAt: timestamp('updatedAt', { mode: 'date' }).defaultNow().notNull(),
   },
   table => [
-    // Indexes for performance
-    index('userProgress_userId_idx').on(table.userId),
-    index('userProgress_contentId_idx').on(table.contentId),
-    index('userProgress_universeId_idx').on(table.universeId),
-    // Unique constraint to ensure one progress entry per user per content
-    uniqueIndex('userProgress_user_content_unique').on(
-      table.userId,
-      table.contentId
+    index('content_relationships_parent_idx').on(table.parentContentId),
+    index('content_relationships_child_idx').on(table.childContentId),
+    uniqueIndex('content_relationships_unique').on(
+      table.parentContentId,
+      table.childContentId
     ),
   ]
 )
 
-// Content sources (for origin tracking with custom colors)
-export const sources = pgTable(
-  'sources',
+// NextAuth.js tables
+export const accounts = pgTable(
+  'account',
   {
-    id: text('id')
-      .primaryKey()
-      .$defaultFn(() => crypto.randomUUID()),
-    name: varchar('name', { length: 100 }).notNull(),
-    backgroundColor: varchar('backgroundColor', { length: 7 }).notNull(), // hex color like #ff0000
-    textColor: varchar('textColor', { length: 7 }).notNull(), // hex color like #000000
-    universeId: text('universeId')
-      .notNull()
-      .references(() => universes.id, { onDelete: 'cascade' }),
     userId: text('userId')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
-    createdAt: timestamp('createdAt', { mode: 'date' }).defaultNow().notNull(),
+    type: text('type').$type<AdapterAccountType>().notNull(),
+    provider: text('provider').notNull(),
+    providerAccountId: text('providerAccountId').notNull(),
+    refresh_token: text('refresh_token'),
+    access_token: text('access_token'),
+    expires_at: integer('expires_at'),
+    token_type: text('token_type'),
+    scope: text('scope'),
+    id_token: text('id_token'),
+    session_state: text('session_state'),
   },
-  table => [
-    // Indexes for performance
-    index('sources_universeId_idx').on(table.universeId),
-    index('sources_userId_idx').on(table.userId),
-    // Unique constraint to prevent duplicate source names per universe
-    uniqueIndex('sources_name_universe_unique').on(
-      table.name,
-      table.universeId
-    ),
+  account => [
+    {
+      compoundKey: primaryKey({
+        columns: [account.provider, account.providerAccountId],
+      }),
+    },
   ]
 )
 
-// User favourites (for universes and content)
-export const favorites = pgTable(
-  'favorites',
+export const sessions = pgTable('session', {
+  sessionToken: text('sessionToken').primaryKey(),
+  userId: text('userId')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  expires: timestamp('expires', { mode: 'date' }).notNull(),
+})
+
+export const verificationTokens = pgTable(
+  'verificationToken',
   {
-    id: text('id')
-      .primaryKey()
-      .$defaultFn(() => crypto.randomUUID()),
-    userId: text('userId')
-      .notNull()
-      .references(() => users.id, { onDelete: 'cascade' }),
-    targetId: text('targetId').notNull(), // universeId or contentId
-    targetType: varchar('targetType', { length: 20 }).notNull(), // 'universe' or 'content'
-    createdAt: timestamp('createdAt', { mode: 'date' }).defaultNow().notNull(),
+    identifier: text('identifier').notNull(),
+    token: text('token').notNull(),
+    expires: timestamp('expires', { mode: 'date' }).notNull(),
   },
-  table => [
-    // Indexes for performance
-    index('favorites_userId_idx').on(table.userId),
-    index('favorites_targetId_idx').on(table.targetId),
-    index('favorites_targetType_idx').on(table.targetType),
-    // Unique constraint to prevent duplicate favourites
-    uniqueIndex('favorites_user_target_unique').on(
-      table.userId,
-      table.targetId,
-      table.targetType
-    ),
+  verificationToken => [
+    {
+      compositePk: primaryKey({
+        columns: [verificationToken.identifier, verificationToken.token],
+      }),
+    },
   ]
 )
 
-// Type exports for the application
+// Type exports
 export type User = typeof users.$inferSelect
 export type NewUser = typeof users.$inferInsert
 
-// CanonCore type exports
 export type Universe = typeof universes.$inferSelect
 export type NewUniverse = typeof universes.$inferInsert
+
+export type Collection = typeof collections.$inferSelect
+export type NewCollection = typeof collections.$inferInsert
+
+export type Group = typeof groups.$inferSelect
+export type NewGroup = typeof groups.$inferInsert
+
 export type Content = typeof content.$inferSelect
 export type NewContent = typeof content.$inferInsert
+
+export type GroupRelationship = typeof groupRelationships.$inferSelect
+export type NewGroupRelationship = typeof groupRelationships.$inferInsert
+
 export type ContentRelationship = typeof contentRelationships.$inferSelect
 export type NewContentRelationship = typeof contentRelationships.$inferInsert
-export type UserProgress = typeof userProgress.$inferSelect
-export type NewUserProgress = typeof userProgress.$inferInsert
-export type Favorite = typeof favorites.$inferSelect
-export type NewFavorite = typeof favorites.$inferInsert
-export type Source = typeof sources.$inferSelect
-export type NewSource = typeof sources.$inferInsert
+
+export type Account = typeof accounts.$inferSelect
+export type NewAccount = typeof accounts.$inferInsert
+
+export type Session = typeof sessions.$inferSelect
+export type NewSession = typeof sessions.$inferInsert
+
+export type VerificationToken = typeof verificationTokens.$inferSelect
+export type NewVerificationToken = typeof verificationTokens.$inferInsert

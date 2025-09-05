@@ -1,172 +1,202 @@
 'use server'
 
-import { universeService } from '@/lib/services'
-import { getCurrentUser } from '@/lib/auth-helpers'
+import { auth } from '@/auth'
+import { UniverseService } from '@/lib/services/universe.service'
+import { z, type ZodIssue } from 'zod'
+import { revalidatePath } from 'next/cache'
+import { redirect } from 'next/navigation'
 
-export interface UniverseActionResult {
-  success: boolean
-  error?: string
-  data?: unknown
-}
+const createUniverseSchema = z.object({
+  name: z.string().min(1, 'Name is required').max(255, 'Name too long'),
+  description: z.string().min(1, 'Description is required'),
+  isPublic: z.boolean().default(false),
+})
 
-/**
- * Server Actions for Universe CRUD operations
- * Following React 19 server action patterns with modern Next.js 15
- */
+const updateUniverseSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string().min(1, 'Name is required').max(255, 'Name too long'),
+  description: z.string().min(1, 'Description is required'),
+  isPublic: z.boolean().default(false),
+})
 
-export async function createUniverseAction(formData: FormData) {
-  try {
-    const user = await getCurrentUser()
-    if (!user || !user.id) {
-      return { success: false, error: 'Authentication required' }
-    }
+const deleteUniverseSchema = z.object({
+  id: z.string().uuid(),
+})
 
-    const name = formData.get('name') as string
-    const description = formData.get('description') as string
-    const isPublic = formData.get('isPublic') === 'true'
-    const sourceLink = formData.get('sourceLink') as string
-    const sourceLinkName = formData.get('sourceLinkName') as string
-
-    if (!name || name.trim().length === 0) {
-      return { success: false, error: 'Universe name is required' }
-    }
-
-    // Basic URL validation if provided
-    if (sourceLink && sourceLink.trim()) {
-      try {
-        let urlToValidate = sourceLink.trim()
-        if (
-          !urlToValidate.startsWith('http://') &&
-          !urlToValidate.startsWith('https://')
-        ) {
-          urlToValidate = 'https://' + urlToValidate
-        }
-        new URL(urlToValidate)
-      } catch {
-        return { success: false, error: 'Please enter a valid source URL' }
-      }
-    }
-
-    const universe = await universeService.create({
-      name: name.trim(),
-      description: description?.trim() || '',
-      isPublic: isPublic,
-      sourceLink: sourceLink?.trim() || null,
-      sourceLinkName: sourceLinkName?.trim() || null,
-      userId: user.id,
+const updateUniverseOrderSchema = z.object({
+  orderUpdates: z.array(
+    z.object({
+      id: z.string().uuid(),
+      order: z.number().int().min(0),
     })
+  ),
+})
 
-    // Using dynamic rendering for fresh data
-
-    return {
-      success: true,
-      universeId: universe.id,
-      message: 'Universe created successfully',
+export async function createUniverse(formData: FormData) {
+  try {
+    const session = await auth()
+    if (!session?.user?.id) {
+      throw new Error('Authentication required')
     }
+
+    const rawData = {
+      name: formData.get('name') as string,
+      description: formData.get('description') as string,
+      isPublic: formData.get('isPublic') === 'true',
+    }
+
+    const validatedData = createUniverseSchema.parse(rawData)
+
+    const universe = await UniverseService.create(
+      validatedData,
+      session.user.id
+    )
+
+    revalidatePath('/dashboard')
+    redirect(`/universes/${universe.id}`)
   } catch (error) {
     console.error('Error creating universe:', error)
-    return {
-      success: false,
-      error: 'Failed to create universe. Please try again.',
-    }
-  }
-}
 
-export async function updateUniverseAction(
-  universeId: string,
-  formData: FormData
-) {
-  try {
-    const user = await getCurrentUser()
-    if (!user || !user.id) {
-      return { success: false, error: 'Authentication required' }
-    }
-
-    // Check if user owns the universe
-    const existingUniverse = await universeService.getById(universeId)
-    if (!existingUniverse || existingUniverse.userId !== user.id) {
-      return { success: false, error: 'Permission denied' }
-    }
-
-    const name = formData.get('name') as string
-    const description = formData.get('description') as string
-    const isPublic = formData.get('isPublic') === 'true'
-    const sourceLink = formData.get('sourceLink') as string
-    const sourceLinkName = formData.get('sourceLinkName') as string
-
-    if (!name || name.trim().length === 0) {
-      return { success: false, error: 'Universe name is required' }
-    }
-
-    // Basic URL validation if provided
-    if (sourceLink && sourceLink.trim()) {
-      try {
-        let urlToValidate = sourceLink.trim()
-        if (
-          !urlToValidate.startsWith('http://') &&
-          !urlToValidate.startsWith('https://')
-        ) {
-          urlToValidate = 'https://' + urlToValidate
-        }
-        new URL(urlToValidate)
-      } catch {
-        return { success: false, error: 'Please enter a valid source URL' }
+    if (error instanceof z.ZodError) {
+      return {
+        success: false,
+        error: 'Validation failed',
+        details: error.issues.map(
+          (e: ZodIssue) => `${e.path.join('.')}: ${e.message}`
+        ),
       }
     }
 
-    await universeService.update(universeId, {
-      name: name.trim(),
-      description: description?.trim() || '',
-      isPublic: isPublic,
-      sourceLink: sourceLink?.trim() || null,
-      sourceLinkName: sourceLinkName?.trim() || null,
-    })
-
-    // Using dynamic rendering for fresh data
-
-    return {
-      success: true,
-      message: 'Universe updated successfully',
-    }
-  } catch (error) {
-    if (process.env.NODE_ENV === 'development') {
-      console.error('Error updating universe:', error)
-    }
     return {
       success: false,
-      error: 'Failed to update universe. Please try again.',
+      error:
+        error instanceof Error ? error.message : 'Failed to create universe',
     }
   }
 }
 
-export async function deleteUniverseAction(universeId: string) {
+export async function updateUniverse(formData: FormData) {
   try {
-    const user = await getCurrentUser()
-    if (!user || !user.id) {
-      return { success: false, error: 'Authentication required' }
+    const session = await auth()
+    if (!session?.user?.id) {
+      throw new Error('Authentication required')
     }
 
-    // Check if user owns the universe
-    const existingUniverse = await universeService.getById(universeId)
-    if (!existingUniverse || existingUniverse.userId !== user.id) {
-      return { success: false, error: 'Permission denied' }
+    const rawData = {
+      id: formData.get('id') as string,
+      name: formData.get('name') as string,
+      description: formData.get('description') as string,
+      isPublic: formData.get('isPublic') === 'true',
     }
 
-    await universeService.delete(universeId)
+    const validatedData = updateUniverseSchema.parse(rawData)
 
-    // Using dynamic rendering for fresh data
+    const { id, ...updateData } = validatedData
+    await UniverseService.update(id, updateData, session.user.id)
 
-    return {
-      success: true,
-      message: 'Universe deleted successfully',
-    }
+    revalidatePath('/dashboard')
+    revalidatePath(`/universes/${id}`)
+
+    return { success: true }
   } catch (error) {
-    if (process.env.NODE_ENV === 'development') {
-      console.error('Error deleting universe:', error)
+    console.error('Error updating universe:', error)
+
+    if (error instanceof z.ZodError) {
+      return {
+        success: false,
+        error: 'Validation failed',
+        details: error.issues.map(
+          (e: ZodIssue) => `${e.path.join('.')}: ${e.message}`
+        ),
+      }
     }
+
     return {
       success: false,
-      error: 'Failed to delete universe. Please try again.',
+      error:
+        error instanceof Error ? error.message : 'Failed to update universe',
+    }
+  }
+}
+
+export async function deleteUniverse(formData: FormData) {
+  try {
+    const session = await auth()
+    if (!session?.user?.id) {
+      throw new Error('Authentication required')
+    }
+
+    const rawData = {
+      id: formData.get('id') as string,
+    }
+
+    const validatedData = deleteUniverseSchema.parse(rawData)
+
+    await UniverseService.delete(validatedData.id, session.user.id)
+
+    revalidatePath('/dashboard')
+    redirect('/dashboard')
+  } catch (error) {
+    console.error('Error deleting universe:', error)
+
+    if (error instanceof z.ZodError) {
+      return {
+        success: false,
+        error: 'Validation failed',
+        details: error.issues.map(
+          (e: ZodIssue) => `${e.path.join('.')}: ${e.message}`
+        ),
+      }
+    }
+
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : 'Failed to delete universe',
+    }
+  }
+}
+
+export async function updateUniverseOrder(formData: FormData) {
+  try {
+    const session = await auth()
+    if (!session?.user?.id) {
+      throw new Error('Authentication required')
+    }
+
+    const rawData = {
+      orderUpdates: JSON.parse(formData.get('orderUpdates') as string),
+    }
+
+    const validatedData = updateUniverseOrderSchema.parse(rawData)
+
+    await UniverseService.updateOrder(
+      validatedData.orderUpdates,
+      session.user.id
+    )
+
+    revalidatePath('/dashboard')
+
+    return { success: true }
+  } catch (error) {
+    console.error('Error updating universe order:', error)
+
+    if (error instanceof z.ZodError) {
+      return {
+        success: false,
+        error: 'Validation failed',
+        details: error.issues.map(
+          (e: ZodIssue) => `${e.path.join('.')}: ${e.message}`
+        ),
+      }
+    }
+
+    return {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : 'Failed to update universe order',
     }
   }
 }

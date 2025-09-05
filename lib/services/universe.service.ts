@@ -1,355 +1,260 @@
-import 'server-only'
-
-import { eq, and, desc, count, sql } from 'drizzle-orm'
-import type { Universe, NewUniverse } from '@/lib/db/schema'
-
-/**
- * Server-side Universe Service
- *
- * Provides server-side data access for Universe operations:
- * - Direct PostgreSQL access with Drizzle ORM
- * - Server-side data fetching for Server Components
- * - Enhanced security with server-only access
- * - Better performance with optimized queries
- */
+import { eq, and, desc, asc } from 'drizzle-orm'
+import { db } from '@/lib/db'
+import {
+  universes,
+  collections,
+  groups,
+  content,
+  groupRelationships,
+  contentRelationships,
+  type Universe,
+  type NewUniverse,
+} from '@/lib/db/schema'
 
 export class UniverseService {
   /**
-   * Get universe by ID
-   */
-  async getById(id: string): Promise<Universe | null> {
-    const { DatabaseQueries } = await import('@/lib/db/queries')
-    const { withPerformanceMonitoring } = await import(
-      '@/lib/db/connection-pool'
-    )
-    const optimizedGetById = withPerformanceMonitoring(
-      DatabaseQueries.getUniverseById,
-      'universe.getById'
-    )
-    return await optimizedGetById(id)
-  }
-
-  /**
-   * Get universe by ID with user progress
-   */
-  async getByIdWithUserProgress(
-    id: string,
-    userId: string
-  ): Promise<(Universe & { progress?: number }) | null> {
-    try {
-      const universe = await this.getById(id)
-      if (!universe) {
-        return null
-      }
-
-      // Calculate progress for this universe based on user's content progress
-      const progress = await this.calculateUniverseProgress(id, userId)
-
-      return {
-        ...universe,
-        progress,
-      }
-    } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('Error fetching universe with user progress:', error)
-      }
-      throw new Error('Failed to fetch universe with user progress')
-    }
-  }
-
-  /**
    * Create a new universe
    */
-  async create(universeData: NewUniverse): Promise<Universe> {
+  static async create(
+    data: Omit<NewUniverse, 'id' | 'createdAt' | 'updatedAt' | 'userId'>,
+    userId: string
+  ): Promise<Universe> {
     try {
-      const { db } = await import('@/lib/db')
-      const { universes } = await import('@/lib/db/schema')
-
-      const [newUniverse] = await db
+      const [universe] = await db
         .insert(universes)
         .values({
-          ...universeData,
-          createdAt: new Date(),
-          updatedAt: new Date(),
+          ...data,
+          userId,
         })
         .returning()
 
-      return newUniverse
+      return universe
     } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('Error creating universe:', error)
-      }
+      console.error('Error creating universe:', error)
       throw new Error('Failed to create universe')
     }
   }
 
   /**
-   * Update universe
+   * Get all universes for a user
    */
-  async update(
-    id: string,
-    updateData: Partial<NewUniverse>
-  ): Promise<Universe | null> {
+  static async getByUser(userId: string): Promise<Universe[]> {
     try {
-      const { db } = await import('@/lib/db')
-      const { universes } = await import('@/lib/db/schema')
+      return await db
+        .select()
+        .from(universes)
+        .where(eq(universes.userId, userId))
+        .orderBy(asc(universes.order), desc(universes.createdAt))
+    } catch (error) {
+      console.error('Error fetching user universes:', error)
+      throw new Error('Failed to fetch universes')
+    }
+  }
 
-      const [updatedUniverse] = await db
+  /**
+   * Get a specific universe by ID with ownership check
+   */
+  static async getById(id: string, userId: string): Promise<Universe | null> {
+    try {
+      const [universe] = await db
+        .select()
+        .from(universes)
+        .where(and(eq(universes.id, id), eq(universes.userId, userId)))
+        .limit(1)
+
+      return universe || null
+    } catch (error) {
+      console.error('Error fetching universe:', error)
+      throw new Error('Failed to fetch universe')
+    }
+  }
+
+  /**
+   * Get public universes (for discovery)
+   */
+  static async getPublic(): Promise<Universe[]> {
+    try {
+      return await db
+        .select()
+        .from(universes)
+        .where(eq(universes.isPublic, true))
+        .orderBy(desc(universes.createdAt))
+    } catch (error) {
+      console.error('Error fetching public universes:', error)
+      throw new Error('Failed to fetch public universes')
+    }
+  }
+
+  /**
+   * Update a universe with ownership check
+   */
+  static async update(
+    id: string,
+    data: Partial<
+      Omit<NewUniverse, 'id' | 'userId' | 'createdAt' | 'updatedAt'>
+    >,
+    userId: string
+  ): Promise<Universe> {
+    try {
+      const [universe] = await db
         .update(universes)
         .set({
-          ...updateData,
+          ...data,
           updatedAt: new Date(),
         })
-        .where(eq(universes.id, id))
+        .where(and(eq(universes.id, id), eq(universes.userId, userId)))
         .returning()
 
-      return updatedUniverse || null
-    } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('Error updating universe:', error)
+      if (!universe) {
+        throw new Error('Universe not found or access denied')
       }
+
+      return universe
+    } catch (error) {
+      console.error('Error updating universe:', error)
       throw new Error('Failed to update universe')
     }
   }
 
   /**
-   * Delete universe
+   * Delete a universe with ownership check
    */
-  async delete(id: string): Promise<void> {
+  static async delete(id: string, userId: string): Promise<void> {
     try {
-      const { db } = await import('@/lib/db')
-      const { universes } = await import('@/lib/db/schema')
+      await db.transaction(async tx => {
+        // Delete universe (cascade will handle related records)
+        const result = await tx
+          .delete(universes)
+          .where(and(eq(universes.id, id), eq(universes.userId, userId)))
 
-      await db.delete(universes).where(eq(universes.id, id))
+        if (result.rowCount === 0) {
+          throw new Error('Universe not found or access denied')
+        }
+      })
     } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('Error deleting universe:', error)
-      }
+      console.error('Error deleting universe:', error)
       throw new Error('Failed to delete universe')
     }
   }
 
   /**
-   * Get universes by user ID
+   * Update universe order for a user
    */
-  async getByUserId(userId: string): Promise<Universe[]> {
-    const { DatabaseQueries } = await import('@/lib/db/queries')
-    const { withPerformanceMonitoring } = await import(
-      '@/lib/db/connection-pool'
-    )
-    const optimizedGetByUser = withPerformanceMonitoring(
-      DatabaseQueries.getUniversesByUserId,
-      'universe.getByUserId'
-    )
-    return await optimizedGetByUser(userId)
-  }
-
-  /**
-   * Get universes by user ID with progress
-   */
-  async getByUserIdWithProgress(
+  static async updateOrder(
+    orderUpdates: { id: string; order: number }[],
     userId: string
-  ): Promise<(Universe & { progress?: number })[]> {
+  ): Promise<void> {
     try {
-      const userUniverses = await this.getByUserId(userId)
-
-      // Calculate progress for each universe
-      const universesWithProgress = await Promise.all(
-        userUniverses.map(async universe => {
-          const progress = await this.calculateUniverseProgress(
-            universe.id,
-            userId
-          )
-          return {
-            ...universe,
-            progress,
-          }
-        })
-      )
-
-      return universesWithProgress
-    } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('Error fetching user universes with progress:', error)
-      }
-      throw new Error('Failed to fetch user universes with progress')
-    }
-  }
-
-  /**
-   * Get public universes for discovery page
-   */
-  async getPublicUniverses(options?: {
-    limitCount?: number
-    searchQuery?: string
-    sortBy?: 'newest' | 'oldest' | 'name'
-  }): Promise<Universe[]> {
-    const { limitCount = 20, searchQuery } = options || {}
-    const { DatabaseQueries } = await import('@/lib/db/queries')
-    const { withPerformanceMonitoring } = await import(
-      '@/lib/db/connection-pool'
-    )
-
-    const optimizedGetPublic = withPerformanceMonitoring(
-      DatabaseQueries.getPublicUniverses,
-      'universe.getPublicUniverses'
-    )
-    const queryOptions: {
-      limit: number
-      searchQuery?: string
-      sortBy?: 'newest' | 'oldest' | 'name'
-    } = { limit: limitCount }
-
-    if (searchQuery && searchQuery.trim()) {
-      queryOptions.searchQuery = searchQuery.trim()
-    }
-
-    if (options?.sortBy) {
-      queryOptions.sortBy = options.sortBy
-    } else {
-      queryOptions.sortBy = 'newest'
-    }
-
-    return await optimizedGetPublic(queryOptions)
-  }
-
-  /**
-   * Calculate universe progress based on user's content progress
-   */
-  async calculateUniverseProgress(
-    universeId: string,
-    userId: string
-  ): Promise<number> {
-    try {
-      const { db } = await import('@/lib/db')
-      const { content, userProgress } = await import('@/lib/db/schema')
-
-      // Get all viewable content in this universe
-      const viewableContent = await db
-        .select({ id: content.id })
-        .from(content)
-        .where(
-          and(eq(content.universeId, universeId), eq(content.isViewable, true))
-        )
-
-      if (viewableContent.length === 0) {
-        return 0
-      }
-
-      // Get user progress for viewable content
-      const progressData = await db
-        .select({
-          progress: userProgress.progress,
-        })
-        .from(userProgress)
-        .where(
-          and(
-            eq(userProgress.userId, userId),
-            eq(userProgress.universeId, universeId)
-          )
-        )
-
-      if (progressData.length === 0) {
-        return 0
-      }
-
-      // Calculate average progress
-      const totalProgress = progressData.reduce(
-        (sum, item) => sum + item.progress,
-        0
-      )
-      const averageProgress = Math.round(totalProgress / viewableContent.length)
-
-      return Math.min(100, Math.max(0, averageProgress))
-    } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('Error calculating universe progress:', error)
-      }
-      return 0
-    }
-  }
-
-  /**
-   * Get universe with detailed content statistics
-   */
-  async getWithContentStats(id: string): Promise<
-    | (Universe & {
-        totalContent: number
-        viewableContent: number
-        organisationalContent: number
+      await db.transaction(async tx => {
+        for (const update of orderUpdates) {
+          await tx
+            .update(universes)
+            .set({
+              order: update.order,
+              updatedAt: new Date(),
+            })
+            .where(
+              and(eq(universes.id, update.id), eq(universes.userId, userId))
+            )
+        }
       })
-    | null
-  > {
+    } catch (error) {
+      console.error('Error updating universe order:', error)
+      throw new Error('Failed to update universe order')
+    }
+  }
+
+  /**
+   * Check if user owns universe
+   */
+  static async checkOwnership(id: string, userId: string): Promise<boolean> {
     try {
-      const universe = await this.getById(id)
+      const [universe] = await db
+        .select({ id: universes.id })
+        .from(universes)
+        .where(and(eq(universes.id, id), eq(universes.userId, userId)))
+        .limit(1)
+
+      return !!universe
+    } catch (error) {
+      console.error('Error checking universe ownership:', error)
+      return false
+    }
+  }
+
+  /**
+   * Get complete hierarchy for a universe (Universe → Collections → Groups → Content)
+   */
+  static async getCompleteHierarchy(universeId: string, userId: string) {
+    try {
+      // First verify user owns the universe
+      const universe = await this.getById(universeId, userId)
       if (!universe) {
-        return null
+        throw new Error('Universe not found or access denied')
       }
 
-      const { db } = await import('@/lib/db')
-      const { content } = await import('@/lib/db/schema')
+      // Fetch all collections for this universe
+      const collectionsData = await db
+        .select()
+        .from(collections)
+        .where(eq(collections.universeId, universeId))
+        .orderBy(asc(collections.order), desc(collections.createdAt))
 
-      // Get content statistics
-      const contentStats = await db
+      // Fetch all groups for these collections
+      const groupsData = await db
         .select({
-          totalContent: count(),
-          viewableContent: sql<number>`sum(case when ${content.isViewable} = true then 1 else 0 end)`,
-          organisationalContent: sql<number>`sum(case when ${content.isViewable} = false then 1 else 0 end)`,
+          group: groups,
+          collectionId: collections.id,
+        })
+        .from(groups)
+        .innerJoin(collections, eq(groups.collectionId, collections.id))
+        .where(eq(collections.universeId, universeId))
+        .orderBy(asc(groups.order), desc(groups.createdAt))
+
+      // Fetch all content for these groups
+      const contentData = await db
+        .select({
+          content: content,
+          groupId: groups.id,
+          collectionId: collections.id,
         })
         .from(content)
-        .where(eq(content.universeId, id))
+        .innerJoin(groups, eq(content.groupId, groups.id))
+        .innerJoin(collections, eq(groups.collectionId, collections.id))
+        .where(eq(collections.universeId, universeId))
+        .orderBy(asc(content.order), desc(content.createdAt))
 
-      const stats = contentStats[0] || {
-        totalContent: 0,
-        viewableContent: 0,
-        organisationalContent: 0,
-      }
+      // Fetch group relationships for hierarchy
+      const groupRelationshipsData = await db
+        .select()
+        .from(groupRelationships)
+        .innerJoin(groups, eq(groupRelationships.parentGroupId, groups.id))
+        .innerJoin(collections, eq(groups.collectionId, collections.id))
+        .where(eq(collections.universeId, universeId))
+
+      // Fetch content relationships for hierarchy
+      const contentRelationshipsData = await db
+        .select()
+        .from(contentRelationships)
+        .innerJoin(
+          content,
+          eq(contentRelationships.parentContentId, content.id)
+        )
+        .innerJoin(groups, eq(content.groupId, groups.id))
+        .innerJoin(collections, eq(groups.collectionId, collections.id))
+        .where(eq(collections.universeId, universeId))
 
       return {
-        ...universe,
-        totalContent: stats.totalContent,
-        viewableContent: Number(stats.viewableContent),
-        organisationalContent: Number(stats.organisationalContent),
+        universe,
+        collections: collectionsData,
+        groups: groupsData,
+        content: contentData,
+        groupRelationships: groupRelationshipsData,
+        contentRelationships: contentRelationshipsData,
       }
     } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('Error fetching universe with content stats:', error)
-      }
-      throw new Error('Failed to fetch universe with content stats')
-    }
-  }
-
-  /**
-   * Search public universes by name
-   */
-  async searchPublic(
-    searchTerm: string,
-    limitCount: number = 20
-  ): Promise<Universe[]> {
-    try {
-      const { db } = await import('@/lib/db')
-      const { universes } = await import('@/lib/db/schema')
-
-      const searchResults = await db
-        .select()
-        .from(universes)
-        .where(
-          and(
-            eq(universes.isPublic, true),
-            sql`${universes.name} ILIKE ${`%${searchTerm}%`}`
-          )
-        )
-        .orderBy(desc(universes.createdAt))
-        .limit(limitCount)
-
-      return searchResults
-    } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('Error searching public universes:', error)
-      }
-      throw new Error('Failed to search public universes')
+      console.error('Error fetching complete universe hierarchy:', error)
+      throw new Error('Failed to fetch complete hierarchy')
     }
   }
 }
-
-export const universeService = new UniverseService()

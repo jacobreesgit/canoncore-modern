@@ -1,295 +1,344 @@
-import 'server-only'
+import { db } from '@/lib/db'
+import { users } from '@/lib/db/schema'
+import { eq } from 'drizzle-orm'
+import bcrypt from 'bcryptjs'
+import { z } from 'zod'
 
-import { eq, and, count } from 'drizzle-orm'
-import type { User, NewUser, Favorite } from '@/lib/db/schema'
+// Shared validation schemas - used on both frontend and backend
+export const userValidation = {
+  signUp: z.object({
+    name: z.string().min(1, 'Name is required').max(255, 'Name too long'),
+    email: z.string().email('Invalid email address').toLowerCase(),
+    password: z.string().min(6, 'Password must be at least 6 characters').max(100, 'Password too long'),
+  }),
+  signIn: z.object({
+    email: z.string().email('Invalid email address').toLowerCase(),
+    password: z.string().min(1, 'Password is required'),
+  }),
+  updateProfile: z.object({
+    name: z.string().min(1, 'Name is required').max(255, 'Name too long').optional(),
+    email: z.string().email('Invalid email address').toLowerCase().optional(),
+  }),
+}
 
-/**
- * Server-side User Service
- *
- * Provides server-side data access for User operations:
- * - Direct PostgreSQL access with Drizzle ORM
- * - Server-side data fetching for Server Components
- * - Enhanced security with server-only access
- * - Better performance with optimized queries
- */
+// Consistent error types
+export class UserServiceError extends Error {
+  constructor(
+    message: string,
+    public code: 'VALIDATION_ERROR' | 'USER_EXISTS' | 'USER_NOT_FOUND' | 'INVALID_CREDENTIALS' | 'DATABASE_ERROR'
+  ) {
+    super(message)
+    this.name = 'UserServiceError'
+  }
+}
+
+// Service result type for consistent responses
+export type ServiceResult<T> = {
+  success: true
+  data: T
+} | {
+  success: false
+  error: string
+  code: UserServiceError['code']
+}
 
 export class UserService {
   /**
-   * Get user by ID
+   * Create a new user account
+   * Consistent validation and error handling
    */
-  async getById(id: string): Promise<User | null> {
-    const { DatabaseQueries } = await import('@/lib/db/queries')
-    const { withPerformanceMonitoring } = await import(
-      '@/lib/db/connection-pool'
-    )
-    const optimizedGetById = withPerformanceMonitoring(
-      DatabaseQueries.getUserById,
-      'user.getById'
-    )
-    return await optimizedGetById(id)
-  }
-
-  /**
-   * Create a new user
-   */
-  async create(userData: NewUser): Promise<User> {
+  static async create(input: z.infer<typeof userValidation.signUp>): Promise<ServiceResult<{ id: string; name: string; email: string }>> {
     try {
-      const { db } = await import('@/lib/db')
-      const { users } = await import('@/lib/db/schema')
+      // Validate input using shared schema
+      const validatedData = userValidation.signUp.parse(input)
+      const { name, email, password } = validatedData
 
+      // Check if user already exists
+      const existingUser = await db
+        .select({ id: users.id })
+        .from(users)
+        .where(eq(users.email, email))
+        .limit(1)
+
+      if (existingUser.length > 0) {
+        return {
+          success: false,
+          error: 'User with this email already exists',
+          code: 'USER_EXISTS'
+        }
+      }
+
+      // Hash password with consistent salt rounds
+      const saltRounds = 12
+      const passwordHash = await bcrypt.hash(password, saltRounds)
+
+      // Create user
       const [newUser] = await db
         .insert(users)
         .values({
-          ...userData,
+          name: name.trim(),
+          email,
+          passwordHash,
           createdAt: new Date(),
           updatedAt: new Date(),
         })
-        .returning()
+        .returning({
+          id: users.id,
+          name: users.name,
+          email: users.email,
+        })
 
-      return newUser
+      return {
+        success: true,
+        data: {
+          id: newUser.id,
+          name: newUser.name || '',
+          email: newUser.email,
+        }
+      }
     } catch (error) {
-      console.error('Error creating user:', error)
-      throw new Error('Failed to create user')
+      console.error('UserService.create error:', error)
+
+      if (error instanceof z.ZodError) {
+        return {
+          success: false,
+          error: error.issues[0].message,
+          code: 'VALIDATION_ERROR'
+        }
+      }
+
+      if (error instanceof Error && error.message.includes('unique constraint')) {
+        return {
+          success: false,
+          error: 'User with this email already exists',
+          code: 'USER_EXISTS'
+        }
+      }
+
+      return {
+        success: false,
+        error: 'Failed to create user account',
+        code: 'DATABASE_ERROR'
+      }
+    }
+  }
+
+  /**
+   * Authenticate user credentials
+   * Used by NextAuth.js authorize function
+   */
+  static async authenticate(input: z.infer<typeof userValidation.signIn>): Promise<ServiceResult<{ id: string; name: string; email: string; image: string | null }>> {
+    try {
+      // Validate input using shared schema
+      const validatedData = userValidation.signIn.parse(input)
+      const { email, password } = validatedData
+
+      // Find user by email
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.email, email))
+        .limit(1)
+
+      if (!user || !user.passwordHash) {
+        return {
+          success: false,
+          error: 'Invalid email or password',
+          code: 'INVALID_CREDENTIALS'
+        }
+      }
+
+      // Verify password
+      const isValidPassword = await bcrypt.compare(password, user.passwordHash)
+
+      if (!isValidPassword) {
+        return {
+          success: false,
+          error: 'Invalid email or password',
+          code: 'INVALID_CREDENTIALS'
+        }
+      }
+
+      return {
+        success: true,
+        data: {
+          id: user.id,
+          name: user.name || '',
+          email: user.email,
+          image: user.image,
+        }
+      }
+    } catch (error) {
+      console.error('UserService.authenticate error:', error)
+
+      if (error instanceof z.ZodError) {
+        return {
+          success: false,
+          error: error.issues[0].message,
+          code: 'VALIDATION_ERROR'
+        }
+      }
+
+      return {
+        success: false,
+        error: 'Authentication failed',
+        code: 'DATABASE_ERROR'
+      }
+    }
+  }
+
+  /**
+   * Find user by ID
+   * Consistent user retrieval
+   */
+  static async findById(id: string): Promise<ServiceResult<{ id: string; name: string; email: string; image: string | null }>> {
+    try {
+      const [user] = await db
+        .select({
+          id: users.id,
+          name: users.name,
+          email: users.email,
+          image: users.image,
+        })
+        .from(users)
+        .where(eq(users.id, id))
+        .limit(1)
+
+      if (!user) {
+        return {
+          success: false,
+          error: 'User not found',
+          code: 'USER_NOT_FOUND'
+        }
+      }
+
+      return {
+        success: true,
+        data: {
+          ...user,
+          name: user.name || ''
+        }
+      }
+    } catch (error) {
+      console.error('UserService.findById error:', error)
+      return {
+        success: false,
+        error: 'Failed to find user',
+        code: 'DATABASE_ERROR'
+      }
+    }
+  }
+
+  /**
+   * Find user by email
+   * Consistent user retrieval
+   */
+  static async findByEmail(email: string): Promise<ServiceResult<{ id: string; name: string; email: string; image: string | null }>> {
+    try {
+      const [user] = await db
+        .select({
+          id: users.id,
+          name: users.name,
+          email: users.email,
+          image: users.image,
+        })
+        .from(users)
+        .where(eq(users.email, email.toLowerCase()))
+        .limit(1)
+
+      if (!user) {
+        return {
+          success: false,
+          error: 'User not found',
+          code: 'USER_NOT_FOUND'
+        }
+      }
+
+      return {
+        success: true,
+        data: {
+          ...user,
+          name: user.name || ''
+        }
+      }
+    } catch (error) {
+      console.error('UserService.findByEmail error:', error)
+      return {
+        success: false,
+        error: 'Failed to find user',
+        code: 'DATABASE_ERROR'
+      }
     }
   }
 
   /**
    * Update user profile
+   * Consistent profile updates
    */
-  async updateProfile(
-    id: string,
-    updateData: Partial<NewUser>
-  ): Promise<User | null> {
+  static async updateProfile(
+    id: string, 
+    input: z.infer<typeof userValidation.updateProfile>
+  ): Promise<ServiceResult<{ id: string; name: string; email: string; image: string | null }>> {
     try {
-      const { db } = await import('@/lib/db')
-      const { users } = await import('@/lib/db/schema')
+      // Validate input using shared schema
+      const validatedData = userValidation.updateProfile.parse(input)
 
+      // Check if user exists
+      const existingUser = await this.findById(id)
+      if (!existingUser.success) {
+        return existingUser
+      }
+
+      // If email is being updated, check for conflicts
+      if (validatedData.email && validatedData.email !== existingUser.data.email) {
+        const emailCheck = await this.findByEmail(validatedData.email)
+        if (emailCheck.success) {
+          return {
+            success: false,
+            error: 'Email address is already in use',
+            code: 'USER_EXISTS'
+          }
+        }
+      }
+
+      // Update user
       const [updatedUser] = await db
         .update(users)
         .set({
-          ...updateData,
+          ...validatedData,
           updatedAt: new Date(),
         })
         .where(eq(users.id, id))
-        .returning()
-
-      return updatedUser || null
-    } catch (error) {
-      console.error('Error updating user profile:', error)
-      throw new Error('Failed to update user profile')
-    }
-  }
-
-  /**
-   * Get user favourites
-   */
-  async getUserFavourites(
-    userId: string
-  ): Promise<{ universes: string[]; content: string[] }> {
-    try {
-      const { DatabaseQueries } = await import('@/lib/db/queries')
-      const { withPerformanceMonitoring } = await import(
-        '@/lib/db/connection-pool'
-      )
-      const optimizedGetFavourites = withPerformanceMonitoring(
-        DatabaseQueries.getUserFavorites,
-        'user.getUserFavourites'
-      )
-      return await optimizedGetFavourites(userId)
-    } catch (error) {
-      console.error('Error fetching user favourites:', error)
-      return { universes: [], content: [] }
-    }
-  }
-
-  /**
-   * Add to favourites
-   */
-  async addToFavourites(
-    userId: string,
-    targetId: string,
-    targetType: 'universe' | 'content'
-  ): Promise<Favorite> {
-    try {
-      const { db } = await import('@/lib/db')
-      const { favorites } = await import('@/lib/db/schema')
-
-      const [favorite] = await db
-        .insert(favorites)
-        .values({
-          userId,
-          targetId,
-          targetType,
-          createdAt: new Date(),
+        .returning({
+          id: users.id,
+          name: users.name,
+          email: users.email,
+          image: users.image,
         })
-        .returning()
-
-      return favorite
-    } catch (error) {
-      console.error('Error adding to favourites:', error)
-      throw new Error('Failed to add to favourites')
-    }
-  }
-
-  /**
-   * Remove from favourites
-   */
-  async removeFromFavourites(
-    userId: string,
-    targetId: string,
-    targetType: 'universe' | 'content'
-  ): Promise<void> {
-    try {
-      const { db } = await import('@/lib/db')
-      const { favorites } = await import('@/lib/db/schema')
-
-      await db
-        .delete(favorites)
-        .where(
-          and(
-            eq(favorites.userId, userId),
-            eq(favorites.targetId, targetId),
-            eq(favorites.targetType, targetType)
-          )
-        )
-    } catch (error) {
-      console.error('Error removing from favourites:', error)
-      throw new Error('Failed to remove from favourites')
-    }
-  }
-
-  /**
-   * Check if item is favourited by user
-   */
-  async isFavourite(
-    userId: string,
-    targetId: string,
-    targetType: 'universe' | 'content'
-  ): Promise<boolean> {
-    try {
-      const { db } = await import('@/lib/db')
-      const { favorites } = await import('@/lib/db/schema')
-
-      const [favorite] = await db
-        .select()
-        .from(favorites)
-        .where(
-          and(
-            eq(favorites.userId, userId),
-            eq(favorites.targetId, targetId),
-            eq(favorites.targetType, targetType)
-          )
-        )
-        .limit(1)
-
-      return !!favorite
-    } catch (error) {
-      console.error('Error checking favourite status:', error)
-      return false
-    }
-  }
-
-  /**
-   * Get user by email
-   */
-  async getByEmail(email: string): Promise<User | null> {
-    const { DatabaseQueries } = await import('@/lib/db/queries')
-    const { withPerformanceMonitoring } = await import(
-      '@/lib/db/connection-pool'
-    )
-    const optimizedGetByEmail = withPerformanceMonitoring(
-      DatabaseQueries.getUserByEmail,
-      'user.getByEmail'
-    )
-    return await optimizedGetByEmail(email)
-  }
-
-  /**
-   * Get user profile statistics
-   */
-  async getProfileStats(userId: string): Promise<{
-    totalUniverses: number
-    publicUniverses: number
-    favouritesCount: number
-  }> {
-    try {
-      const { db } = await import('@/lib/db')
-      const { universes, favorites } = await import('@/lib/db/schema')
-
-      const [universesCount] = await db
-        .select({ count: count() })
-        .from(universes)
-        .where(eq(universes.userId, userId))
-
-      const [publicUniversesCount] = await db
-        .select({ count: count() })
-        .from(universes)
-        .where(and(eq(universes.userId, userId), eq(universes.isPublic, true)))
-
-      const [favouritesCount] = await db
-        .select({ count: count() })
-        .from(favorites)
-        .where(eq(favorites.userId, userId))
 
       return {
-        totalUniverses: universesCount.count,
-        publicUniverses: publicUniversesCount.count,
-        favouritesCount: favouritesCount.count,
+        success: true,
+        data: {
+          ...updatedUser,
+          name: updatedUser.name || ''
+        }
       }
     } catch (error) {
-      console.error('Error fetching profile stats:', error)
+      console.error('UserService.updateProfile error:', error)
+
+      if (error instanceof z.ZodError) {
+        return {
+          success: false,
+          error: error.issues[0].message,
+          code: 'VALIDATION_ERROR'
+        }
+      }
+
       return {
-        totalUniverses: 0,
-        publicUniverses: 0,
-        favouritesCount: 0,
+        success: false,
+        error: 'Failed to update profile',
+        code: 'DATABASE_ERROR'
       }
-    }
-  }
-
-  /**
-   * Delete user account and all associated data
-   * This will cascade delete all related records (universes, content, progress, favorites, etc.)
-   */
-  async deleteUser(userId: string): Promise<void> {
-    try {
-      const { db } = await import('@/lib/db')
-      const { users } = await import('@/lib/db/schema')
-
-      // First verify the user exists
-      const existingUser = await this.getById(userId)
-      if (!existingUser) {
-        throw new Error('User not found')
-      }
-
-      // Get stats before deletion for logging purposes
-      const stats = await this.getProfileStats(userId)
-
-      // Delete the user - cascading deletes will handle all related data
-      const deletedRows = await db.delete(users).where(eq(users.id, userId))
-
-      if (deletedRows.rowCount === 0) {
-        throw new Error('User deletion failed - no rows affected')
-      }
-
-      // Log the deletion for audit purposes (only in development)
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`User deleted successfully:`, {
-          userId,
-          email: existingUser.email,
-          deletedData: {
-            universes: stats.totalUniverses,
-            favorites: stats.favouritesCount,
-          },
-          timestamp: new Date().toISOString(),
-        })
-      }
-    } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('Error deleting user:', error)
-      }
-      throw new Error('Failed to delete user account')
     }
   }
 }
-
-export const userService = new UserService()

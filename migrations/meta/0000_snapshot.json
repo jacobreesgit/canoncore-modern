@@ -1,11 +1,100 @@
 {
-  "id": "3c3661f0-8eb1-4351-93a1-67976c79b400",
+  "id": "9940765f-7586-4210-bd95-0c64af283206",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
-    "public.content": {
-      "name": "content",
+    "public.account": {
+      "name": "account",
+      "schema": "",
+      "columns": {
+        "userId": {
+          "name": "userId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "type": {
+          "name": "type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "provider": {
+          "name": "provider",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "providerAccountId": {
+          "name": "providerAccountId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "refresh_token": {
+          "name": "refresh_token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "access_token": {
+          "name": "access_token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "token_type": {
+          "name": "token_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "scope": {
+          "name": "scope",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "id_token": {
+          "name": "id_token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "session_state": {
+          "name": "session_state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "account_userId_user_id_fk": {
+          "name": "account_userId_user_id_fk",
+          "tableFrom": "account",
+          "tableTo": "user",
+          "columnsFrom": ["userId"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.collections": {
+      "name": "collections",
       "schema": "",
       "columns": {
         "id": {
@@ -38,30 +127,12 @@
           "primaryKey": false,
           "notNull": true
         },
-        "isViewable": {
-          "name": "isViewable",
-          "type": "boolean",
+        "order": {
+          "name": "order",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
-          "default": false
-        },
-        "itemType": {
-          "name": "itemType",
-          "type": "varchar(50)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "sourceLink": {
-          "name": "sourceLink",
-          "type": "varchar(500)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "sourceLinkName": {
-          "name": "sourceLinkName",
-          "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": false
+          "default": 0
         },
         "createdAt": {
           "name": "createdAt",
@@ -79,11 +150,160 @@
         }
       },
       "indexes": {
-        "content_universeId_idx": {
-          "name": "content_universeId_idx",
+        "collections_universeId_idx": {
+          "name": "collections_universeId_idx",
           "columns": [
             {
               "expression": "universeId",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "collections_userId_idx": {
+          "name": "collections_userId_idx",
+          "columns": [
+            {
+              "expression": "userId",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "collections_order_idx": {
+          "name": "collections_order_idx",
+          "columns": [
+            {
+              "expression": "order",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "collections_universeId_universes_id_fk": {
+          "name": "collections_universeId_universes_id_fk",
+          "tableFrom": "collections",
+          "tableTo": "universes",
+          "columnsFrom": ["universeId"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "collections_userId_user_id_fk": {
+          "name": "collections_userId_user_id_fk",
+          "tableFrom": "collections",
+          "tableTo": "user",
+          "columnsFrom": ["userId"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.content": {
+      "name": "content",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "groupId": {
+          "name": "groupId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "userId": {
+          "name": "userId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "isViewable": {
+          "name": "isViewable",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "itemType": {
+          "name": "itemType",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'video'"
+        },
+        "releaseDate": {
+          "name": "releaseDate",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "order": {
+          "name": "order",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "content_groupId_idx": {
+          "name": "content_groupId_idx",
+          "columns": [
+            {
+              "expression": "groupId",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -109,6 +329,21 @@
           "method": "btree",
           "with": {}
         },
+        "content_order_idx": {
+          "name": "content_order_idx",
+          "columns": [
+            {
+              "expression": "order",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
         "content_isViewable_idx": {
           "name": "content_isViewable_idx",
           "columns": [
@@ -123,44 +358,14 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
-        },
-        "content_itemType_idx": {
-          "name": "content_itemType_idx",
-          "columns": [
-            {
-              "expression": "itemType",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "content_createdAt_idx": {
-          "name": "content_createdAt_idx",
-          "columns": [
-            {
-              "expression": "createdAt",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
         }
       },
       "foreignKeys": {
-        "content_universeId_universes_id_fk": {
-          "name": "content_universeId_universes_id_fk",
+        "content_groupId_groups_id_fk": {
+          "name": "content_groupId_groups_id_fk",
           "tableFrom": "content",
-          "tableTo": "universes",
-          "columnsFrom": ["universeId"],
+          "tableTo": "groups",
+          "columnsFrom": ["groupId"],
           "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
@@ -181,8 +386,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.contentRelationships": {
-      "name": "contentRelationships",
+    "public.content_relationships": {
+      "name": "content_relationships",
       "schema": "",
       "columns": {
         "id": {
@@ -191,26 +396,14 @@
           "primaryKey": true,
           "notNull": true
         },
-        "parentId": {
-          "name": "parentId",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "childId": {
-          "name": "childId",
+        "parentContentId": {
+          "name": "parentContentId",
           "type": "text",
           "primaryKey": false,
           "notNull": true
         },
-        "universeId": {
-          "name": "universeId",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "userId": {
-          "name": "userId",
+        "childContentId": {
+          "name": "childContentId",
           "type": "text",
           "primaryKey": false,
           "notNull": true
@@ -224,11 +417,11 @@
         }
       },
       "indexes": {
-        "contentRelationships_parentId_idx": {
-          "name": "contentRelationships_parentId_idx",
+        "content_relationships_parent_idx": {
+          "name": "content_relationships_parent_idx",
           "columns": [
             {
-              "expression": "parentId",
+              "expression": "parentContentId",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -239,11 +432,11 @@
           "method": "btree",
           "with": {}
         },
-        "contentRelationships_childId_idx": {
-          "name": "contentRelationships_childId_idx",
+        "content_relationships_child_idx": {
+          "name": "content_relationships_child_idx",
           "columns": [
             {
-              "expression": "childId",
+              "expression": "childContentId",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -254,32 +447,17 @@
           "method": "btree",
           "with": {}
         },
-        "contentRelationships_universeId_idx": {
-          "name": "contentRelationships_universeId_idx",
+        "content_relationships_unique": {
+          "name": "content_relationships_unique",
           "columns": [
             {
-              "expression": "universeId",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "contentRelationships_parent_child_unique": {
-          "name": "contentRelationships_parent_child_unique",
-          "columns": [
-            {
-              "expression": "parentId",
+              "expression": "parentContentId",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
             },
             {
-              "expression": "childId",
+              "expression": "childContentId",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -292,36 +470,263 @@
         }
       },
       "foreignKeys": {
-        "contentRelationships_parentId_content_id_fk": {
-          "name": "contentRelationships_parentId_content_id_fk",
-          "tableFrom": "contentRelationships",
+        "content_relationships_parentContentId_content_id_fk": {
+          "name": "content_relationships_parentContentId_content_id_fk",
+          "tableFrom": "content_relationships",
           "tableTo": "content",
-          "columnsFrom": ["parentId"],
+          "columnsFrom": ["parentContentId"],
           "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "contentRelationships_childId_content_id_fk": {
-          "name": "contentRelationships_childId_content_id_fk",
-          "tableFrom": "contentRelationships",
+        "content_relationships_childContentId_content_id_fk": {
+          "name": "content_relationships_childContentId_content_id_fk",
+          "tableFrom": "content_relationships",
           "tableTo": "content",
-          "columnsFrom": ["childId"],
+          "columnsFrom": ["childContentId"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.group_relationships": {
+      "name": "group_relationships",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "parentGroupId": {
+          "name": "parentGroupId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "childGroupId": {
+          "name": "childGroupId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "group_relationships_parent_idx": {
+          "name": "group_relationships_parent_idx",
+          "columns": [
+            {
+              "expression": "parentGroupId",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "group_relationships_child_idx": {
+          "name": "group_relationships_child_idx",
+          "columns": [
+            {
+              "expression": "childGroupId",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "group_relationships_unique": {
+          "name": "group_relationships_unique",
+          "columns": [
+            {
+              "expression": "parentGroupId",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "childGroupId",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "group_relationships_parentGroupId_groups_id_fk": {
+          "name": "group_relationships_parentGroupId_groups_id_fk",
+          "tableFrom": "group_relationships",
+          "tableTo": "groups",
+          "columnsFrom": ["parentGroupId"],
           "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "contentRelationships_universeId_universes_id_fk": {
-          "name": "contentRelationships_universeId_universes_id_fk",
-          "tableFrom": "contentRelationships",
-          "tableTo": "universes",
-          "columnsFrom": ["universeId"],
+        "group_relationships_childGroupId_groups_id_fk": {
+          "name": "group_relationships_childGroupId_groups_id_fk",
+          "tableFrom": "group_relationships",
+          "tableTo": "groups",
+          "columnsFrom": ["childGroupId"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.groups": {
+      "name": "groups",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "collectionId": {
+          "name": "collectionId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "userId": {
+          "name": "userId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "itemType": {
+          "name": "itemType",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'series'"
+        },
+        "order": {
+          "name": "order",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "groups_collectionId_idx": {
+          "name": "groups_collectionId_idx",
+          "columns": [
+            {
+              "expression": "collectionId",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "groups_userId_idx": {
+          "name": "groups_userId_idx",
+          "columns": [
+            {
+              "expression": "userId",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "groups_order_idx": {
+          "name": "groups_order_idx",
+          "columns": [
+            {
+              "expression": "order",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "groups_collectionId_collections_id_fk": {
+          "name": "groups_collectionId_collections_id_fk",
+          "tableFrom": "groups",
+          "tableTo": "collections",
+          "columnsFrom": ["collectionId"],
           "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "contentRelationships_userId_user_id_fk": {
-          "name": "contentRelationships_userId_user_id_fk",
-          "tableFrom": "contentRelationships",
+        "groups_userId_user_id_fk": {
+          "name": "groups_userId_user_id_fk",
+          "tableFrom": "groups",
           "tableTo": "user",
           "columnsFrom": ["userId"],
           "columnsTo": ["id"],
@@ -335,12 +740,12 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.favorites": {
-      "name": "favorites",
+    "public.session": {
+      "name": "session",
       "schema": "",
       "columns": {
-        "id": {
-          "name": "id",
+        "sessionToken": {
+          "name": "sessionToken",
           "type": "text",
           "primaryKey": true,
           "notNull": true
@@ -351,104 +756,18 @@
           "primaryKey": false,
           "notNull": true
         },
-        "targetId": {
-          "name": "targetId",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "targetType": {
-          "name": "targetType",
-          "type": "varchar(20)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "createdAt": {
-          "name": "createdAt",
+        "expires": {
+          "name": "expires",
           "type": "timestamp",
           "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
+          "notNull": true
         }
       },
-      "indexes": {
-        "favorites_userId_idx": {
-          "name": "favorites_userId_idx",
-          "columns": [
-            {
-              "expression": "userId",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "favorites_targetId_idx": {
-          "name": "favorites_targetId_idx",
-          "columns": [
-            {
-              "expression": "targetId",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "favorites_targetType_idx": {
-          "name": "favorites_targetType_idx",
-          "columns": [
-            {
-              "expression": "targetType",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "favorites_user_target_unique": {
-          "name": "favorites_user_target_unique",
-          "columns": [
-            {
-              "expression": "userId",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "targetId",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "targetType",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
+      "indexes": {},
       "foreignKeys": {
-        "favorites_userId_user_id_fk": {
-          "name": "favorites_userId_user_id_fk",
-          "tableFrom": "favorites",
+        "session_userId_user_id_fk": {
+          "name": "session_userId_user_id_fk",
+          "tableFrom": "session",
           "tableTo": "user",
           "columnsFrom": ["userId"],
           "columnsTo": ["id"],
@@ -497,17 +816,12 @@
           "notNull": true,
           "default": false
         },
-        "sourceLink": {
-          "name": "sourceLink",
-          "type": "varchar(500)",
+        "order": {
+          "name": "order",
+          "type": "integer",
           "primaryKey": false,
-          "notNull": false
-        },
-        "sourceLinkName": {
-          "name": "sourceLinkName",
-          "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": false
+          "notNull": true,
+          "default": 0
         },
         "createdAt": {
           "name": "createdAt",
@@ -540,26 +854,11 @@
           "method": "btree",
           "with": {}
         },
-        "universes_isPublic_idx": {
-          "name": "universes_isPublic_idx",
+        "universes_order_idx": {
+          "name": "universes_order_idx",
           "columns": [
             {
-              "expression": "isPublic",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "universes_createdAt_idx": {
-          "name": "universes_createdAt_idx",
-          "columns": [
-            {
-              "expression": "createdAt",
+              "expression": "order",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -577,159 +876,6 @@
           "tableFrom": "universes",
           "tableTo": "user",
           "columnsFrom": ["userId"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.userProgress": {
-      "name": "userProgress",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "userId": {
-          "name": "userId",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "contentId": {
-          "name": "contentId",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "universeId": {
-          "name": "universeId",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "progress": {
-          "name": "progress",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 0
-        },
-        "createdAt": {
-          "name": "createdAt",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updatedAt": {
-          "name": "updatedAt",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "userProgress_userId_idx": {
-          "name": "userProgress_userId_idx",
-          "columns": [
-            {
-              "expression": "userId",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "userProgress_contentId_idx": {
-          "name": "userProgress_contentId_idx",
-          "columns": [
-            {
-              "expression": "contentId",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "userProgress_universeId_idx": {
-          "name": "userProgress_universeId_idx",
-          "columns": [
-            {
-              "expression": "universeId",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "userProgress_user_content_unique": {
-          "name": "userProgress_user_content_unique",
-          "columns": [
-            {
-              "expression": "userId",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "contentId",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "userProgress_userId_user_id_fk": {
-          "name": "userProgress_userId_user_id_fk",
-          "tableFrom": "userProgress",
-          "tableTo": "user",
-          "columnsFrom": ["userId"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "userProgress_contentId_content_id_fk": {
-          "name": "userProgress_contentId_content_id_fk",
-          "tableFrom": "userProgress",
-          "tableTo": "content",
-          "columnsFrom": ["contentId"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "userProgress_universeId_universes_id_fk": {
-          "name": "userProgress_universeId_universes_id_fk",
-          "tableFrom": "userProgress",
-          "tableTo": "universes",
-          "columnsFrom": ["universeId"],
           "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
@@ -800,6 +946,37 @@
           "columns": ["email"]
         }
       },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.verificationToken": {
+      "name": "verificationToken",
+      "schema": "",
+      "columns": {
+        "identifier": {
+          "name": "identifier",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "token": {
+          "name": "token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expires": {
+          "name": "expires",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false

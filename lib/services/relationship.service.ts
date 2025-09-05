@@ -1,363 +1,341 @@
-import 'server-only'
-
-import { eq, and, asc, isNull } from 'drizzle-orm'
-import type { ContentRelationship, Content } from '@/lib/db/schema'
-
-/**
- * Server-side Relationship Service
- *
- * Provides server-side data access for Content relationship operations:
- * - Direct PostgreSQL access with Drizzle ORM
- * - Server-side data fetching for Server Components
- * - Enhanced security with server-only access
- * - Better performance with optimized queries
- */
+import { eq, and } from 'drizzle-orm'
+import { db } from '@/lib/db'
+import {
+  groupRelationships,
+  contentRelationships,
+  groups,
+  content,
+  collections,
+  universes,
+  type GroupRelationship,
+  type ContentRelationship,
+  type NewGroupRelationship,
+  type NewContentRelationship,
+} from '@/lib/db/schema'
 
 export class RelationshipService {
   /**
-   * Get all relationships for a universe
+   * Create a group relationship (parent-child)
    */
-  async getByUniverse(
-    universeId: string
-  ): Promise<Array<{ parentId: string | null; childId: string }>> {
+  static async createGroupRelationship(
+    data: Omit<NewGroupRelationship, 'id' | 'createdAt'>,
+    userId: string
+  ): Promise<GroupRelationship> {
     try {
-      const { db } = await import('@/lib/db')
-      const { contentRelationships } = await import('@/lib/db/schema')
+      return await db.transaction(async tx => {
+        // Verify user owns both groups through their collections and universes
+        const [parentGroup] = await tx
+          .select({ id: groups.id })
+          .from(groups)
+          .innerJoin(collections, eq(groups.collectionId, collections.id))
+          .innerJoin(universes, eq(collections.universeId, universes.id))
+          .where(
+            and(eq(groups.id, data.parentGroupId), eq(universes.userId, userId))
+          )
+          .limit(1)
 
-      const relationships = await db
-        .select({
-          parentId: contentRelationships.parentId,
-          childId: contentRelationships.childId,
-        })
-        .from(contentRelationships)
-        .where(eq(contentRelationships.universeId, universeId))
-        .orderBy(asc(contentRelationships.createdAt))
+        const [childGroup] = await tx
+          .select({ id: groups.id })
+          .from(groups)
+          .innerJoin(collections, eq(groups.collectionId, collections.id))
+          .innerJoin(universes, eq(collections.universeId, universes.id))
+          .where(
+            and(eq(groups.id, data.childGroupId), eq(universes.userId, userId))
+          )
+          .limit(1)
 
-      return relationships
+        if (!parentGroup || !childGroup) {
+          throw new Error('Groups not found or access denied')
+        }
+
+        // Prevent self-referencing relationships
+        if (data.parentGroupId === data.childGroupId) {
+          throw new Error('Cannot create self-referencing relationship')
+        }
+
+        const [relationship] = await tx
+          .insert(groupRelationships)
+          .values(data)
+          .returning()
+
+        return relationship
+      })
     } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('Error fetching universe relationships:', error)
-      }
-      throw new Error('Failed to fetch universe relationships')
+      console.error('Error creating group relationship:', error)
+      throw new Error('Failed to create group relationship')
     }
   }
 
   /**
-   * Get parent relationships for a content item
+   * Create a content relationship (parent-child)
    */
-  async getParents(
-    contentId: string
-  ): Promise<Array<{ parentId: string | null; childId: string }>> {
-    try {
-      const { db } = await import('@/lib/db')
-      const { contentRelationships } = await import('@/lib/db/schema')
-
-      const parentRelationships = await db
-        .select({
-          parentId: contentRelationships.parentId,
-          childId: contentRelationships.childId,
-        })
-        .from(contentRelationships)
-        .where(eq(contentRelationships.childId, contentId))
-
-      return parentRelationships
-    } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('Error fetching content parents:', error)
-      }
-      throw new Error('Failed to fetch content parents')
-    }
-  }
-
-  /**
-   * Get child relationships for a content item
-   */
-  async getChildren(
-    parentId: string | null
-  ): Promise<Array<{ parentId: string | null; childId: string }>> {
-    try {
-      const { db } = await import('@/lib/db')
-      const { contentRelationships } = await import('@/lib/db/schema')
-
-      const whereCondition =
-        parentId === null
-          ? isNull(contentRelationships.parentId)
-          : eq(contentRelationships.parentId, parentId)
-
-      const childRelationships = await db
-        .select({
-          parentId: contentRelationships.parentId,
-          childId: contentRelationships.childId,
-        })
-        .from(contentRelationships)
-        .where(whereCondition)
-        .orderBy(asc(contentRelationships.createdAt))
-
-      return childRelationships
-    } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('Error fetching content children:', error)
-      }
-      throw new Error('Failed to fetch content children')
-    }
-  }
-
-  /**
-   * Create a new relationship
-   */
-  async create(
-    parentId: string | null,
-    childId: string,
-    universeId: string,
+  static async createContentRelationship(
+    data: Omit<NewContentRelationship, 'id' | 'createdAt'>,
     userId: string
   ): Promise<ContentRelationship> {
     try {
-      const { db } = await import('@/lib/db')
-      const { contentRelationships } = await import('@/lib/db/schema')
-
-      const [relationship] = await db
-        .insert(contentRelationships)
-        .values({
-          parentId,
-          childId,
-          universeId,
-          userId,
-          createdAt: new Date(),
-        })
-        .returning()
-
-      return relationship
-    } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('Error creating relationship:', error)
-      }
-      throw new Error('Failed to create relationship')
-    }
-  }
-
-  /**
-   * Delete a relationship
-   */
-  async delete(parentId: string | null, childId: string): Promise<void> {
-    try {
-      const { db } = await import('@/lib/db')
-      const { contentRelationships } = await import('@/lib/db/schema')
-
-      const whereCondition =
-        parentId === null
-          ? and(
-              isNull(contentRelationships.parentId),
-              eq(contentRelationships.childId, childId)
+      return await db.transaction(async tx => {
+        // Verify user owns both content items through their groups, collections, and universes
+        const [parentContent] = await tx
+          .select({ id: content.id })
+          .from(content)
+          .innerJoin(groups, eq(content.groupId, groups.id))
+          .innerJoin(collections, eq(groups.collectionId, collections.id))
+          .innerJoin(universes, eq(collections.universeId, universes.id))
+          .where(
+            and(
+              eq(content.id, data.parentContentId),
+              eq(universes.userId, userId)
             )
-          : and(
-              eq(contentRelationships.parentId, parentId),
-              eq(contentRelationships.childId, childId)
+          )
+          .limit(1)
+
+        const [childContent] = await tx
+          .select({ id: content.id })
+          .from(content)
+          .innerJoin(groups, eq(content.groupId, groups.id))
+          .innerJoin(collections, eq(groups.collectionId, collections.id))
+          .innerJoin(universes, eq(collections.universeId, universes.id))
+          .where(
+            and(
+              eq(content.id, data.childContentId),
+              eq(universes.userId, userId)
             )
+          )
+          .limit(1)
 
-      await db.delete(contentRelationships).where(whereCondition)
-    } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('Error deleting relationship:', error)
-      }
-      throw new Error('Failed to delete relationship')
-    }
-  }
+        if (!parentContent || !childContent) {
+          throw new Error('Content items not found or access denied')
+        }
 
-  /**
-   * Delete all relationships for a content item (when content is deleted)
-   */
-  async deleteAllForContent(contentId: string): Promise<void> {
-    try {
-      const { db } = await import('@/lib/db')
-      const { contentRelationships } = await import('@/lib/db/schema')
+        // Prevent self-referencing relationships
+        if (data.parentContentId === data.childContentId) {
+          throw new Error('Cannot create self-referencing relationship')
+        }
 
-      // Delete relationships where this content is the parent
-      await db
-        .delete(contentRelationships)
-        .where(eq(contentRelationships.parentId, contentId))
+        const [relationship] = await tx
+          .insert(contentRelationships)
+          .values(data)
+          .returning()
 
-      // Delete relationships where this content is the child
-      await db
-        .delete(contentRelationships)
-        .where(eq(contentRelationships.childId, contentId))
-    } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('Error deleting content relationships:', error)
-      }
-      throw new Error('Failed to delete content relationships')
-    }
-  }
-
-  /**
-   * Build hierarchy tree structure from relationships
-   */
-  buildHierarchyTree(
-    contentItems: Content[],
-    relationships: Array<{
-      parentId: string | null
-      childId: string
-    }>
-  ): Array<Content & { children: Array<Content & { children: Content[] }> }> {
-    type TreeNode = Content & {
-      children: Array<Content & { children: Content[] }>
-    }
-    const nodeMap = new Map<string, TreeNode>()
-
-    // Create nodes for all content
-    contentItems.forEach(item => {
-      nodeMap.set(item.id, {
-        ...item,
-        children: [],
+        return relationship
       })
-    })
-
-    // Build parent-child relationships recursively
-    const buildNode = (node: TreeNode): TreeNode => {
-      const childRelations = relationships.filter(
-        rel => rel.parentId === node.id
-      )
-      node.children = childRelations
-        .map(rel => nodeMap.get(rel.childId))
-        .filter((child): child is TreeNode => child !== undefined)
-        .sort(
-          (a, b) =>
-            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-        ) // Sort by createdAt
-        .map(child => buildNode(child))
-
-      return node
+    } catch (error) {
+      console.error('Error creating content relationship:', error)
+      throw new Error('Failed to create content relationship')
     }
-
-    // Find root nodes and sort by creation time
-    const rootRelations = relationships.filter(rel => rel.parentId === null)
-
-    const rootNodes: TreeNode[] = rootRelations
-      .map(rel => nodeMap.get(rel.childId))
-      .filter((node): node is TreeNode => node !== undefined)
-      .sort(
-        (a, b) =>
-          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-      ) // Sort by createdAt
-      .map(node => buildNode(node))
-
-    return rootNodes
   }
 
   /**
-   * Get full hierarchy tree for a universe
+   * Get group relationships for a specific group
    */
-  async getUniverseHierarchy(
-    universeId: string
-  ): Promise<
-    Array<Content & { children: Array<Content & { children: Content[] }> }>
-  > {
+  static async getGroupRelationships(
+    groupId: string,
+    userId: string
+  ): Promise<{
+    children: GroupRelationship[]
+    parents: GroupRelationship[]
+  }> {
     try {
-      // Get all content for the universe
-      const { db } = await import('@/lib/db')
-      const { content } = await import('@/lib/db/schema')
-
-      const contentItems = await db
+      // Get child relationships
+      const children = await db
         .select()
-        .from(content)
-        .where(eq(content.universeId, universeId))
+        .from(groupRelationships)
+        .innerJoin(groups, eq(groupRelationships.parentGroupId, groups.id))
+        .innerJoin(collections, eq(groups.collectionId, collections.id))
+        .innerJoin(universes, eq(collections.universeId, universes.id))
+        .where(
+          and(
+            eq(groupRelationships.parentGroupId, groupId),
+            eq(universes.userId, userId)
+          )
+        )
 
-      // Get all relationships for the universe
-      const relationships = await this.getByUniverse(universeId)
+      // Get parent relationships
+      const parents = await db
+        .select()
+        .from(groupRelationships)
+        .innerJoin(groups, eq(groupRelationships.childGroupId, groups.id))
+        .innerJoin(collections, eq(groups.collectionId, collections.id))
+        .innerJoin(universes, eq(collections.universeId, universes.id))
+        .where(
+          and(
+            eq(groupRelationships.childGroupId, groupId),
+            eq(universes.userId, userId)
+          )
+        )
 
-      // Build and return hierarchy tree
-      return this.buildHierarchyTree(contentItems, relationships)
-    } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('Error building universe hierarchy:', error)
+      return {
+        children: children.map(item => item.group_relationships),
+        parents: parents.map(item => item.group_relationships),
       }
-      throw new Error('Failed to build universe hierarchy')
+    } catch (error) {
+      console.error('Error fetching group relationships:', error)
+      throw new Error('Failed to fetch group relationships')
     }
   }
 
   /**
-   * Check if creating a relationship would create a circular dependency
+   * Get content relationships for a specific content item
    */
-  async wouldCreateCircularDependency(
-    parentId: string,
-    childId: string
-  ): Promise<boolean> {
+  static async getContentRelationships(
+    contentId: string,
+    userId: string
+  ): Promise<{
+    children: ContentRelationship[]
+    parents: ContentRelationship[]
+  }> {
     try {
-      // If parent and child are the same, it's circular
-      if (parentId === childId) {
-        return true
-      }
+      // Get child relationships
+      const children = await db
+        .select()
+        .from(contentRelationships)
+        .innerJoin(
+          content,
+          eq(contentRelationships.parentContentId, content.id)
+        )
+        .innerJoin(groups, eq(content.groupId, groups.id))
+        .innerJoin(collections, eq(groups.collectionId, collections.id))
+        .innerJoin(universes, eq(collections.universeId, universes.id))
+        .where(
+          and(
+            eq(contentRelationships.parentContentId, contentId),
+            eq(universes.userId, userId)
+          )
+        )
 
-      // Check if childId is already an ancestor of parentId
-      return await this.isAncestor(childId, parentId)
-    } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('Error checking circular dependency:', error)
+      // Get parent relationships
+      const parents = await db
+        .select()
+        .from(contentRelationships)
+        .innerJoin(content, eq(contentRelationships.childContentId, content.id))
+        .innerJoin(groups, eq(content.groupId, groups.id))
+        .innerJoin(collections, eq(groups.collectionId, collections.id))
+        .innerJoin(universes, eq(collections.universeId, universes.id))
+        .where(
+          and(
+            eq(contentRelationships.childContentId, contentId),
+            eq(universes.userId, userId)
+          )
+        )
+
+      return {
+        children: children.map(item => item.content_relationships),
+        parents: parents.map(item => item.content_relationships),
       }
-      return true // Err on the side of caution
+    } catch (error) {
+      console.error('Error fetching content relationships:', error)
+      throw new Error('Failed to fetch content relationships')
     }
   }
 
   /**
-   * Check if potentialAncestor is an ancestor of descendant
+   * Delete a group relationship
    */
-  private async isAncestor(
-    potentialAncestor: string,
-    descendant: string
-  ): Promise<boolean> {
+  static async deleteGroupRelationship(
+    parentGroupId: string,
+    childGroupId: string,
+    userId: string
+  ): Promise<void> {
     try {
-      const parents = await this.getParents(descendant)
+      await db.transaction(async tx => {
+        // Verify user owns both groups
+        const [parentGroup] = await tx
+          .select({ id: groups.id })
+          .from(groups)
+          .innerJoin(collections, eq(groups.collectionId, collections.id))
+          .innerJoin(universes, eq(collections.universeId, universes.id))
+          .where(
+            and(eq(groups.id, parentGroupId), eq(universes.userId, userId))
+          )
+          .limit(1)
 
-      for (const parent of parents) {
-        if (parent.parentId === potentialAncestor) {
-          return true
+        const [childGroup] = await tx
+          .select({ id: groups.id })
+          .from(groups)
+          .innerJoin(collections, eq(groups.collectionId, collections.id))
+          .innerJoin(universes, eq(collections.universeId, universes.id))
+          .where(and(eq(groups.id, childGroupId), eq(universes.userId, userId)))
+          .limit(1)
+
+        if (!parentGroup || !childGroup) {
+          throw new Error('Groups not found or access denied')
         }
 
-        // Recursively check if potentialAncestor is an ancestor of the parent
-        if (
-          parent.parentId &&
-          (await this.isAncestor(potentialAncestor, parent.parentId))
-        ) {
-          return true
-        }
-      }
+        // Delete the relationship
+        const result = await tx
+          .delete(groupRelationships)
+          .where(
+            and(
+              eq(groupRelationships.parentGroupId, parentGroupId),
+              eq(groupRelationships.childGroupId, childGroupId)
+            )
+          )
 
-      return false
+        if (result.rowCount === 0) {
+          throw new Error('Relationship not found')
+        }
+      })
     } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('Error checking ancestor relationship:', error)
-      }
-      return false
+      console.error('Error deleting group relationship:', error)
+      throw new Error('Failed to delete group relationship')
     }
   }
 
   /**
-   * Get path from root to a specific content item
+   * Delete a content relationship
    */
-  async getContentPath(contentId: string): Promise<string[]> {
+  static async deleteContentRelationship(
+    parentContentId: string,
+    childContentId: string,
+    userId: string
+  ): Promise<void> {
     try {
-      const path: string[] = []
-      let currentId = contentId
+      await db.transaction(async tx => {
+        // Verify user owns both content items
+        const [parentContent] = await tx
+          .select({ id: content.id })
+          .from(content)
+          .innerJoin(groups, eq(content.groupId, groups.id))
+          .innerJoin(collections, eq(groups.collectionId, collections.id))
+          .innerJoin(universes, eq(collections.universeId, universes.id))
+          .where(
+            and(eq(content.id, parentContentId), eq(universes.userId, userId))
+          )
+          .limit(1)
 
-      while (currentId) {
-        path.unshift(currentId)
+        const [childContent] = await tx
+          .select({ id: content.id })
+          .from(content)
+          .innerJoin(groups, eq(content.groupId, groups.id))
+          .innerJoin(collections, eq(groups.collectionId, collections.id))
+          .innerJoin(universes, eq(collections.universeId, universes.id))
+          .where(
+            and(eq(content.id, childContentId), eq(universes.userId, userId))
+          )
+          .limit(1)
 
-        const parents = await this.getParents(currentId)
-        if (parents.length === 0) {
-          break
+        if (!parentContent || !childContent) {
+          throw new Error('Content items not found or access denied')
         }
 
-        // Take the first parent if multiple exist
-        currentId = parents[0].parentId || ''
-      }
+        // Delete the relationship
+        const result = await tx
+          .delete(contentRelationships)
+          .where(
+            and(
+              eq(contentRelationships.parentContentId, parentContentId),
+              eq(contentRelationships.childContentId, childContentId)
+            )
+          )
 
-      return path
+        if (result.rowCount === 0) {
+          throw new Error('Relationship not found')
+        }
+      })
     } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('Error getting content path:', error)
-      }
-      return [contentId]
+      console.error('Error deleting content relationship:', error)
+      throw new Error('Failed to delete content relationship')
     }
   }
 }
-
-export const relationshipService = new RelationshipService()
