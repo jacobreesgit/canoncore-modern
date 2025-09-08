@@ -1,0 +1,24 @@
+{
+  "content": {
+    "organisational": "Organizational"
+  },
+  "errors": {
+    "unauthorized": "Unauthorized"
+  },
+  "language": {
+    "switchLanguage": "Switch Language",
+    "currentLanguage": "Current Language",
+    "languagePreference": "Language Preference",
+    "preferenceUpdated": "Language preference updated successfully"
+  },
+  "homepage": {
+    "title": "Welcome to CanonCore",
+    "subtitle": "The complete solution for organizing your content universes and franchises",
+    "feature1": "Create unlimited universes and collections",
+    "feature2": "Organize content in hierarchical structures",
+    "feature3": "Interactive tree navigation with drag & drop",
+    "welcomeBack": "Welcome back, {name}!",
+    "readyToManage": "Ready to manage your content universes?",
+    "goToDashboard": "Go to Dashboard"
+  }
+}

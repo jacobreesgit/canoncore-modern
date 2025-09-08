@@ -10,6 +10,39 @@ import {
   type Collection,
   type NewCollection,
 } from '@/lib/db/schema'
+import type {
+  GroupItem,
+  ContentItem,
+  GroupRelationship as GroupRelationshipItem,
+  ContentRelationship as ContentRelationshipItem,
+} from '@/components/tree/tree-types'
+
+// Consistent error types for Collection operations
+export class CollectionServiceError extends Error {
+  constructor(
+    message: string,
+    public code:
+      | 'VALIDATION_ERROR'
+      | 'COLLECTION_NOT_FOUND'
+      | 'ACCESS_DENIED'
+      | 'DATABASE_ERROR'
+  ) {
+    super(message)
+    this.name = 'CollectionServiceError'
+  }
+}
+
+// Service result type for consistent responses
+export type CollectionServiceResult<T> =
+  | {
+      success: true
+      data: T
+    }
+  | {
+      success: false
+      error: string
+      code: CollectionServiceError['code']
+    }
 
 export class CollectionService {
   /**
@@ -18,9 +51,9 @@ export class CollectionService {
   static async create(
     data: Omit<NewCollection, 'id' | 'createdAt' | 'updatedAt' | 'userId'>,
     userId: string
-  ): Promise<Collection> {
+  ): Promise<CollectionServiceResult<Collection>> {
     try {
-      return await db.transaction(async tx => {
+      const collection = await db.transaction(async tx => {
         // Verify user owns the universe
         const [universe] = await tx
           .select({ id: universes.id })
@@ -44,9 +77,25 @@ export class CollectionService {
 
         return collection
       })
+
+      return {
+        success: true,
+        data: collection,
+      }
     } catch (error) {
       console.error('Error creating collection:', error)
-      throw new Error('Failed to create collection')
+      if (error instanceof Error && error.message.includes('not found')) {
+        return {
+          success: false,
+          error: 'Universe not found or access denied',
+          code: 'ACCESS_DENIED',
+        }
+      }
+      return {
+        success: false,
+        error: 'Failed to create collection',
+        code: 'DATABASE_ERROR',
+      }
     }
   }
 
@@ -56,9 +105,9 @@ export class CollectionService {
   static async getByUniverse(
     universeId: string,
     userId: string
-  ): Promise<Collection[]> {
+  ): Promise<CollectionServiceResult<Collection[]>> {
     try {
-      return await db
+      const collectionsData = await db
         .select({
           id: collections.id,
           name: collections.name,
@@ -78,16 +127,28 @@ export class CollectionService {
           )
         )
         .orderBy(asc(collections.order), desc(collections.createdAt))
+
+      return {
+        success: true,
+        data: collectionsData,
+      }
     } catch (error) {
       console.error('Error fetching collections:', error)
-      throw new Error('Failed to fetch collections')
+      return {
+        success: false,
+        error: 'Failed to fetch collections',
+        code: 'DATABASE_ERROR',
+      }
     }
   }
 
   /**
    * Get a specific collection by ID with ownership check
    */
-  static async getById(id: string, userId: string): Promise<Collection | null> {
+  static async getById(
+    id: string,
+    userId: string
+  ): Promise<CollectionServiceResult<Collection | null>> {
     try {
       const [collection] = await db
         .select({
@@ -105,10 +166,25 @@ export class CollectionService {
         .where(and(eq(collections.id, id), eq(universes.userId, userId)))
         .limit(1)
 
-      return collection || null
+      if (!collection) {
+        return {
+          success: false,
+          error: 'Collection not found or access denied',
+          code: 'COLLECTION_NOT_FOUND',
+        }
+      }
+
+      return {
+        success: true,
+        data: collection,
+      }
     } catch (error) {
       console.error('Error fetching collection:', error)
-      throw new Error('Failed to fetch collection')
+      return {
+        success: false,
+        error: 'Failed to fetch collection',
+        code: 'DATABASE_ERROR',
+      }
     }
   }
 
@@ -121,9 +197,9 @@ export class CollectionService {
       Omit<NewCollection, 'id' | 'userId' | 'createdAt' | 'updatedAt'>
     >,
     userId: string
-  ): Promise<Collection> {
+  ): Promise<CollectionServiceResult<Collection>> {
     try {
-      return await db.transaction(async tx => {
+      const collection = await db.transaction(async tx => {
         // Verify ownership through universe
         const [existingCollection] = await tx
           .select({ universeId: collections.universeId })
@@ -147,16 +223,35 @@ export class CollectionService {
 
         return collection
       })
+
+      return {
+        success: true,
+        data: collection,
+      }
     } catch (error) {
       console.error('Error updating collection:', error)
-      throw new Error('Failed to update collection')
+      if (error instanceof Error && error.message.includes('not found')) {
+        return {
+          success: false,
+          error: 'Collection not found or access denied',
+          code: 'COLLECTION_NOT_FOUND',
+        }
+      }
+      return {
+        success: false,
+        error: 'Failed to update collection',
+        code: 'DATABASE_ERROR',
+      }
     }
   }
 
   /**
    * Delete a collection with ownership check
    */
-  static async delete(id: string, userId: string): Promise<void> {
+  static async delete(
+    id: string,
+    userId: string
+  ): Promise<CollectionServiceResult<void>> {
     try {
       await db.transaction(async tx => {
         // Verify ownership through universe
@@ -174,9 +269,25 @@ export class CollectionService {
         // Delete collection (cascade will handle related records)
         await tx.delete(collections).where(eq(collections.id, id))
       })
+
+      return {
+        success: true,
+        data: undefined,
+      }
     } catch (error) {
       console.error('Error deleting collection:', error)
-      throw new Error('Failed to delete collection')
+      if (error instanceof Error && error.message.includes('not found')) {
+        return {
+          success: false,
+          error: 'Collection not found or access denied',
+          code: 'COLLECTION_NOT_FOUND',
+        }
+      }
+      return {
+        success: false,
+        error: 'Failed to delete collection',
+        code: 'DATABASE_ERROR',
+      }
     }
   }
 
@@ -187,7 +298,7 @@ export class CollectionService {
     orderUpdates: { id: string; order: number }[],
     universeId: string,
     userId: string
-  ): Promise<void> {
+  ): Promise<CollectionServiceResult<void>> {
     try {
       await db.transaction(async tx => {
         // Verify user owns the universe
@@ -219,16 +330,35 @@ export class CollectionService {
             )
         }
       })
+
+      return {
+        success: true,
+        data: undefined,
+      }
     } catch (error) {
       console.error('Error updating collection order:', error)
-      throw new Error('Failed to update collection order')
+      if (error instanceof Error && error.message.includes('not found')) {
+        return {
+          success: false,
+          error: 'Universe not found or access denied',
+          code: 'ACCESS_DENIED',
+        }
+      }
+      return {
+        success: false,
+        error: 'Failed to update collection order',
+        code: 'DATABASE_ERROR',
+      }
     }
   }
 
   /**
    * Check if user has access to collection
    */
-  static async checkAccess(id: string, userId: string): Promise<boolean> {
+  static async checkAccess(
+    id: string,
+    userId: string
+  ): Promise<CollectionServiceResult<boolean>> {
     try {
       const [collection] = await db
         .select({ id: collections.id })
@@ -237,22 +367,40 @@ export class CollectionService {
         .where(and(eq(collections.id, id), eq(universes.userId, userId)))
         .limit(1)
 
-      return !!collection
+      return {
+        success: true,
+        data: !!collection,
+      }
     } catch (error) {
       console.error('Error checking collection access:', error)
-      return false
+      return {
+        success: false,
+        error: 'Failed to check collection access',
+        code: 'DATABASE_ERROR',
+      }
     }
   }
 
   /**
    * Get complete hierarchy for a collection (Collection → Groups → Content)
    */
-  static async getCompleteHierarchy(collectionId: string, userId: string) {
+  static async getCompleteHierarchy(
+    collectionId: string,
+    userId: string
+  ): Promise<
+    CollectionServiceResult<{
+      collection: Collection
+      groups: GroupItem[]
+      content: ContentItem[]
+      groupRelationships: GroupRelationshipItem[]
+      contentRelationships: ContentRelationshipItem[]
+    }>
+  > {
     try {
       // First verify user has access to the collection
-      const collection = await this.getById(collectionId, userId)
-      if (!collection) {
-        throw new Error('Collection not found or access denied')
+      const collectionResult = await this.getById(collectionId, userId)
+      if (!collectionResult.success) {
+        return collectionResult
       }
 
       // Fetch all groups for this collection
@@ -267,6 +415,7 @@ export class CollectionService {
         .select({
           content: content,
           groupId: groups.id,
+          collectionId: groups.collectionId,
         })
         .from(content)
         .innerJoin(groups, eq(content.groupId, groups.id))
@@ -275,14 +424,22 @@ export class CollectionService {
 
       // Fetch group relationships for hierarchy
       const groupRelationshipsData = await db
-        .select()
+        .select({
+          id: groupRelationships.id,
+          parentGroupId: groupRelationships.parentGroupId,
+          childGroupId: groupRelationships.childGroupId,
+        })
         .from(groupRelationships)
         .innerJoin(groups, eq(groupRelationships.parentGroupId, groups.id))
         .where(eq(groups.collectionId, collectionId))
 
       // Fetch content relationships for hierarchy
       const contentRelationshipsData = await db
-        .select()
+        .select({
+          id: contentRelationships.id,
+          parentContentId: contentRelationships.parentContentId,
+          childContentId: contentRelationships.childContentId,
+        })
         .from(contentRelationships)
         .innerJoin(
           content,
@@ -292,15 +449,30 @@ export class CollectionService {
         .where(eq(groups.collectionId, collectionId))
 
       return {
-        collection,
-        groups: groupsData,
-        content: contentData,
-        groupRelationships: groupRelationshipsData,
-        contentRelationships: contentRelationshipsData,
+        success: true,
+        data: {
+          collection: collectionResult.data!,
+          groups: groupsData as GroupItem[],
+          content: contentData.map(item => ({
+            ...item.content,
+            groupId: item.groupId,
+            collectionId: item.collectionId,
+            releaseDate: item.content.releaseDate
+              ? new Date(item.content.releaseDate)
+              : null,
+          })) as ContentItem[],
+          groupRelationships: groupRelationshipsData as GroupRelationshipItem[],
+          contentRelationships:
+            contentRelationshipsData as ContentRelationshipItem[],
+        },
       }
     } catch (error) {
       console.error('Error fetching complete collection hierarchy:', error)
-      throw new Error('Failed to fetch complete hierarchy')
+      return {
+        success: false,
+        error: 'Failed to fetch complete hierarchy',
+        code: 'DATABASE_ERROR',
+      }
     }
   }
 }

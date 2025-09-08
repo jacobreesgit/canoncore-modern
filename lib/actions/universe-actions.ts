@@ -8,14 +8,14 @@ import { redirect } from 'next/navigation'
 
 const createUniverseSchema = z.object({
   name: z.string().min(1, 'Name is required').max(255, 'Name too long'),
-  description: z.string().min(1, 'Description is required'),
+  description: z.string().optional(),
   isPublic: z.boolean().default(false),
 })
 
 const updateUniverseSchema = z.object({
   id: z.string().uuid(),
   name: z.string().min(1, 'Name is required').max(255, 'Name too long'),
-  description: z.string().min(1, 'Description is required'),
+  description: z.string().optional(),
   isPublic: z.boolean().default(false),
 })
 
@@ -33,27 +33,38 @@ const updateUniverseOrderSchema = z.object({
 })
 
 export async function createUniverse(formData: FormData) {
+  let createdUniverseId: string
+
   try {
     const session = await auth()
     if (!session?.user?.id) {
-      throw new Error('Authentication required')
+      return {
+        success: false,
+        error: 'Authentication required',
+      }
     }
 
+    const description = formData.get('description') as string
     const rawData = {
       name: formData.get('name') as string,
-      description: formData.get('description') as string,
+      description: description || undefined,
       isPublic: formData.get('isPublic') === 'true',
     }
 
     const validatedData = createUniverseSchema.parse(rawData)
 
-    const universe = await UniverseService.create(
-      validatedData,
-      session.user.id
-    )
+    const result = await UniverseService.create(validatedData, session.user.id)
 
+    if (!result.success) {
+      return {
+        success: false,
+        error: result.error,
+        code: result.code,
+      }
+    }
+
+    createdUniverseId = result.data.id
     revalidatePath('/dashboard')
-    redirect(`/universes/${universe.id}`)
   } catch (error) {
     console.error('Error creating universe:', error)
 
@@ -73,13 +84,19 @@ export async function createUniverse(formData: FormData) {
         error instanceof Error ? error.message : 'Failed to create universe',
     }
   }
+
+  // Redirect outside try/catch as per Next.js best practices
+  redirect(`/universes/${createdUniverseId}`)
 }
 
 export async function updateUniverse(formData: FormData) {
   try {
     const session = await auth()
     if (!session?.user?.id) {
-      throw new Error('Authentication required')
+      return {
+        success: false,
+        error: 'Authentication required',
+      }
     }
 
     const rawData = {
@@ -92,7 +109,15 @@ export async function updateUniverse(formData: FormData) {
     const validatedData = updateUniverseSchema.parse(rawData)
 
     const { id, ...updateData } = validatedData
-    await UniverseService.update(id, updateData, session.user.id)
+    const result = await UniverseService.update(id, updateData, session.user.id)
+
+    if (!result.success) {
+      return {
+        success: false,
+        error: result.error,
+        code: result.code,
+      }
+    }
 
     revalidatePath('/dashboard')
     revalidatePath(`/universes/${id}`)
@@ -123,7 +148,10 @@ export async function deleteUniverse(formData: FormData) {
   try {
     const session = await auth()
     if (!session?.user?.id) {
-      throw new Error('Authentication required')
+      return {
+        success: false,
+        error: 'Authentication required',
+      }
     }
 
     const rawData = {
@@ -132,10 +160,20 @@ export async function deleteUniverse(formData: FormData) {
 
     const validatedData = deleteUniverseSchema.parse(rawData)
 
-    await UniverseService.delete(validatedData.id, session.user.id)
+    const result = await UniverseService.delete(
+      validatedData.id,
+      session.user.id
+    )
+
+    if (!result.success) {
+      return {
+        success: false,
+        error: result.error,
+        code: result.code,
+      }
+    }
 
     revalidatePath('/dashboard')
-    redirect('/dashboard')
   } catch (error) {
     console.error('Error deleting universe:', error)
 
@@ -155,13 +193,19 @@ export async function deleteUniverse(formData: FormData) {
         error instanceof Error ? error.message : 'Failed to delete universe',
     }
   }
+
+  // Redirect outside try/catch as per Next.js best practices
+  redirect('/dashboard')
 }
 
 export async function updateUniverseOrder(formData: FormData) {
   try {
     const session = await auth()
     if (!session?.user?.id) {
-      throw new Error('Authentication required')
+      return {
+        success: false,
+        error: 'Authentication required',
+      }
     }
 
     const rawData = {
@@ -170,10 +214,18 @@ export async function updateUniverseOrder(formData: FormData) {
 
     const validatedData = updateUniverseOrderSchema.parse(rawData)
 
-    await UniverseService.updateOrder(
+    const result = await UniverseService.updateOrder(
       validatedData.orderUpdates,
       session.user.id
     )
+
+    if (!result.success) {
+      return {
+        success: false,
+        error: result.error,
+        code: result.code,
+      }
+    }
 
     revalidatePath('/dashboard')
 

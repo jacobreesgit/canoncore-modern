@@ -9,7 +9,7 @@ import { redirect } from 'next/navigation'
 
 const createGroupSchema = z.object({
   name: z.string().min(1, 'Name is required').max(255, 'Name too long'),
-  description: z.string().min(1, 'Description is required'),
+  description: z.string().optional(),
   collectionId: z.string().uuid(),
   itemType: z
     .enum(['series', 'movie', 'book', 'game', 'other'])
@@ -19,7 +19,7 @@ const createGroupSchema = z.object({
 const updateGroupSchema = z.object({
   id: z.string().uuid(),
   name: z.string().min(1, 'Name is required').max(255, 'Name too long'),
-  description: z.string().min(1, 'Description is required'),
+  description: z.string().optional(),
   itemType: z
     .enum(['series', 'movie', 'book', 'game', 'other'])
     .default('other'),
@@ -56,10 +56,15 @@ const moveGroupSchema = z.object({
 })
 
 export async function createGroup(formData: FormData) {
+  let createdGroup: { universeId: string; collectionId: string; id: string }
+
   try {
     const session = await auth()
     if (!session?.user?.id) {
-      throw new Error('Authentication required')
+      return {
+        success: false,
+        error: 'Authentication required',
+      }
     }
 
     const rawData = {
@@ -71,23 +76,39 @@ export async function createGroup(formData: FormData) {
 
     const validatedData = createGroupSchema.parse(rawData)
 
-    const group = await GroupService.create(validatedData, session.user.id)
+    const groupResult = await GroupService.create(
+      validatedData,
+      session.user.id
+    )
+    if (!groupResult.success) {
+      return {
+        success: false,
+        error: groupResult.error,
+        code: groupResult.code,
+      }
+    }
 
     // Get collection for navigation
-    const collection = await CollectionService.getById(
+    const collectionResult = await CollectionService.getById(
       validatedData.collectionId,
       session.user.id
     )
-    if (!collection) {
-      throw new Error('Collection not found')
+    if (!collectionResult.success) {
+      return {
+        success: false,
+        error: collectionResult.error,
+        code: collectionResult.code,
+      }
     }
 
-    revalidatePath(`/universes/${collection.universeId}`)
+    createdGroup = {
+      universeId: collectionResult.data!.universeId,
+      collectionId: validatedData.collectionId,
+      id: groupResult.data!.id
+    }
+    revalidatePath(`/universes/${collectionResult.data!.universeId}`)
     revalidatePath(
-      `/universes/${collection.universeId}/collections/${validatedData.collectionId}`
-    )
-    redirect(
-      `/universes/${collection.universeId}/collections/${validatedData.collectionId}/groups/${group.id}`
+      `/universes/${collectionResult.data!.universeId}/collections/${validatedData.collectionId}`
     )
   } catch (error) {
     console.error('Error creating group:', error)
@@ -107,13 +128,19 @@ export async function createGroup(formData: FormData) {
       error: error instanceof Error ? error.message : 'Failed to create group',
     }
   }
+
+  // Redirect outside try/catch as per Next.js best practices
+  redirect(`/universes/${createdGroup.universeId}/collections/${createdGroup.collectionId}/groups/${createdGroup.id}`)
 }
 
 export async function updateGroup(formData: FormData) {
   try {
     const session = await auth()
     if (!session?.user?.id) {
-      throw new Error('Authentication required')
+      return {
+        success: false,
+        error: 'Authentication required',
+      }
     }
 
     const rawData = {
@@ -126,23 +153,38 @@ export async function updateGroup(formData: FormData) {
     const validatedData = updateGroupSchema.parse(rawData)
 
     const { id, ...updateData } = validatedData
-    const group = await GroupService.update(id, updateData, session.user.id)
-
-    // Get collection for navigation
-    const collection = await CollectionService.getById(
-      group.collectionId,
+    const groupResult = await GroupService.update(
+      id,
+      updateData,
       session.user.id
     )
-    if (!collection) {
-      throw new Error('Collection not found')
+    if (!groupResult.success) {
+      return {
+        success: false,
+        error: groupResult.error,
+        code: groupResult.code,
+      }
     }
 
-    revalidatePath(`/universes/${collection.universeId}`)
+    // Get collection for navigation
+    const collectionResult = await CollectionService.getById(
+      groupResult.data!.collectionId,
+      session.user.id
+    )
+    if (!collectionResult.success) {
+      return {
+        success: false,
+        error: collectionResult.error,
+        code: collectionResult.code,
+      }
+    }
+
+    revalidatePath(`/universes/${collectionResult.data!.universeId}`)
     revalidatePath(
-      `/universes/${collection.universeId}/collections/${group.collectionId}`
+      `/universes/${collectionResult.data!.universeId}/collections/${groupResult.data!.collectionId}`
     )
     revalidatePath(
-      `/universes/${collection.universeId}/collections/${group.collectionId}/groups/${id}`
+      `/universes/${collectionResult.data!.universeId}/collections/${groupResult.data!.collectionId}/groups/${id}`
     )
 
     return { success: true }
@@ -167,10 +209,15 @@ export async function updateGroup(formData: FormData) {
 }
 
 export async function deleteGroup(formData: FormData) {
+  let redirectInfo: { universeId: string; collectionId: string }
+
   try {
     const session = await auth()
     if (!session?.user?.id) {
-      throw new Error('Authentication required')
+      return {
+        success: false,
+        error: 'Authentication required',
+      }
     }
 
     const rawData = {
@@ -180,28 +227,50 @@ export async function deleteGroup(formData: FormData) {
     const validatedData = deleteGroupSchema.parse(rawData)
 
     // Get group info before deletion for redirect
-    const group = await GroupService.getById(validatedData.id, session.user.id)
-    if (!group) {
-      throw new Error('Group not found')
+    const groupResult = await GroupService.getById(
+      validatedData.id,
+      session.user.id
+    )
+    if (!groupResult.success) {
+      return {
+        success: false,
+        error: groupResult.error,
+        code: groupResult.code,
+      }
     }
 
     // Get collection for navigation
-    const collection = await CollectionService.getById(
-      group.collectionId,
+    const collectionResult = await CollectionService.getById(
+      groupResult.data!.collectionId,
       session.user.id
     )
-    if (!collection) {
-      throw new Error('Collection not found')
+    if (!collectionResult.success) {
+      return {
+        success: false,
+        error: collectionResult.error,
+        code: collectionResult.code,
+      }
     }
 
-    await GroupService.delete(validatedData.id, session.user.id)
-
-    revalidatePath(`/universes/${collection.universeId}`)
-    revalidatePath(
-      `/universes/${collection.universeId}/collections/${group.collectionId}`
+    const deleteResult = await GroupService.delete(
+      validatedData.id,
+      session.user.id
     )
-    redirect(
-      `/universes/${collection.universeId}/collections/${group.collectionId}`
+    if (!deleteResult.success) {
+      return {
+        success: false,
+        error: deleteResult.error,
+        code: deleteResult.code,
+      }
+    }
+
+    redirectInfo = {
+      universeId: collectionResult.data!.universeId,
+      collectionId: groupResult.data!.collectionId
+    }
+    revalidatePath(`/universes/${collectionResult.data!.universeId}`)
+    revalidatePath(
+      `/universes/${collectionResult.data!.universeId}/collections/${groupResult.data!.collectionId}`
     )
   } catch (error) {
     console.error('Error deleting group:', error)
@@ -221,13 +290,19 @@ export async function deleteGroup(formData: FormData) {
       error: error instanceof Error ? error.message : 'Failed to delete group',
     }
   }
+
+  // Redirect outside try/catch as per Next.js best practices
+  redirect(`/universes/${redirectInfo.universeId}/collections/${redirectInfo.collectionId}`)
 }
 
 export async function updateGroupOrder(formData: FormData) {
   try {
     const session = await auth()
     if (!session?.user?.id) {
-      throw new Error('Authentication required')
+      return {
+        success: false,
+        error: 'Authentication required',
+      }
     }
 
     const rawData = {
@@ -237,21 +312,29 @@ export async function updateGroupOrder(formData: FormData) {
 
     const validatedData = updateGroupOrderSchema.parse(rawData)
 
-    await GroupService.updateOrder(
+    const result = await GroupService.updateOrder(
       validatedData.orderUpdates,
       validatedData.collectionId,
       session.user.id
     )
 
+    if (!result.success) {
+      return {
+        success: false,
+        error: result.error,
+        code: result.code,
+      }
+    }
+
     // Get collection for navigation
-    const collection = await CollectionService.getById(
+    const collectionResult = await CollectionService.getById(
       validatedData.collectionId,
       session.user.id
     )
-    if (collection) {
-      revalidatePath(`/universes/${collection.universeId}`)
+    if (collectionResult.success) {
+      revalidatePath(`/universes/${collectionResult.data!.universeId}`)
       revalidatePath(
-        `/universes/${collection.universeId}/collections/${validatedData.collectionId}`
+        `/universes/${collectionResult.data!.universeId}/collections/${validatedData.collectionId}`
       )
     }
 
@@ -284,26 +367,37 @@ export async function reorderGroupsAction(data: {
   try {
     const session = await auth()
     if (!session?.user?.id) {
-      throw new Error('Authentication required')
+      return {
+        success: false,
+        error: 'Authentication required',
+      }
     }
 
     const validatedData = reorderGroupsSchema.parse(data)
 
-    await GroupService.updateOrder(
+    const result = await GroupService.updateOrder(
       validatedData.items,
       validatedData.collectionId,
       session.user.id
     )
 
+    if (!result.success) {
+      return {
+        success: false,
+        error: result.error,
+        code: result.code,
+      }
+    }
+
     // Get collection for cache invalidation
-    const collection = await CollectionService.getById(
+    const collectionResult = await CollectionService.getById(
       validatedData.collectionId,
       session.user.id
     )
-    if (collection) {
-      revalidatePath(`/universes/${collection.universeId}`)
+    if (collectionResult.success) {
+      revalidatePath(`/universes/${collectionResult.data!.universeId}`)
       revalidatePath(
-        `/universes/${collection.universeId}/collections/${validatedData.collectionId}`
+        `/universes/${collectionResult.data!.universeId}/collections/${validatedData.collectionId}`
       )
     }
 
@@ -348,30 +442,41 @@ export async function moveGroupAction(data: {
       'Group hierarchical move not yet implemented, treating as reorder'
     )
 
-    const group = await GroupService.getById(
+    const groupResult = await GroupService.getById(
       validatedData.groupId,
       session.user.id
     )
-    if (!group) {
-      throw new Error('Group not found')
+    if (!groupResult.success) {
+      return {
+        success: false,
+        error: groupResult.error,
+        code: groupResult.code,
+      }
     }
 
     // Update order only for now
-    await GroupService.updateOrder(
+    const updateResult = await GroupService.updateOrder(
       [{ id: validatedData.groupId, order: validatedData.newOrder }],
-      group.collectionId,
+      groupResult.data!.collectionId,
       session.user.id
     )
+    if (!updateResult.success) {
+      return {
+        success: false,
+        error: updateResult.error,
+        code: updateResult.code,
+      }
+    }
 
     // Get collection for cache invalidation
-    const collection = await CollectionService.getById(
-      group.collectionId,
+    const collectionResult = await CollectionService.getById(
+      groupResult.data!.collectionId,
       session.user.id
     )
-    if (collection) {
-      revalidatePath(`/universes/${collection.universeId}`)
+    if (collectionResult.success) {
+      revalidatePath(`/universes/${collectionResult.data!.universeId}`)
       revalidatePath(
-        `/universes/${collection.universeId}/collections/${group.collectionId}`
+        `/universes/${collectionResult.data!.universeId}/collections/${groupResult.data!.collectionId}`
       )
     }
 

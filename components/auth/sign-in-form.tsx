@@ -6,8 +6,14 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Alert } from '@/components/ui/alert'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Eye, EyeOff, LogIn } from 'lucide-react'
 import Link from 'next/link'
 import { userValidation } from '@/lib/validations'
@@ -30,7 +36,7 @@ export function SignInForm() {
       // Use consistent validation schema from UserService
       const validatedData = userValidation.signIn.parse({
         email,
-        password
+        password,
       })
 
       const result = await signIn('credentials', {
@@ -48,7 +54,7 @@ export function SignInForm() {
       }
     } catch (error) {
       console.error('Sign-in error:', error)
-      
+
       if (error instanceof z.ZodError) {
         setError(error.issues[0].message)
       } else {
@@ -69,15 +75,15 @@ export function SignInForm() {
           Enter your credentials to access your universes
         </CardDescription>
       </CardHeader>
-      
+
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
             <Alert variant="destructive">
-              {error}
+              <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
-          
+
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input
@@ -85,12 +91,12 @@ export function SignInForm() {
               type="email"
               placeholder="Enter your email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={e => setEmail(e.target.value)}
               required
               disabled={isLoading}
             />
           </div>
-          
+
           <div className="space-y-2">
             <Label htmlFor="password">Password</Label>
             <div className="relative">
@@ -99,7 +105,7 @@ export function SignInForm() {
                 type={showPassword ? 'text' : 'password'}
                 placeholder="Enter your password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={e => setPassword(e.target.value)}
                 required
                 disabled={isLoading}
                 className="pr-10"
@@ -118,12 +124,8 @@ export function SignInForm() {
               </button>
             </div>
           </div>
-          
-          <Button 
-            type="submit" 
-            className="w-full"
-            disabled={isLoading}
-          >
+
+          <Button type="submit" className="w-full" disabled={isLoading}>
             {isLoading ? (
               <>
                 <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
@@ -137,12 +139,12 @@ export function SignInForm() {
             )}
           </Button>
         </form>
-        
+
         <div className="mt-6 text-center">
           <p className="text-sm text-muted-foreground">
             Don&apos;t have an account?{' '}
-            <Link 
-              href="/signup" 
+            <Link
+              href="/signup"
               className="font-medium text-primary hover:underline"
             >
               Sign up

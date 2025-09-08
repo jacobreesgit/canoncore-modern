@@ -7,11 +7,11 @@ import { z } from 'zod'
 import type { User, Universe, Collection, Group, Content } from '@/lib/types'
 
 // Specific data types that can be returned by services
-export type ServiceData = 
-  | User 
-  | Universe 
-  | Collection 
-  | Group 
+export type ServiceData =
+  | User
+  | Universe
+  | Collection
+  | Group
   | Content
   | User[]
   | Universe[]
@@ -23,9 +23,9 @@ export type ServiceData =
   | void
 
 // Standard error codes used throughout the application
-export type ErrorCode = 
+export type ErrorCode =
   | 'VALIDATION_ERROR'
-  | 'USER_EXISTS' 
+  | 'USER_EXISTS'
   | 'USER_NOT_FOUND'
   | 'INVALID_CREDENTIALS'
   | 'DATABASE_ERROR'
@@ -53,14 +53,14 @@ export type ServiceResponse = SuccessResponse | ErrorResponse
  * Create standardized error response
  */
 export function createError(
-  message: string, 
-  code: ErrorCode, 
+  message: string,
+  code: ErrorCode,
   details?: Record<string, unknown>
 ): ErrorResponse {
   return {
     error: message,
     code,
-    ...(details && { details })
+    ...(details && { details }),
   }
 }
 
@@ -68,13 +68,13 @@ export function createError(
  * Create standardized success response
  */
 export function createSuccess(
-  data: ServiceData, 
+  data: ServiceData,
   message?: string
 ): SuccessResponse {
   return {
     success: true,
     data,
-    ...(message && { message })
+    ...(message && { message }),
   }
 }
 
@@ -88,7 +88,9 @@ export function isError(response: ServiceResponse): response is ErrorResponse {
 /**
  * Check if response is successful
  */
-export function isSuccess(response: ServiceResponse): response is SuccessResponse {
+export function isSuccess(
+  response: ServiceResponse
+): response is SuccessResponse {
   return 'success' in response && response.success === true
 }
 
@@ -112,32 +114,28 @@ export const ERROR_STATUS_MAP: Record<ErrorCode, number> = {
 export function parseError(error: unknown): ErrorResponse {
   // Zod validation errors
   if (error instanceof z.ZodError) {
-    return createError(
-      error.issues[0].message,
-      'VALIDATION_ERROR',
-      { zodErrors: error.issues }
-    )
+    return createError(error.issues[0].message, 'VALIDATION_ERROR', {
+      zodErrors: error.issues,
+    })
   }
 
   // Standard Error objects
   if (error instanceof Error) {
     // Database constraint errors
-    if (error.message.includes('unique constraint') || 
-        error.message.includes('duplicate key')) {
-      return createError(
-        'Resource already exists',
-        'USER_EXISTS'
-      )
+    if (
+      error.message.includes('unique constraint') ||
+      error.message.includes('duplicate key')
+    ) {
+      return createError('Resource already exists', 'USER_EXISTS')
     }
 
     // Network errors
-    if (error.message.includes('fetch') || 
-        error.message.includes('network') ||
-        error.message.includes('connection')) {
-      return createError(
-        'Network error occurred',
-        'NETWORK_ERROR'
-      )
+    if (
+      error.message.includes('fetch') ||
+      error.message.includes('network') ||
+      error.message.includes('connection')
+    ) {
+      return createError('Network error occurred', 'NETWORK_ERROR')
     }
 
     return createError(error.message, 'UNKNOWN_ERROR')

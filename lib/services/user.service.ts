@@ -9,7 +9,12 @@ import { userValidation } from '@/lib/validations'
 export class UserServiceError extends Error {
   constructor(
     message: string,
-    public code: 'VALIDATION_ERROR' | 'USER_EXISTS' | 'USER_NOT_FOUND' | 'INVALID_CREDENTIALS' | 'DATABASE_ERROR'
+    public code:
+      | 'VALIDATION_ERROR'
+      | 'USER_EXISTS'
+      | 'USER_NOT_FOUND'
+      | 'INVALID_CREDENTIALS'
+      | 'DATABASE_ERROR'
   ) {
     super(message)
     this.name = 'UserServiceError'
@@ -17,21 +22,25 @@ export class UserServiceError extends Error {
 }
 
 // Service result type for consistent responses
-export type ServiceResult<T> = {
-  success: true
-  data: T
-} | {
-  success: false
-  error: string
-  code: UserServiceError['code']
-}
+export type ServiceResult<T> =
+  | {
+      success: true
+      data: T
+    }
+  | {
+      success: false
+      error: string
+      code: UserServiceError['code']
+    }
 
 export class UserService {
   /**
    * Create a new user account
    * Consistent validation and error handling
    */
-  static async create(input: z.infer<typeof userValidation.signUp>): Promise<ServiceResult<{ id: string; name: string; email: string }>> {
+  static async create(
+    input: z.infer<typeof userValidation.signUp>
+  ): Promise<ServiceResult<{ id: string; name: string; email: string }>> {
     try {
       // Validate input using shared schema
       const validatedData = userValidation.signUp.parse(input)
@@ -48,7 +57,7 @@ export class UserService {
         return {
           success: false,
           error: 'User with this email already exists',
-          code: 'USER_EXISTS'
+          code: 'USER_EXISTS',
         }
       }
 
@@ -78,7 +87,7 @@ export class UserService {
           id: newUser.id,
           name: newUser.name || '',
           email: newUser.email,
-        }
+        },
       }
     } catch (error) {
       console.error('UserService.create error:', error)
@@ -87,22 +96,25 @@ export class UserService {
         return {
           success: false,
           error: error.issues[0].message,
-          code: 'VALIDATION_ERROR'
+          code: 'VALIDATION_ERROR',
         }
       }
 
-      if (error instanceof Error && error.message.includes('unique constraint')) {
+      if (
+        error instanceof Error &&
+        error.message.includes('unique constraint')
+      ) {
         return {
           success: false,
           error: 'User with this email already exists',
-          code: 'USER_EXISTS'
+          code: 'USER_EXISTS',
         }
       }
 
       return {
         success: false,
         error: 'Failed to create user account',
-        code: 'DATABASE_ERROR'
+        code: 'DATABASE_ERROR',
       }
     }
   }
@@ -111,7 +123,17 @@ export class UserService {
    * Authenticate user credentials
    * Used by NextAuth.js authorize function
    */
-  static async authenticate(input: z.infer<typeof userValidation.signIn>): Promise<ServiceResult<{ id: string; name: string; email: string; image: string | null }>> {
+  static async authenticate(
+    input: z.infer<typeof userValidation.signIn>
+  ): Promise<
+    ServiceResult<{
+      id: string
+      name: string
+      email: string
+      image: string | null
+      preferredLanguage: string | null
+    }>
+  > {
     try {
       // Validate input using shared schema
       const validatedData = userValidation.signIn.parse(input)
@@ -128,7 +150,7 @@ export class UserService {
         return {
           success: false,
           error: 'Invalid email or password',
-          code: 'INVALID_CREDENTIALS'
+          code: 'INVALID_CREDENTIALS',
         }
       }
 
@@ -139,7 +161,7 @@ export class UserService {
         return {
           success: false,
           error: 'Invalid email or password',
-          code: 'INVALID_CREDENTIALS'
+          code: 'INVALID_CREDENTIALS',
         }
       }
 
@@ -150,7 +172,8 @@ export class UserService {
           name: user.name || '',
           email: user.email,
           image: user.image,
-        }
+          preferredLanguage: user.preferredLanguage,
+        },
       }
     } catch (error) {
       console.error('UserService.authenticate error:', error)
@@ -159,14 +182,14 @@ export class UserService {
         return {
           success: false,
           error: error.issues[0].message,
-          code: 'VALIDATION_ERROR'
+          code: 'VALIDATION_ERROR',
         }
       }
 
       return {
         success: false,
         error: 'Authentication failed',
-        code: 'DATABASE_ERROR'
+        code: 'DATABASE_ERROR',
       }
     }
   }
@@ -175,7 +198,15 @@ export class UserService {
    * Find user by ID
    * Consistent user retrieval
    */
-  static async findById(id: string): Promise<ServiceResult<{ id: string; name: string; email: string; image: string | null }>> {
+  static async findById(id: string): Promise<
+    ServiceResult<{
+      id: string
+      name: string
+      email: string
+      image: string | null
+      preferredLanguage: string | null
+    }>
+  > {
     try {
       const [user] = await db
         .select({
@@ -183,6 +214,7 @@ export class UserService {
           name: users.name,
           email: users.email,
           image: users.image,
+          preferredLanguage: users.preferredLanguage,
         })
         .from(users)
         .where(eq(users.id, id))
@@ -192,7 +224,7 @@ export class UserService {
         return {
           success: false,
           error: 'User not found',
-          code: 'USER_NOT_FOUND'
+          code: 'USER_NOT_FOUND',
         }
       }
 
@@ -200,15 +232,15 @@ export class UserService {
         success: true,
         data: {
           ...user,
-          name: user.name || ''
-        }
+          name: user.name || '',
+        },
       }
     } catch (error) {
       console.error('UserService.findById error:', error)
       return {
         success: false,
         error: 'Failed to find user',
-        code: 'DATABASE_ERROR'
+        code: 'DATABASE_ERROR',
       }
     }
   }
@@ -217,7 +249,15 @@ export class UserService {
    * Find user by email
    * Consistent user retrieval
    */
-  static async findByEmail(email: string): Promise<ServiceResult<{ id: string; name: string; email: string; image: string | null }>> {
+  static async findByEmail(email: string): Promise<
+    ServiceResult<{
+      id: string
+      name: string
+      email: string
+      image: string | null
+      preferredLanguage: string | null
+    }>
+  > {
     try {
       const [user] = await db
         .select({
@@ -225,6 +265,7 @@ export class UserService {
           name: users.name,
           email: users.email,
           image: users.image,
+          preferredLanguage: users.preferredLanguage,
         })
         .from(users)
         .where(eq(users.email, email.toLowerCase()))
@@ -234,7 +275,7 @@ export class UserService {
         return {
           success: false,
           error: 'User not found',
-          code: 'USER_NOT_FOUND'
+          code: 'USER_NOT_FOUND',
         }
       }
 
@@ -242,15 +283,15 @@ export class UserService {
         success: true,
         data: {
           ...user,
-          name: user.name || ''
-        }
+          name: user.name || '',
+        },
       }
     } catch (error) {
       console.error('UserService.findByEmail error:', error)
       return {
         success: false,
         error: 'Failed to find user',
-        code: 'DATABASE_ERROR'
+        code: 'DATABASE_ERROR',
       }
     }
   }
@@ -260,9 +301,17 @@ export class UserService {
    * Consistent profile updates
    */
   static async updateProfile(
-    id: string, 
+    id: string,
     input: z.infer<typeof userValidation.updateProfile>
-  ): Promise<ServiceResult<{ id: string; name: string; email: string; image: string | null }>> {
+  ): Promise<
+    ServiceResult<{
+      id: string
+      name: string
+      email: string
+      image: string | null
+      preferredLanguage: string | null
+    }>
+  > {
     try {
       // Validate input using shared schema
       const validatedData = userValidation.updateProfile.parse(input)
@@ -274,13 +323,16 @@ export class UserService {
       }
 
       // If email is being updated, check for conflicts
-      if (validatedData.email && validatedData.email !== existingUser.data.email) {
+      if (
+        validatedData.email &&
+        validatedData.email !== existingUser.data.email
+      ) {
         const emailCheck = await this.findByEmail(validatedData.email)
         if (emailCheck.success) {
           return {
             success: false,
             error: 'Email address is already in use',
-            code: 'USER_EXISTS'
+            code: 'USER_EXISTS',
           }
         }
       }
@@ -298,14 +350,15 @@ export class UserService {
           name: users.name,
           email: users.email,
           image: users.image,
+          preferredLanguage: users.preferredLanguage,
         })
 
       return {
         success: true,
         data: {
           ...updatedUser,
-          name: updatedUser.name || ''
-        }
+          name: updatedUser.name || '',
+        },
       }
     } catch (error) {
       console.error('UserService.updateProfile error:', error)
@@ -314,14 +367,14 @@ export class UserService {
         return {
           success: false,
           error: error.issues[0].message,
-          code: 'VALIDATION_ERROR'
+          code: 'VALIDATION_ERROR',
         }
       }
 
       return {
         success: false,
         error: 'Failed to update profile',
-        code: 'DATABASE_ERROR'
+        code: 'DATABASE_ERROR',
       }
     }
   }

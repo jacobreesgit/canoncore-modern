@@ -8,6 +8,13 @@
       "when": 1757056844760,
       "tag": "0000_glossy_loa",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1757329692769,
+      "tag": "0001_open_husk",
+      "breakpoints": true
     }
   ]
 }

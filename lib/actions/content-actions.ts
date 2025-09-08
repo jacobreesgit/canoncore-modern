@@ -10,7 +10,7 @@ import { redirect } from 'next/navigation'
 
 const createContentSchema = z.object({
   name: z.string().min(1, 'Name is required').max(255, 'Name too long'),
-  description: z.string().min(1, 'Description is required'),
+  description: z.string().optional(),
   groupId: z.string().uuid(),
   itemType: z
     .enum(['episode', 'movie', 'chapter', 'level', 'other'])
@@ -28,7 +28,7 @@ const createContentSchema = z.object({
 const updateContentSchema = z.object({
   id: z.string().uuid(),
   name: z.string().min(1, 'Name is required').max(255, 'Name too long'),
-  description: z.string().min(1, 'Description is required'),
+  description: z.string().optional(),
   itemType: z
     .enum(['episode', 'movie', 'chapter', 'level', 'other'])
     .default('other'),
@@ -77,15 +77,21 @@ const moveContentSchema = z.object({
 })
 
 export async function createContent(formData: FormData) {
+  let createdContent: { universeId: string; collectionId: string; groupId: string; id: string }
+
   try {
     const session = await auth()
     if (!session?.user?.id) {
-      throw new Error('Authentication required')
+      return {
+        success: false,
+        error: 'Authentication required',
+      }
     }
 
+    const description = formData.get('description') as string
     const rawData = {
       name: formData.get('name') as string,
-      description: formData.get('description') as string,
+      description: description || undefined,
       groupId: formData.get('groupId') as string,
       itemType: (formData.get('itemType') as string) || 'other',
       releaseDate: formData.get('releaseDate') as string,
@@ -94,34 +100,55 @@ export async function createContent(formData: FormData) {
 
     const validatedData = createContentSchema.parse(rawData)
 
-    const content = await ContentService.create(validatedData, session.user.id)
+    const contentResult = await ContentService.create(
+      validatedData,
+      session.user.id
+    )
+    if (!contentResult.success) {
+      return {
+        success: false,
+        error: contentResult.error,
+        code: contentResult.code,
+      }
+    }
 
     // Get navigation info
-    const group = await GroupService.getById(
+    const groupResult = await GroupService.getById(
       validatedData.groupId,
       session.user.id
     )
-    if (!group) {
-      throw new Error('Group not found')
+    if (!groupResult.success) {
+      return {
+        success: false,
+        error: groupResult.error,
+        code: groupResult.code,
+      }
     }
 
-    const collection = await CollectionService.getById(
-      group.collectionId,
+    const collectionResult = await CollectionService.getById(
+      groupResult.data!.collectionId,
       session.user.id
     )
-    if (!collection) {
-      throw new Error('Collection not found')
+    if (!collectionResult.success) {
+      return {
+        success: false,
+        error: collectionResult.error,
+        code: collectionResult.code,
+      }
     }
 
-    revalidatePath(`/universes/${collection.universeId}`)
+    revalidatePath(`/universes/${collectionResult.data!.universeId}`)
     revalidatePath(
-      `/universes/${collection.universeId}/collections/${group.collectionId}`
+      `/universes/${collectionResult.data!.universeId}/collections/${groupResult.data!.collectionId}`
     )
+    createdContent = {
+      universeId: collectionResult.data!.universeId,
+      collectionId: groupResult.data!.collectionId,
+      groupId: validatedData.groupId,
+      id: contentResult.data!.id
+    }
     revalidatePath(
-      `/universes/${collection.universeId}/collections/${group.collectionId}/groups/${validatedData.groupId}`
-    )
-    redirect(
-      `/universes/${collection.universeId}/collections/${group.collectionId}/groups/${validatedData.groupId}/content/${content.id}`
+      `/universes/${collectionResult.data!.universeId}/collections/${groupResult.data!.collectionId}/groups/${validatedData.groupId}`
     )
   } catch (error) {
     console.error('Error creating content:', error)
@@ -142,13 +169,19 @@ export async function createContent(formData: FormData) {
         error instanceof Error ? error.message : 'Failed to create content',
     }
   }
+
+  // Redirect outside try/catch as per Next.js best practices
+  redirect(`/universes/${createdContent.universeId}/collections/${createdContent.collectionId}/groups/${createdContent.groupId}/content/${createdContent.id}`)
 }
 
 export async function updateContent(formData: FormData) {
   try {
     const session = await auth()
     if (!session?.user?.id) {
-      throw new Error('Authentication required')
+      return {
+        success: false,
+        error: 'Authentication required',
+      }
     }
 
     const rawData = {
@@ -164,25 +197,39 @@ export async function updateContent(formData: FormData) {
 
     const { id, ...updateData } = validatedData
 
-    const content = await ContentService.update(id, updateData, session.user.id)
+    const contentResult = await ContentService.update(
+      id,
+      updateData,
+      session.user.id
+    )
+    if (!contentResult.success) {
+      return {
+        success: false,
+        error: contentResult.error,
+        code: contentResult.code,
+      }
+    }
 
     // Get navigation info
-    const group = await GroupService.getById(content.groupId, session.user.id)
-    if (group) {
-      const collection = await CollectionService.getById(
-        group.collectionId,
+    const groupResult = await GroupService.getById(
+      contentResult.data!.groupId,
+      session.user.id
+    )
+    if (groupResult.success) {
+      const collectionResult = await CollectionService.getById(
+        groupResult.data!.collectionId,
         session.user.id
       )
-      if (collection) {
-        revalidatePath(`/universes/${collection.universeId}`)
+      if (collectionResult.success) {
+        revalidatePath(`/universes/${collectionResult.data!.universeId}`)
         revalidatePath(
-          `/universes/${collection.universeId}/collections/${group.collectionId}`
+          `/universes/${collectionResult.data!.universeId}/collections/${groupResult.data!.collectionId}`
         )
         revalidatePath(
-          `/universes/${collection.universeId}/collections/${group.collectionId}/groups/${content.groupId}`
+          `/universes/${collectionResult.data!.universeId}/collections/${groupResult.data!.collectionId}/groups/${contentResult.data!.groupId}`
         )
         revalidatePath(
-          `/universes/${collection.universeId}/collections/${group.collectionId}/groups/${content.groupId}/content/${id}`
+          `/universes/${collectionResult.data!.universeId}/collections/${groupResult.data!.collectionId}/groups/${contentResult.data!.groupId}/content/${id}`
         )
       }
     }
@@ -210,10 +257,15 @@ export async function updateContent(formData: FormData) {
 }
 
 export async function deleteContent(formData: FormData) {
+  let redirectInfo: { universeId: string; collectionId: string; groupId: string }
+
   try {
     const session = await auth()
     if (!session?.user?.id) {
-      throw new Error('Authentication required')
+      return {
+        success: false,
+        error: 'Authentication required',
+      }
     }
 
     const rawData = {
@@ -223,38 +275,65 @@ export async function deleteContent(formData: FormData) {
     const validatedData = deleteContentSchema.parse(rawData)
 
     // Get content info before deletion for redirect
-    const content = await ContentService.getById(
+    const contentResult = await ContentService.getById(
       validatedData.id,
       session.user.id
     )
-    if (!content) {
-      throw new Error('Content not found')
+    if (!contentResult.success) {
+      return {
+        success: false,
+        error: contentResult.error,
+        code: contentResult.code,
+      }
     }
 
-    const group = await GroupService.getById(content.groupId, session.user.id)
-    if (!group) {
-      throw new Error('Group not found')
-    }
-
-    const collection = await CollectionService.getById(
-      group.collectionId,
+    const groupResult = await GroupService.getById(
+      contentResult.data!.groupId,
       session.user.id
     )
-    if (!collection) {
-      throw new Error('Collection not found')
+    if (!groupResult.success) {
+      return {
+        success: false,
+        error: groupResult.error,
+        code: groupResult.code,
+      }
     }
 
-    await ContentService.delete(validatedData.id, session.user.id)
+    const collectionResult = await CollectionService.getById(
+      groupResult.data!.collectionId,
+      session.user.id
+    )
+    if (!collectionResult.success) {
+      return {
+        success: false,
+        error: collectionResult.error,
+        code: collectionResult.code,
+      }
+    }
 
-    revalidatePath(`/universes/${collection.universeId}`)
-    revalidatePath(
-      `/universes/${collection.universeId}/collections/${group.collectionId}`
+    const deleteResult = await ContentService.delete(
+      validatedData.id,
+      session.user.id
     )
+    if (!deleteResult.success) {
+      return {
+        success: false,
+        error: deleteResult.error,
+        code: deleteResult.code,
+      }
+    }
+
+    revalidatePath(`/universes/${collectionResult.data!.universeId}`)
     revalidatePath(
-      `/universes/${collection.universeId}/collections/${group.collectionId}/groups/${content.groupId}`
+      `/universes/${collectionResult.data!.universeId}/collections/${groupResult.data!.collectionId}`
     )
-    redirect(
-      `/universes/${collection.universeId}/collections/${group.collectionId}/groups/${content.groupId}`
+    redirectInfo = {
+      universeId: collectionResult.data!.universeId,
+      collectionId: groupResult.data!.collectionId,
+      groupId: contentResult.data!.groupId
+    }
+    revalidatePath(
+      `/universes/${collectionResult.data!.universeId}/collections/${groupResult.data!.collectionId}/groups/${contentResult.data!.groupId}`
     )
   } catch (error) {
     console.error('Error deleting content:', error)
@@ -275,13 +354,19 @@ export async function deleteContent(formData: FormData) {
         error instanceof Error ? error.message : 'Failed to delete content',
     }
   }
+
+  // Redirect outside try/catch as per Next.js best practices
+  redirect(`/universes/${redirectInfo.universeId}/collections/${redirectInfo.collectionId}/groups/${redirectInfo.groupId}`)
 }
 
 export async function updateContentOrder(formData: FormData) {
   try {
     const session = await auth()
     if (!session?.user?.id) {
-      throw new Error('Authentication required')
+      return {
+        success: false,
+        error: 'Authentication required',
+      }
     }
 
     const rawData = {
@@ -291,29 +376,37 @@ export async function updateContentOrder(formData: FormData) {
 
     const validatedData = updateContentOrderSchema.parse(rawData)
 
-    await ContentService.updateOrder(
+    const result = await ContentService.updateOrder(
       validatedData.orderUpdates,
       validatedData.groupId,
       session.user.id
     )
 
+    if (!result.success) {
+      return {
+        success: false,
+        error: result.error,
+        code: result.code,
+      }
+    }
+
     // Get navigation info for revalidation
-    const group = await GroupService.getById(
+    const groupResult = await GroupService.getById(
       validatedData.groupId,
       session.user.id
     )
-    if (group) {
-      const collection = await CollectionService.getById(
-        group.collectionId,
+    if (groupResult.success) {
+      const collectionResult = await CollectionService.getById(
+        groupResult.data!.collectionId,
         session.user.id
       )
-      if (collection) {
-        revalidatePath(`/universes/${collection.universeId}`)
+      if (collectionResult.success) {
+        revalidatePath(`/universes/${collectionResult.data!.universeId}`)
         revalidatePath(
-          `/universes/${collection.universeId}/collections/${group.collectionId}`
+          `/universes/${collectionResult.data!.universeId}/collections/${groupResult.data!.collectionId}`
         )
         revalidatePath(
-          `/universes/${collection.universeId}/collections/${group.collectionId}/groups/${validatedData.groupId}`
+          `/universes/${collectionResult.data!.universeId}/collections/${groupResult.data!.collectionId}/groups/${validatedData.groupId}`
         )
       }
     }
@@ -346,7 +439,10 @@ export async function toggleContentViewable(formData: FormData) {
   try {
     const session = await auth()
     if (!session?.user?.id) {
-      throw new Error('Authentication required')
+      return {
+        success: false,
+        error: 'Authentication required',
+      }
     }
 
     const rawData = {
@@ -355,35 +451,46 @@ export async function toggleContentViewable(formData: FormData) {
 
     const validatedData = toggleContentViewableSchema.parse(rawData)
 
-    const content = await ContentService.toggleViewable(
+    const contentResult = await ContentService.toggleViewable(
       validatedData.id,
       session.user.id
     )
 
+    if (!contentResult.success) {
+      return {
+        success: false,
+        error: contentResult.error,
+        code: contentResult.code,
+      }
+    }
+
     // Get navigation info for revalidation
-    const group = await GroupService.getById(content.groupId, session.user.id)
-    if (group) {
-      const collection = await CollectionService.getById(
-        group.collectionId,
+    const groupResult = await GroupService.getById(
+      contentResult.data!.groupId,
+      session.user.id
+    )
+    if (groupResult.success) {
+      const collectionResult = await CollectionService.getById(
+        groupResult.data!.collectionId,
         session.user.id
       )
-      if (collection) {
-        revalidatePath(`/universes/${collection.universeId}`)
+      if (collectionResult.success) {
+        revalidatePath(`/universes/${collectionResult.data!.universeId}`)
         revalidatePath(
-          `/universes/${collection.universeId}/collections/${group.collectionId}`
+          `/universes/${collectionResult.data!.universeId}/collections/${groupResult.data!.collectionId}`
         )
         revalidatePath(
-          `/universes/${collection.universeId}/collections/${group.collectionId}/groups/${content.groupId}`
+          `/universes/${collectionResult.data!.universeId}/collections/${groupResult.data!.collectionId}/groups/${contentResult.data!.groupId}`
         )
         revalidatePath(
-          `/universes/${collection.universeId}/collections/${group.collectionId}/groups/${content.groupId}/content/${validatedData.id}`
+          `/universes/${collectionResult.data!.universeId}/collections/${groupResult.data!.collectionId}/groups/${contentResult.data!.groupId}/content/${validatedData.id}`
         )
       }
     }
 
     return {
       success: true,
-      isViewable: content.isViewable,
+      isViewable: contentResult.data!.isViewable,
     }
   } catch (error) {
     console.error('Error toggling content viewability:', error)
@@ -415,35 +522,45 @@ export async function reorderContentAction(data: {
   try {
     const session = await auth()
     if (!session?.user?.id) {
-      throw new Error('Authentication required')
+      return {
+        success: false,
+        error: 'Authentication required',
+      }
     }
 
     const validatedData = reorderContentSchema.parse(data)
 
-    // Use the existing updateOrder method - need to check if ContentService has this method
-    await ContentService.updateOrder(
+    const result = await ContentService.updateOrder(
       validatedData.items,
       validatedData.groupId,
       session.user.id
     )
 
+    if (!result.success) {
+      return {
+        success: false,
+        error: result.error,
+        code: result.code,
+      }
+    }
+
     // Get navigation info for revalidation
-    const group = await GroupService.getById(
+    const groupResult = await GroupService.getById(
       validatedData.groupId,
       session.user.id
     )
-    if (group) {
-      const collection = await CollectionService.getById(
-        group.collectionId,
+    if (groupResult.success) {
+      const collectionResult = await CollectionService.getById(
+        groupResult.data!.collectionId,
         session.user.id
       )
-      if (collection) {
-        revalidatePath(`/universes/${collection.universeId}`)
+      if (collectionResult.success) {
+        revalidatePath(`/universes/${collectionResult.data!.universeId}`)
         revalidatePath(
-          `/universes/${collection.universeId}/collections/${group.collectionId}`
+          `/universes/${collectionResult.data!.universeId}/collections/${groupResult.data!.collectionId}`
         )
         revalidatePath(
-          `/universes/${collection.universeId}/collections/${group.collectionId}/groups/${validatedData.groupId}`
+          `/universes/${collectionResult.data!.universeId}/collections/${groupResult.data!.collectionId}/groups/${validatedData.groupId}`
         )
       }
     }
@@ -478,7 +595,10 @@ export async function moveContentAction(data: {
   try {
     const session = await auth()
     if (!session?.user?.id) {
-      throw new Error('Authentication required')
+      return {
+        success: false,
+        error: 'Authentication required',
+      }
     }
 
     const validatedData = moveContentSchema.parse(data)
@@ -489,35 +609,49 @@ export async function moveContentAction(data: {
       'Content hierarchical move not yet implemented, treating as reorder'
     )
 
-    const content = await ContentService.getById(
+    const contentResult = await ContentService.getById(
       validatedData.contentId,
       session.user.id
     )
-    if (!content) {
-      throw new Error('Content not found')
+    if (!contentResult.success) {
+      return {
+        success: false,
+        error: contentResult.error,
+        code: contentResult.code,
+      }
     }
 
     // Update order only for now
-    await ContentService.updateOrder(
+    const updateResult = await ContentService.updateOrder(
       [{ id: validatedData.contentId, order: validatedData.newOrder }],
-      content.groupId,
+      contentResult.data!.groupId,
       session.user.id
     )
+    if (!updateResult.success) {
+      return {
+        success: false,
+        error: updateResult.error,
+        code: updateResult.code,
+      }
+    }
 
     // Get navigation info for revalidation
-    const group = await GroupService.getById(content.groupId, session.user.id)
-    if (group) {
-      const collection = await CollectionService.getById(
-        group.collectionId,
+    const groupResult = await GroupService.getById(
+      contentResult.data!.groupId,
+      session.user.id
+    )
+    if (groupResult.success) {
+      const collectionResult = await CollectionService.getById(
+        groupResult.data!.collectionId,
         session.user.id
       )
-      if (collection) {
-        revalidatePath(`/universes/${collection.universeId}`)
+      if (collectionResult.success) {
+        revalidatePath(`/universes/${collectionResult.data!.universeId}`)
         revalidatePath(
-          `/universes/${collection.universeId}/collections/${group.collectionId}`
+          `/universes/${collectionResult.data!.universeId}/collections/${groupResult.data!.collectionId}`
         )
         revalidatePath(
-          `/universes/${collection.universeId}/collections/${group.collectionId}/groups/${content.groupId}`
+          `/universes/${collectionResult.data!.universeId}/collections/${groupResult.data!.collectionId}/groups/${contentResult.data!.groupId}`
         )
       }
     }

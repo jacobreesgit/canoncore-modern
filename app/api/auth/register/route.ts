@@ -4,7 +4,7 @@ import { UserService } from '@/lib/services/user.service'
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    
+
     // Use consistent UserService for registration
     const result = await UserService.create(body)
 

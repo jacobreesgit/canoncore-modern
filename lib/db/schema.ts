@@ -21,6 +21,7 @@ export const users = pgTable('user', {
   email: text('email').unique().notNull(),
   image: text('image'),
   passwordHash: text('passwordHash'),
+  preferredLanguage: varchar('preferredLanguage', { length: 10 }),
   createdAt: timestamp('createdAt', { mode: 'date' }).defaultNow(),
   updatedAt: timestamp('updatedAt', { mode: 'date' }).defaultNow(),
 })
@@ -33,7 +34,7 @@ export const universes = pgTable(
       .primaryKey()
       .$defaultFn(() => crypto.randomUUID()),
     name: varchar('name', { length: 255 }).notNull(),
-    description: text('description').notNull(),
+    description: text('description'),
     userId: text('userId')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
@@ -56,7 +57,7 @@ export const collections = pgTable(
       .primaryKey()
       .$defaultFn(() => crypto.randomUUID()),
     name: varchar('name', { length: 255 }).notNull(),
-    description: text('description').notNull(),
+    description: text('description'),
     universeId: text('universeId')
       .notNull()
       .references(() => universes.id, { onDelete: 'cascade' }),
@@ -82,7 +83,7 @@ export const groups = pgTable(
       .primaryKey()
       .$defaultFn(() => crypto.randomUUID()),
     name: varchar('name', { length: 255 }).notNull(),
-    description: text('description').notNull(),
+    description: text('description'),
     collectionId: text('collectionId')
       .notNull()
       .references(() => collections.id, { onDelete: 'cascade' }),
@@ -109,7 +110,7 @@ export const content = pgTable(
       .primaryKey()
       .$defaultFn(() => crypto.randomUUID()),
     name: varchar('name', { length: 255 }).notNull(),
-    description: text('description').notNull(),
+    description: text('description'),
     groupId: text('groupId')
       .notNull()
       .references(() => groups.id, { onDelete: 'cascade' }),

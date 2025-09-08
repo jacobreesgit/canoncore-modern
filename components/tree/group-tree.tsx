@@ -39,9 +39,7 @@ export function GroupTree({
       const firstItem = items[0]
 
       // Check if we're reordering groups
-      const isGroup = hierarchyData.groups?.some(
-        g => (g.group?.id || g.id) === firstItem.id
-      )
+      const isGroup = hierarchyData.groups?.some(g => g.id === firstItem.id)
 
       if (isGroup) {
         const result = await reorderGroupsAction({
@@ -55,11 +53,11 @@ export function GroupTree({
       } else {
         // Check if we're reordering content
         const contentData = hierarchyData.content?.find(
-          c => (c.content?.id || c.id) === firstItem.id
+          c => c.id === firstItem.id
         )
 
         if (contentData) {
-          const groupId = contentData.content?.groupId || contentData.groupId
+          const groupId = contentData.groupId
           const result = await reorderContentAction({
             groupId,
             items: items.map(item => ({ id: item.id, order: item.newOrder })),
@@ -85,9 +83,7 @@ export function GroupTree({
   ) => {
     try {
       // Check if we're moving a group
-      const isGroup = hierarchyData.groups?.some(
-        g => (g.group?.id || g.id) === itemId
-      )
+      const isGroup = hierarchyData.groups?.some(g => g.id === itemId)
 
       if (isGroup) {
         const result = await moveGroupAction({
@@ -121,18 +117,14 @@ export function GroupTree({
 
   const handleSelect = (itemId: string) => {
     // Navigate to appropriate detail page
-    if (hierarchyData.groups?.some(g => (g.group?.id || g.id) === itemId)) {
+    if (hierarchyData.groups?.some(g => g.id === itemId)) {
       router.push(
         `/universes/${universeId}/collections/${collectionId}/groups/${itemId}`
       )
-    } else if (
-      hierarchyData.content?.some(c => (c.content?.id || c.id) === itemId)
-    ) {
-      const contentData = hierarchyData.content.find(
-        c => (c.content?.id || c.id) === itemId
-      )
+    } else if (hierarchyData.content?.some(c => c.id === itemId)) {
+      const contentData = hierarchyData.content.find(c => c.id === itemId)
       if (contentData) {
-        const groupId = contentData.content?.groupId || contentData.groupId
+        const groupId = contentData.groupId
         router.push(
           `/universes/${universeId}/collections/${collectionId}/groups/${groupId}/content/${itemId}`
         )

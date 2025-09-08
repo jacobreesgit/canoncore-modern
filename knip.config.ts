@@ -1,11 +1,7 @@
 import type { KnipConfig } from 'knip'
 
 const config: KnipConfig = {
-  entry: [
-    'app/**/*.{ts,tsx}',
-    'lib/**/*.ts',
-    'components/**/*.{ts,tsx}',
-  ],
+  entry: ['app/**/*.{ts,tsx}', 'lib/**/*.ts', 'components/**/*.{ts,tsx}'],
   ignore: ['**/*.test.{ts,tsx}', '**/*.spec.{ts,tsx}'],
   ignoreDependencies: [
     '@types/*',

@@ -5,8 +5,14 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Alert } from '@/components/ui/alert'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Eye, EyeOff, UserPlus, Check } from 'lucide-react'
 import Link from 'next/link'
 import { signIn } from 'next-auth/react'
@@ -18,7 +24,7 @@ export function SignUpForm() {
     name: '',
     email: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
   })
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
@@ -38,15 +44,15 @@ export function SignUpForm() {
       userValidation.signUp.parse({
         name: formData.name,
         email: formData.email,
-        password: formData.password
+        password: formData.password,
       })
-      
+
       // Additional frontend validation for password confirmation
       if (formData.password !== formData.confirmPassword) {
         setError('Passwords do not match')
         return false
       }
-      
+
       return true
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -61,11 +67,11 @@ export function SignUpForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
-    
+
     if (!validateForm()) {
       return
     }
-    
+
     setIsLoading(true)
 
     try {
@@ -89,7 +95,7 @@ export function SignUpForm() {
       }
 
       setSuccess(true)
-      
+
       // Auto sign-in after successful registration
       setTimeout(async () => {
         const result = await signIn('credentials', {
@@ -103,10 +109,13 @@ export function SignUpForm() {
           router.refresh()
         }
       }, 1000)
-
     } catch (error) {
       console.error('Registration error:', error)
-      setError(error instanceof Error ? error.message : 'An error occurred. Please try again.')
+      setError(
+        error instanceof Error
+          ? error.message
+          : 'An error occurred. Please try again.'
+      )
     } finally {
       setIsLoading(false)
     }
@@ -121,10 +130,10 @@ export function SignUpForm() {
               <Check className="h-6 w-6 text-green-600" />
             </div>
             <div>
-              <h3 className="text-lg font-medium">Account created successfully!</h3>
-              <p className="text-sm text-muted-foreground">
-                Signing you in...
-              </p>
+              <h3 className="text-lg font-medium">
+                Account created successfully!
+              </h3>
+              <p className="text-sm text-muted-foreground">Signing you in...</p>
             </div>
           </div>
         </CardContent>
@@ -142,15 +151,15 @@ export function SignUpForm() {
           Join CanonCore to start organizing your content universes
         </CardDescription>
       </CardHeader>
-      
+
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
             <Alert variant="destructive">
-              {error}
+              <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
-          
+
           <div className="space-y-2">
             <Label htmlFor="name">Full Name</Label>
             <Input
@@ -164,7 +173,7 @@ export function SignUpForm() {
               disabled={isLoading}
             />
           </div>
-          
+
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input
@@ -178,7 +187,7 @@ export function SignUpForm() {
               disabled={isLoading}
             />
           </div>
-          
+
           <div className="space-y-2">
             <Label htmlFor="password">Password</Label>
             <div className="relative">
@@ -207,7 +216,7 @@ export function SignUpForm() {
               </button>
             </div>
           </div>
-          
+
           <div className="space-y-2">
             <Label htmlFor="confirmPassword">Confirm Password</Label>
             <div className="relative">
@@ -236,12 +245,8 @@ export function SignUpForm() {
               </button>
             </div>
           </div>
-          
-          <Button 
-            type="submit" 
-            className="w-full"
-            disabled={isLoading}
-          >
+
+          <Button type="submit" className="w-full" disabled={isLoading}>
             {isLoading ? (
               <>
                 <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
@@ -255,14 +260,11 @@ export function SignUpForm() {
             )}
           </Button>
         </form>
-        
+
         <div className="mt-6 text-center">
           <p className="text-sm text-muted-foreground">
             Already have an account?{' '}
-            <Link 
-              href="/" 
-              className="font-medium text-primary hover:underline"
-            >
+            <Link href="/" className="font-medium text-primary hover:underline">
               Sign in
             </Link>
           </p>

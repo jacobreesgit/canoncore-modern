@@ -6,7 +6,7 @@
 export interface BaseTreeItem {
   id: string
   name: string
-  description?: string
+  description?: string | null
   order: number
   createdAt: Date
   updatedAt: Date
@@ -31,29 +31,39 @@ export interface TreeItemData extends BaseTreeItem {
 export interface CollectionItem {
   id: string
   name: string
-  description: string
+  description: string | null
   order: number
   universeId: string
+  userId: string
+  createdAt: Date
+  updatedAt: Date
 }
 
 export interface GroupItem {
   id: string
   name: string
-  description: string
+  description: string | null
   order: number
   collectionId: string
   itemType: string
+  userId: string
+  createdAt: Date
+  updatedAt: Date
 }
 
 export interface ContentItem {
   id: string
   name: string
-  description: string
+  description: string | null
   order: number
   groupId: string
+  collectionId: string
   isViewable: boolean
   itemType: string
   releaseDate: Date | null
+  userId: string
+  createdAt: Date
+  updatedAt: Date
 }
 
 export interface GroupRelationship {

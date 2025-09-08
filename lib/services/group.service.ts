@@ -9,6 +9,37 @@ import {
   type Group,
   type NewGroup,
 } from '@/lib/db/schema'
+import type {
+  ContentItem,
+  ContentRelationship as ContentRelationshipItem,
+} from '@/components/tree/tree-types'
+
+// Consistent error types for Group operations
+export class GroupServiceError extends Error {
+  constructor(
+    message: string,
+    public code:
+      | 'VALIDATION_ERROR'
+      | 'GROUP_NOT_FOUND'
+      | 'ACCESS_DENIED'
+      | 'DATABASE_ERROR'
+  ) {
+    super(message)
+    this.name = 'GroupServiceError'
+  }
+}
+
+// Service result type for consistent responses
+export type GroupServiceResult<T> =
+  | {
+      success: true
+      data: T
+    }
+  | {
+      success: false
+      error: string
+      code: GroupServiceError['code']
+    }
 
 export class GroupService {
   /**
@@ -17,9 +48,9 @@ export class GroupService {
   static async create(
     data: Omit<NewGroup, 'id' | 'createdAt' | 'updatedAt' | 'userId'>,
     userId: string
-  ): Promise<Group> {
+  ): Promise<GroupServiceResult<Group>> {
     try {
-      return await db.transaction(async tx => {
+      const group = await db.transaction(async tx => {
         // Verify user owns the collection through universe ownership
         const [collection] = await tx
           .select({ id: collections.id })
@@ -47,9 +78,25 @@ export class GroupService {
 
         return group
       })
+
+      return {
+        success: true,
+        data: group,
+      }
     } catch (error) {
       console.error('Error creating group:', error)
-      throw new Error('Failed to create group')
+      if (error instanceof Error && error.message.includes('not found')) {
+        return {
+          success: false,
+          error: 'Collection not found or access denied',
+          code: 'ACCESS_DENIED',
+        }
+      }
+      return {
+        success: false,
+        error: 'Failed to create group',
+        code: 'DATABASE_ERROR',
+      }
     }
   }
 
@@ -59,9 +106,9 @@ export class GroupService {
   static async getByCollection(
     collectionId: string,
     userId: string
-  ): Promise<Group[]> {
+  ): Promise<GroupServiceResult<Group[]>> {
     try {
-      return await db
+      const groupsData = await db
         .select({
           id: groups.id,
           name: groups.name,
@@ -83,16 +130,28 @@ export class GroupService {
           )
         )
         .orderBy(asc(groups.order), desc(groups.createdAt))
+
+      return {
+        success: true,
+        data: groupsData,
+      }
     } catch (error) {
       console.error('Error fetching groups:', error)
-      throw new Error('Failed to fetch groups')
+      return {
+        success: false,
+        error: 'Failed to fetch groups',
+        code: 'DATABASE_ERROR',
+      }
     }
   }
 
   /**
    * Get a specific group by ID with ownership check
    */
-  static async getById(id: string, userId: string): Promise<Group | null> {
+  static async getById(
+    id: string,
+    userId: string
+  ): Promise<GroupServiceResult<Group | null>> {
     try {
       const [group] = await db
         .select({
@@ -112,10 +171,25 @@ export class GroupService {
         .where(and(eq(groups.id, id), eq(universes.userId, userId)))
         .limit(1)
 
-      return group || null
+      if (!group) {
+        return {
+          success: false,
+          error: 'Group not found or access denied',
+          code: 'GROUP_NOT_FOUND',
+        }
+      }
+
+      return {
+        success: true,
+        data: group,
+      }
     } catch (error) {
       console.error('Error fetching group:', error)
-      throw new Error('Failed to fetch group')
+      return {
+        success: false,
+        error: 'Failed to fetch group',
+        code: 'DATABASE_ERROR',
+      }
     }
   }
 
@@ -126,9 +200,9 @@ export class GroupService {
     id: string,
     data: Partial<Omit<NewGroup, 'id' | 'userId' | 'createdAt' | 'updatedAt'>>,
     userId: string
-  ): Promise<Group> {
+  ): Promise<GroupServiceResult<Group>> {
     try {
-      return await db.transaction(async tx => {
+      const group = await db.transaction(async tx => {
         // Verify ownership through collection and universe
         const [existingGroup] = await tx
           .select({ collectionId: groups.collectionId })
@@ -153,16 +227,35 @@ export class GroupService {
 
         return group
       })
+
+      return {
+        success: true,
+        data: group,
+      }
     } catch (error) {
       console.error('Error updating group:', error)
-      throw new Error('Failed to update group')
+      if (error instanceof Error && error.message.includes('not found')) {
+        return {
+          success: false,
+          error: 'Group not found or access denied',
+          code: 'GROUP_NOT_FOUND',
+        }
+      }
+      return {
+        success: false,
+        error: 'Failed to update group',
+        code: 'DATABASE_ERROR',
+      }
     }
   }
 
   /**
    * Delete a group with ownership check
    */
-  static async delete(id: string, userId: string): Promise<void> {
+  static async delete(
+    id: string,
+    userId: string
+  ): Promise<GroupServiceResult<void>> {
     try {
       await db.transaction(async tx => {
         // Verify ownership through collection and universe
@@ -181,9 +274,25 @@ export class GroupService {
         // Delete group (cascade will handle related records)
         await tx.delete(groups).where(eq(groups.id, id))
       })
+
+      return {
+        success: true,
+        data: undefined,
+      }
     } catch (error) {
       console.error('Error deleting group:', error)
-      throw new Error('Failed to delete group')
+      if (error instanceof Error && error.message.includes('not found')) {
+        return {
+          success: false,
+          error: 'Group not found or access denied',
+          code: 'GROUP_NOT_FOUND',
+        }
+      }
+      return {
+        success: false,
+        error: 'Failed to delete group',
+        code: 'DATABASE_ERROR',
+      }
     }
   }
 
@@ -194,7 +303,7 @@ export class GroupService {
     orderUpdates: { id: string; order: number }[],
     collectionId: string,
     userId: string
-  ): Promise<void> {
+  ): Promise<GroupServiceResult<void>> {
     try {
       await db.transaction(async tx => {
         // Verify user owns the collection through universe
@@ -227,16 +336,35 @@ export class GroupService {
             )
         }
       })
+
+      return {
+        success: true,
+        data: undefined,
+      }
     } catch (error) {
       console.error('Error updating group order:', error)
-      throw new Error('Failed to update group order')
+      if (error instanceof Error && error.message.includes('not found')) {
+        return {
+          success: false,
+          error: 'Collection not found or access denied',
+          code: 'ACCESS_DENIED',
+        }
+      }
+      return {
+        success: false,
+        error: 'Failed to update group order',
+        code: 'DATABASE_ERROR',
+      }
     }
   }
 
   /**
    * Check if user has access to group
    */
-  static async checkAccess(id: string, userId: string): Promise<boolean> {
+  static async checkAccess(
+    id: string,
+    userId: string
+  ): Promise<GroupServiceResult<boolean>> {
     try {
       const [group] = await db
         .select({ id: groups.id })
@@ -246,34 +374,58 @@ export class GroupService {
         .where(and(eq(groups.id, id), eq(universes.userId, userId)))
         .limit(1)
 
-      return !!group
+      return {
+        success: true,
+        data: !!group,
+      }
     } catch (error) {
       console.error('Error checking group access:', error)
-      return false
+      return {
+        success: false,
+        error: 'Failed to check group access',
+        code: 'DATABASE_ERROR',
+      }
     }
   }
 
   /**
    * Get complete hierarchy for a group (Group → Content → Sub-content)
    */
-  static async getCompleteHierarchy(groupId: string, userId: string) {
+  static async getCompleteHierarchy(
+    groupId: string,
+    userId: string
+  ): Promise<
+    GroupServiceResult<{
+      group: Group
+      content: ContentItem[]
+      contentRelationships: ContentRelationshipItem[]
+    }>
+  > {
     try {
       // First verify user has access to the group
-      const group = await this.getById(groupId, userId)
-      if (!group) {
-        throw new Error('Group not found or access denied')
+      const groupResult = await this.getById(groupId, userId)
+      if (!groupResult.success) {
+        return groupResult
       }
 
-      // Fetch all content for this group
+      // Fetch all content for this group with collectionId
       const contentData = await db
-        .select()
+        .select({
+          content: content,
+          collectionId: groups.collectionId,
+        })
         .from(content)
+        .innerJoin(groups, eq(content.groupId, groups.id))
         .where(eq(content.groupId, groupId))
         .orderBy(asc(content.order), desc(content.createdAt))
 
       // Fetch content relationships for hierarchy
       const contentRelationshipsData = await db
-        .select()
+        .select({
+          id: contentRelationships.id,
+          parentContentId: contentRelationships.parentContentId,
+          childContentId: contentRelationships.childContentId,
+        })
         .from(contentRelationships)
         .innerJoin(
           content,
@@ -282,13 +434,27 @@ export class GroupService {
         .where(eq(content.groupId, groupId))
 
       return {
-        group,
-        content: contentData,
-        contentRelationships: contentRelationshipsData,
+        success: true,
+        data: {
+          group: groupResult.data!,
+          content: contentData.map(item => ({
+            ...item.content,
+            collectionId: item.collectionId,
+            releaseDate: item.content.releaseDate
+              ? new Date(item.content.releaseDate)
+              : null,
+          })) as ContentItem[],
+          contentRelationships:
+            contentRelationshipsData as ContentRelationshipItem[],
+        },
       }
     } catch (error) {
       console.error('Error fetching complete group hierarchy:', error)
-      throw new Error('Failed to fetch complete hierarchy')
+      return {
+        success: false,
+        error: 'Failed to fetch complete hierarchy',
+        code: 'DATABASE_ERROR',
+      }
     }
   }
 }

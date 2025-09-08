@@ -35,29 +35,24 @@ export class TreeDataBuilder {
 
     // Transform groups
     if (data.groups) {
-      data.groups.forEach(item => {
-        const group = item.group || item
+      data.groups.forEach(group => {
         this.itemsMap.set(group.id, {
           ...group,
           entityType: 'group',
           isFolder: true,
           children: [],
-          collectionId: item.collectionId || group.collectionId,
         })
       })
     }
 
     // Transform content
     if (data.content) {
-      data.content.forEach(item => {
-        const contentItem = item.content || item
+      data.content.forEach(contentItem => {
         this.itemsMap.set(contentItem.id, {
           ...contentItem,
           entityType: 'content',
           isFolder: false, // Content can have children but starts as leaf
           children: [],
-          groupId: item.groupId || contentItem.groupId,
-          collectionId: item.collectionId || contentItem.collectionId,
         })
       })
     }
@@ -69,34 +64,29 @@ export class TreeDataBuilder {
   private buildChildrenMap(data: HierarchyData) {
     // Build collection -> groups relationships
     if (data.groups) {
-      data.groups.forEach(item => {
-        const group = item.group || item
-        const collectionId = item.collectionId || group.collectionId
-        if (collectionId) {
-          const children = this.childrenMap.get(collectionId) || []
+      data.groups.forEach(group => {
+        if (group.collectionId) {
+          const children = this.childrenMap.get(group.collectionId) || []
           children.push(group.id)
-          this.childrenMap.set(collectionId, children)
+          this.childrenMap.set(group.collectionId, children)
         }
       })
     }
 
     // Build group -> content relationships (direct)
     if (data.content) {
-      data.content.forEach(item => {
-        const contentItem = item.content || item
-        const groupId = item.groupId || contentItem.groupId
-        if (groupId) {
-          const children = this.childrenMap.get(groupId) || []
+      data.content.forEach(contentItem => {
+        if (contentItem.groupId) {
+          const children = this.childrenMap.get(contentItem.groupId) || []
           children.push(contentItem.id)
-          this.childrenMap.set(groupId, children)
+          this.childrenMap.set(contentItem.groupId, children)
         }
       })
     }
 
     // Build group hierarchical relationships
     if (data.groupRelationships) {
-      data.groupRelationships.forEach(rel => {
-        const relationship = rel.group_relationships || rel
+      data.groupRelationships.forEach(relationship => {
         const parentId = relationship.parentGroupId
         const childId = relationship.childGroupId
 
@@ -114,8 +104,7 @@ export class TreeDataBuilder {
 
     // Build content hierarchical relationships
     if (data.contentRelationships) {
-      data.contentRelationships.forEach(rel => {
-        const relationship = rel.content_relationships || rel
+      data.contentRelationships.forEach(relationship => {
         const parentId = relationship.parentContentId
         const childId = relationship.childContentId
 

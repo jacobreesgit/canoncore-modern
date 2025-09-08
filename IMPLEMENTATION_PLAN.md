@@ -1,182 +1,515 @@
-# CanonCore Implementation Plan
+## Phase 1: Group Sub-Hierarchies Implementation
 
-## Overview
-Comprehensive implementation plan for completing the CanonCore application using Context7 best practices and sequential thinking.
+### 1.1 RelationshipService Integration
 
-## Current State Analysis
+**Objective**: Enable Groups to have sub-Groups within Collections, supporting complex organizational structures like "Season Arc → Story Arc → Episode Arc".
 
-### ✅ What Exists and is Functional
-1. **Database Schema** - Complete four-tier hierarchy (Users → Universes → Collections → Groups → Content)
-2. **Authentication Backend** - NextAuth.js with JWT strategy configured
-3. **Dashboard** - Functional dashboard showing user universes with create functionality
-4. **Universe Detail Pages** - Complete hierarchy display with tree navigation
-5. **Tree Component** - Advanced drag & drop, reordering, navigation using @headless-tree/react
-6. **Create Forms** - Universe, Collection, and Group creation implemented
-7. **Services & Actions** - Full backend CRUD operations for all entities
-8. **API Routes** - NextAuth.js API endpoints configured
+**Status**: ❌ **Service implemented but not integrated - requires backend connection**
 
-### ❌ What's Missing
-1. **Homepage** - Still default Next.js template (critical blocker)
-2. **Authentication UI** - No sign-in/sign-up pages
-3. **Content Creation** - Forms for adding content items within groups
-4. **Error Pages** - Custom authentication error handling
-5. **Loading States** - User feedback during operations
+**Current Issue**: RelationshipService exists with correct methods but:
+- No imports found in GroupService  
+- No server actions connect to RelationshipService methods
+- No UI components use relationship functionality
+- Database tables exist but are unused
 
+**Available Methods**: 
+- Group relationship methods ready: `createGroupRelationship()`, `getGroupRelationships()`, `deleteGroupRelationship()`
+- Content relationship methods removed to avoid over-engineering  
+- Database schema already supports `groupRelationships` table
+
+**Integration Required**:
+- Connect GroupService to RelationshipService methods
+- Create server actions for relationship management
+- Update GroupTree component for hierarchical display
+- Add validation for circular references and depth limits
+
+### 1.2 GroupService Enhancements
+
+**File**: `lib/services/group.service.ts`
+
+Add hierarchy support methods:
+
+```typescript
+// New methods for hierarchy support
+static async getWithHierarchy(groupId: string, userId: string): Promise<GroupTreeData>
+static async moveToParent(groupId: string, parentId: string, userId: string): Promise<ServiceResult<void>>
+static async getAncestors(groupId: string, userId: string): Promise<ServiceResult<Group[]>>
+static async getDescendants(groupId: string, userId: string): Promise<ServiceResult<Group[]>>
+```
+
+### 1.3 Server Actions for Group Hierarchies
+
+**File**: `lib/actions/group-actions.ts`
+
+Add new server actions:
+
+```typescript
+export async function createSubGroup(formData: FormData): Promise<ActionResult>
+export async function moveGroupToParent(
+  formData: FormData
+): Promise<ActionResult>
+export async function removeGroupFromParent(
+  formData: FormData
+): Promise<ActionResult>
+```
+
+### 1.4 UI Component Updates
+
+**File**: `components/tree/group-tree.tsx`
+
+Extend GroupTree component:
+
+```typescript
+export interface GroupTreeProps extends TreeProps {
+  enableHierarchy: boolean // Toggle between flat and hierarchical view
+  onCreateSubGroup?: (parentId: string, groupData: NewGroup) => Promise<void>
+  onMoveToParent?: (groupId: string, newParentId: string) => Promise<void>
+  onRemoveFromParent?: (groupId: string) => Promise<void>
+}
+```
+
+### 1.5 Example Implementation
+
+**Doctor Who Collection: "Series 4" with Group Hierarchies**:
+
+```
+├── Group: "Main Season"
+│   ├── Sub-Group: "Donna Arc"
+│   │   ├── Content: "Partners in Crime"
+│   │   └── Content: "The Fires of Pompeii"
+│   └── Sub-Group: "Shadow Proclamation Arc"
+│       ├── Content: "The Stolen Earth"
+│       └── Content: "Journey's End"
+└── Group: "Specials"
+    └── Sub-Group: "Between Series Arc"
+        ├── Content: "The Next Doctor"
+        └── Content: "Planet of the Dead"
+```
 
 ## Phase 2: Content Creation Implementation
 
 ### 2.1 Content Creation Forms
+
 **File**: `app/universes/[id]/collections/[collectionId]/groups/[groupId]/create-content/page.tsx`
 
 Following the existing pattern of Collection and Group creation forms.
 
 ### 2.2 Content Detail Pages
+
 **File**: `app/universes/[id]/collections/[collectionId]/groups/[groupId]/content/[contentId]/page.tsx`
 
 Display individual content items with editing capabilities.
 
-### 2.3 Enhanced Tree Component
-Update existing tree component to handle content creation directly within the tree interface.
+### 2.3 Collection Edit Implementation
 
-## Phase 3: Playwright MCP Testing Strategy
+**Objective**: Implement collection editing functionality following architectural principles.
 
-### 3.1 MCP Tool Validation Framework
+**Backend Status**: ✅ Complete
+- `CollectionService.update()` method exists
+- `updateCollection()` server action exists with validation
+- Follows same patterns as universe implementation
 
-**Objective**: Create comprehensive tests FOR the MCP Playwright tools themselves, not using them to test our app.
+**Frontend Implementation Required**:
+- Create `app/[locale]/universes/[id]/collections/[collectionId]/edit/page.tsx`
+- Create `app/[locale]/universes/[id]/collections/[collectionId]/edit/collection-edit-form.tsx`
+- Follow identical patterns to universe edit implementation
 
-#### 3.1.1 Core MCP Function Testing
-```javascript
-// Test each MCP Playwright function systematically:
-- mcp__playwright-mcp__browser_navigate
-- mcp__playwright-mcp__browser_snapshot  
-- mcp__playwright-mcp__browser_click
-- mcp__playwright-mcp__browser_type
-- mcp__playwright-mcp__browser_take_screenshot
-- mcp__playwright-mcp__browser_fill_form
-- mcp__playwright-mcp__browser_wait_for
-- mcp__playwright-mcp__browser_hover
-- mcp__playwright-mcp__browser_drag
-```
+## Phase 3: Error Handling & Polish
 
-#### 3.1.2 Test Scenarios Structure
-```markdown
-For each MCP tool function:
-1. **Basic Functionality Test** - Does it work as expected?
-2. **Error Handling Test** - How does it handle invalid inputs?
-3. **Edge Cases Test** - Boundary conditions and extreme inputs
-4. **Performance Test** - Response times and reliability
-5. **Integration Test** - How well does it work with other MCP functions?
-```
+### 3.1 Error Pages
 
-#### 3.1.3 Demo Universe Test Case
-**Use the Doctor Who universe creation as the comprehensive test scenario**:
-
-```markdown
-Test Workflow:
-1. Navigate to CanonCore homepage (test browser_navigate)
-2. Take initial screenshot (test browser_take_screenshot)  
-3. Fill sign-in form (test browser_fill_form)
-4. Click sign-in button (test browser_click)
-5. Wait for dashboard load (test browser_wait_for)
-6. Navigate to create universe (test browser_navigate)
-7. Type universe details (test browser_type)
-8. Create "Doctor Who" universe
-9. Add Collections: "Classic Who", "New Who", "Spin-offs"
-10. Add Groups within Collections
-11. Test drag & drop functionality (test browser_drag)
-12. Take final screenshot (test browser_take_screenshot)
-13. Capture page snapshot (test browser_snapshot)
-```
-
-### 3.2 MCP Tool Quality Assurance
-```markdown
-**Test Documentation Structure**:
-- Function signature and parameters
-- Expected behavior description
-- Test results and screenshots
-- Performance metrics
-- Error cases encountered
-- Recommendations for improvement
-```
-
-## Phase 4: Demo Universe Creation
-
-### 4.1 Doctor Who Universe Structure
-**Following the four-tier architecture**:
-
-```
-🌌 Doctor Who Universe
-├── 📁 Classic Who (1963-1996)
-│   ├── 👥 First Doctor Era
-│   │   ├── 📺 An Unearthly Child
-│   │   ├── 📺 The Daleks  
-│   │   └── 📺 The Edge of Destruction
-│   ├── 👥 Second Doctor Era
-│   └── 👥 Third Doctor Era
-├── 📁 New Who (2005-present)
-│   ├── 👥 Ninth Doctor Era
-│   ├── 👥 Tenth Doctor Era
-│   └── 👥 Eleventh Doctor Era
-└── 📁 Spin-offs
-    ├── 👥 Torchwood
-    └── 👥 Sarah Jane Adventures
-```
-
-### 4.2 Implementation Steps
-1. **Create Universe**: "Doctor Who" with full description
-2. **Create Collections**: Classic, New, Spin-offs with chronological ordering
-3. **Create Groups**: Doctor eras, show categories
-4. **Create Content**: Individual episodes/specials with metadata
-5. **Test Tree Functionality**: Drag & drop reordering, navigation
-6. **Document Process**: Screenshots and workflow documentation
-
-## Phase 5: Error Handling & Polish
-
-### 5.1 Error Pages
 - Custom 404 page
-- Authentication error page  
+- Authentication error page
 - Server error page
 - Loading states
 
-### 5.2 Performance Optimization
-- Loading indicators
-- Optimistic UI updates
-- Error boundaries
+### 3.2 Performance Optimization
 
-## Implementation Priority Order
+**Implementation Tasks**:
+- Optimistic UI updates for better user experience  
+- Error boundaries for React component resilience
+- Database query optimization for tree operations
+- Bundle size optimization and code splitting
 
+**Context7 Research Required**:
+- "React error boundary patterns" for robust error handling
+- "Next.js production deployment best practices" for optimization
+- "database query optimization techniques" for performance
 
-### Week 1: Content Management
-1. Create content creation forms
-2. Implement content detail pages
-3. Enhance tree component for content management
-4. Test CRUD operations
+**Success Criteria**:
+- ✅ All error cases handled gracefully
+- ✅ Loading states provide clear user feedback
+- ✅ Application performs well with large datasets
+- ✅ Production deployment ready
+- ✅ Security vulnerabilities addressed
 
-### Week 2: MCP Testing Framework
-1. Design MCP tool testing framework
-2. Implement systematic tests for each MCP function
-3. Create Doctor Who demo universe as test case
-4. Document MCP tool capabilities and limitations
+## Phase 5: Future Features Implementation
 
-### Week 3: Polish & Documentation
-1. Implement error handling
-2. Add loading states
-3. Performance optimization
-4. Comprehensive documentation
-5. Final testing and validation
+### 5.1 Public Universe Discovery
 
-### Week 4: Ask me how to improve the design
+**Objective**: Implement `UniverseService.getPublic()` to enable public universe browsing and discovery.
+
+**Features**:
+- Public universe listing with search and filtering
+- Public universe detail pages for non-owners
+- Discovery feed with popular/featured universes
+- Public API endpoints for universe discovery
+
+**Implementation**:
+
+```typescript
+// Enhanced UniverseService methods
+static async getPublic(options?: {
+  search?: string
+  limit?: number
+  offset?: number
+  featured?: boolean
+}): Promise<ServiceResult<Universe[]>>
+
+static async getPublicById(
+  universeId: string
+): Promise<ServiceResult<PublicUniverseData>>
+
+static async togglePublicVisibility(
+  universeId: string, 
+  userId: string
+): Promise<ServiceResult<Universe>>
+```
+
+**UI Components**:
+- Public universe discovery page (`/discover`)
+- Public universe detail view (read-only)
+- Universe visibility toggle in settings
+
+### 5.2 Advanced Hierarchy Views
+
+**Objective**: Implement `GroupService.getCompleteHierarchy()` for comprehensive hierarchy visualization.
+
+**Features**:
+- Complete group hierarchy tree with all descendants
+- Hierarchical breadcrumb navigation
+- Expandable/collapsible tree views
+- Hierarchy depth indicators and statistics
+
+**Implementation**:
+
+```typescript
+// Enhanced GroupService methods  
+static async getCompleteHierarchy(
+  groupId: string,
+  userId: string
+): Promise<ServiceResult<GroupHierarchyTree>>
+
+static async getHierarchyStats(
+  groupId: string,
+  userId: string  
+): Promise<ServiceResult<HierarchyStats>>
+
+interface GroupHierarchyTree {
+  group: Group
+  children: GroupHierarchyTree[]
+  depth: number
+  totalDescendants: number
+}
+```
+
+**UI Components**:
+- Advanced hierarchy tree component
+- Hierarchy statistics dashboard
+- Depth-based visual indicators
+
+### 5.3 Alternative Content Views
+
+**Objective**: Implement `ContentService.getViewableByUniverse()` for flat content organization views.
+
+**Features**:
+- Flat content listing across entire universe
+- Content filtering by type, viewability, and progress
+- Timeline/chronological content views
+- Content search across hierarchy boundaries
+
+**Implementation**:
+
+```typescript
+// Enhanced ContentService methods
+static async getViewableByUniverse(
+  universeId: string,
+  userId: string,
+  options?: {
+    includeNonViewable?: boolean
+    sortBy?: 'created' | 'order' | 'name'
+    filterByType?: string
+  }
+): Promise<ServiceResult<ContentItem[]>>
+
+static async getContentTimeline(
+  universeId: string,
+  userId: string
+): Promise<ServiceResult<TimelineContent[]>>
+
+interface TimelineContent extends ContentItem {
+  hierarchyPath: string[]
+  collectionName: string
+  groupName: string
+}
+```
+
+**UI Components**:
+- Flat content listing page
+- Timeline view component  
+- Advanced content search and filtering
+
+### 5.4 Success Criteria
+
+**Public Universe Discovery**:
+- ✅ Public universes discoverable without authentication
+- ✅ Search and filtering work effectively
+- ✅ Privacy controls function properly
+- ✅ Performance optimized for public access
+
+**Advanced Hierarchy Views**:
+- ✅ Complete hierarchy trees load efficiently
+- ✅ Visual hierarchy representation is intuitive
+- ✅ Navigation between hierarchy levels is seamless
+- ✅ Statistics provide useful organizational insights
+
+**Alternative Content Views**:
+- ✅ Flat content views provide useful organization alternatives
+- ✅ Timeline views enable chronological content consumption
+- ✅ Search functionality works across entire universes
+- ✅ Performance remains optimal with large content libraries
+
+**Overall Integration**:
+- ✅ All future features integrate seamlessly with existing architecture
+- ✅ No performance degradation to core functionality
+- ✅ Consistent UI/UX patterns across all new features
+- ✅ Comprehensive testing coverage for new functionality
+
+## Phase 6: Access Control & Security Implementation
+
+### 6.1 Authentication & Authorization Framework
+
+**Objective**: Implement comprehensive access control system using NextAuth.js patterns and role-based authorization.
+
+**Security Architecture**:
+- Middleware-based route protection with NextAuth.js `withAuth`
+- Service-layer authorization checks for all CRUD operations
+- Role-based access control (RBAC) with user roles and permissions
+- Resource ownership validation across the four-tier hierarchy
+
+### 6.2 Service-Layer Access Control Methods
+
+**Implementation of the 4 access control methods identified as unused but critical for security:**
+
+#### UniverseService.checkOwnership()
+
+```typescript
+static async checkOwnership(
+  universeId: string, 
+  userId: string
+): Promise<ServiceResult<boolean>> {
+  // Verify user owns the universe
+  // Used by all universe operations and downstream checks
+}
+
+static async checkPublicAccess(
+  universeId: string
+): Promise<ServiceResult<boolean>> {
+  // Check if universe is publicly accessible
+  // Used for public universe discovery features
+}
+```
+
+#### CollectionService.checkAccess()
+
+```typescript  
+static async checkAccess(
+  collectionId: string, 
+  userId: string,
+  permission: 'read' | 'write' | 'delete' = 'read'
+): Promise<ServiceResult<boolean>> {
+  // Verify user has access to collection via universe ownership
+  // Support different permission levels
+}
+```
+
+#### GroupService.checkAccess()
+
+```typescript
+static async checkAccess(
+  groupId: string,
+  userId: string,
+  permission: 'read' | 'write' | 'delete' = 'read'
+): Promise<ServiceResult<boolean>> {
+  // Verify access via collection → universe ownership chain
+  // Handle hierarchical group relationships
+}
+```
+
+#### ContentService.checkAccess()
+
+```typescript
+static async checkAccess(
+  contentId: string,
+  userId: string, 
+  permission: 'read' | 'write' | 'delete' = 'read'
+): Promise<ServiceResult<boolean>> {
+  // Verify access via group → collection → universe ownership chain
+  // Consider content visibility settings
+}
+```
+
+### 7.3 Middleware & Route Protection
+
+**Implementation using NextAuth.js best practices:**
+
+```typescript
+// middleware.ts enhancement
+import { withAuth } from "next-auth/middleware"
+
+export default withAuth(
+  function middleware(req) {
+    // Custom middleware logic for protected routes
+  },
+  {
+    callbacks: {
+      authorized: ({ token, req }) => {
+        // Route-specific authorization logic
+        const { pathname } = req.nextUrl
+        
+        // Public routes
+        if (pathname.startsWith('/discover')) return true
+        
+        // Protected routes require authentication
+        if (pathname.startsWith('/dashboard')) return !!token
+        if (pathname.startsWith('/universes')) return !!token
+        
+        return true
+      }
+    }
+  }
+)
+
+export const config = {
+  matcher: ['/dashboard/:path*', '/universes/:path*', '/discover/:path*']
+}
+```
+
+### 7.4 Server Action Authorization
+
+**Integration with existing server actions:**
+
+```typescript
+// Enhanced server action pattern
+export async function updateUniverse(formData: FormData): Promise<ActionResult> {
+  const session = await auth()
+  if (!session?.user?.id) {
+    return { success: false, error: 'Authentication required' }
+  }
+  
+  const universeId = formData.get('id') as string
+  
+  // Access control check
+  const accessCheck = await UniverseService.checkOwnership(universeId, session.user.id)
+  if (!accessCheck.success) {
+    return { success: false, error: 'Access denied' }
+  }
+  
+  // Proceed with update logic...
+}
+```
+
+### 7.5 Client-Side Protection Patterns
+
+**UI component authorization:**
+
+```typescript
+// Protected component wrapper
+async function UniverseActions({ universeId }: { universeId: string }) {
+  const session = await auth()
+  if (!session?.user?.id) return null
+  
+  const hasAccess = await UniverseService.checkOwnership(universeId, session.user.id)
+  if (!hasAccess.success) return null
+  
+  return (
+    <div>
+      <EditButton universeId={universeId} />
+      <DeleteButton universeId={universeId} />
+    </div>
+  )
+}
+```
+
+### 7.6 Security Validation & Testing
+
+**Comprehensive security coverage:**
+
+- **Authentication Flow Testing**: Sign-in/out, session management, token validation
+- **Authorization Testing**: Role-based access, ownership checks, permission boundaries  
+- **Cross-User Access Prevention**: Ensure users cannot access others' content
+- **Public/Private Content Boundaries**: Validate public universe access controls
+- **API Endpoint Security**: Protect all server actions and API routes
+- **Middleware Effectiveness**: Test route protection across all protected paths
+
+### 7.7 Performance Considerations
+
+**Efficient access control implementation:**
+
+- **Caching Strategy**: Cache ownership/permission checks to reduce database queries
+- **Batch Permission Checks**: Validate multiple resources in single queries where possible
+- **Middleware Optimization**: Minimize performance impact of authorization checks
+- **Database Indexing**: Ensure efficient queries for ownership verification
+
+### 7.8 Success Criteria
+
+**Security Implementation**:
+- ✅ All 4 access control methods implemented and tested
+- ✅ No unauthorized access possible across any tier of the hierarchy
+- ✅ Public universe access works correctly with proper boundaries
+- ✅ All server actions protected with authorization checks
+- ✅ Middleware provides comprehensive route protection
+
+**Performance & UX**:
+- ✅ Authorization checks do not significantly impact response times
+- ✅ Proper error handling and user feedback for access denied scenarios
+- ✅ Graceful degradation for public vs authenticated user experiences
+
+**Testing Coverage**:
+- ✅ Comprehensive security test suite covering all access patterns
+- ✅ Cross-user access prevention verified across all content types
+- ✅ Public/private boundary testing complete
+- ✅ Authentication flow edge cases handled properly
+
+**Integration**:
+- ✅ Access control integrates seamlessly with existing service architecture
+- ✅ No breaking changes to existing functionality
+- ✅ Consistent authorization patterns across all tiers
+- ✅ Security measures documented and maintainable
+
+- [ ] Remove 7 unused LanguageService methods as specified
+- [ ] Update service exports and imports accordingly
+- [ ] Run type-check to ensure no broken references
+
+**Access Control Methods** (Now properly planned in Phase 7: Access Control & Security):
+- [ ] Implement `UniverseService.checkOwnership()` - universe access control
+- [ ] Implement `CollectionService.checkAccess()` - collection access control  
+- [ ] Implement `GroupService.checkAccess()` - group access control
+- [ ] Implement `ContentService.checkAccess()` - content access control
+
+**Note**: Other preserved methods are now properly planned in Phase 6: Future Features Implementation
 
 ## Success Metrics
 
-
 ### Content Management
+
 - [ ] Complete four-tier hierarchy creation works
 - [ ] Tree component handles all interactions
 - [ ] Drag & drop reordering functions
 - [ ] Content creation and editing works
 
 ### MCP Tool Validation
+
 - [ ] All MCP Playwright functions tested systematically
 - [ ] Demo universe creation workflow documented
 - [ ] Performance metrics captured
@@ -184,6 +517,7 @@ Test Workflow:
 - [ ] Recommendations provided
 
 ### Demo Universe
+
 - [ ] Doctor Who universe created with full hierarchy
 - [ ] All content types represented
 - [ ] Tree navigation fully functional
@@ -192,6 +526,7 @@ Test Workflow:
 ## Notes
 
 This plan follows Context7 best practices by:
+
 1. **Using proven patterns** from NextAuth.js documentation
 2. **Sequential implementation** with clear priorities
 3. **Comprehensive testing** strategy for MCP tools

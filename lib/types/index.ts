@@ -110,7 +110,13 @@ export type InputFieldProps = FormFieldProps & {
 }
 
 export type ButtonProps = {
-  variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link'
+  variant?:
+    | 'default'
+    | 'destructive'
+    | 'outline'
+    | 'secondary'
+    | 'ghost'
+    | 'link'
   size?: 'default' | 'sm' | 'lg' | 'icon'
   loading?: boolean
   disabled?: boolean
@@ -169,15 +175,17 @@ export type HierarchyData = {
 }
 
 // Action result types for consistent server actions
-export type ActionResult<T = void> = {
-  success: true
-  data: T
-  message?: string
-} | {
-  success: false
-  error: string
-  code: string
-}
+export type ActionResult<T = void> =
+  | {
+      success: true
+      data: T
+      message?: string
+    }
+  | {
+      success: false
+      error: string
+      code: string
+    }
 
 // Search and filter types
 export type SearchFilters = {
@@ -234,7 +242,8 @@ export type ConfirmDialogProps = {
 
 // Generic utility types
 export type Optional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>
-export type RequiredFields<T, K extends keyof T> = Omit<T, K> & Required<Pick<T, K>>
+export type RequiredFields<T, K extends keyof T> = Omit<T, K> &
+  Required<Pick<T, K>>
 
 // Export common schema types for reuse
 export { userValidation } from '@/lib/validations'

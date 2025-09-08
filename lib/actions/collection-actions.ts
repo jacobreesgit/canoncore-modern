@@ -8,14 +8,14 @@ import { redirect } from 'next/navigation'
 
 const createCollectionSchema = z.object({
   name: z.string().min(1, 'Name is required').max(255, 'Name too long'),
-  description: z.string().min(1, 'Description is required'),
+  description: z.string().optional(),
   universeId: z.string().uuid(),
 })
 
 const updateCollectionSchema = z.object({
   id: z.string().uuid(),
   name: z.string().min(1, 'Name is required').max(255, 'Name too long'),
-  description: z.string().min(1, 'Description is required'),
+  description: z.string().optional(),
 })
 
 const deleteCollectionSchema = z.object({
@@ -43,10 +43,15 @@ const reorderCollectionsSchema = z.object({
 })
 
 export async function createCollection(formData: FormData) {
+  let createdCollection: { universeId: string; id: string }
+
   try {
     const session = await auth()
     if (!session?.user?.id) {
-      throw new Error('Authentication required')
+      return {
+        success: false,
+        error: 'Authentication required',
+      }
     }
 
     const rawData = {
@@ -57,15 +62,21 @@ export async function createCollection(formData: FormData) {
 
     const validatedData = createCollectionSchema.parse(rawData)
 
-    const collection = await CollectionService.create(
+    const result = await CollectionService.create(
       validatedData,
       session.user.id
     )
 
+    if (!result.success) {
+      return {
+        success: false,
+        error: result.error,
+        code: result.code,
+      }
+    }
+
+    createdCollection = { universeId: validatedData.universeId, id: result.data.id }
     revalidatePath(`/universes/${validatedData.universeId}`)
-    redirect(
-      `/universes/${validatedData.universeId}/collections/${collection.id}`
-    )
   } catch (error) {
     console.error('Error creating collection:', error)
 
@@ -85,13 +96,19 @@ export async function createCollection(formData: FormData) {
         error instanceof Error ? error.message : 'Failed to create collection',
     }
   }
+
+  // Redirect outside try/catch as per Next.js best practices
+  redirect(`/universes/${createdCollection.universeId}/collections/${createdCollection.id}`)
 }
 
 export async function updateCollection(formData: FormData) {
   try {
     const session = await auth()
     if (!session?.user?.id) {
-      throw new Error('Authentication required')
+      return {
+        success: false,
+        error: 'Authentication required',
+      }
     }
 
     const rawData = {
@@ -103,14 +120,22 @@ export async function updateCollection(formData: FormData) {
     const validatedData = updateCollectionSchema.parse(rawData)
 
     const { id, ...updateData } = validatedData
-    const collection = await CollectionService.update(
+    const result = await CollectionService.update(
       id,
       updateData,
       session.user.id
     )
 
-    revalidatePath(`/universes/${collection.universeId}`)
-    revalidatePath(`/universes/${collection.universeId}/collections/${id}`)
+    if (!result.success) {
+      return {
+        success: false,
+        error: result.error,
+        code: result.code,
+      }
+    }
+
+    revalidatePath(`/universes/${result.data.universeId}`)
+    revalidatePath(`/universes/${result.data.universeId}/collections/${id}`)
 
     return { success: true }
   } catch (error) {
@@ -135,10 +160,15 @@ export async function updateCollection(formData: FormData) {
 }
 
 export async function deleteCollection(formData: FormData) {
+  let universeId: string
+
   try {
     const session = await auth()
     if (!session?.user?.id) {
-      throw new Error('Authentication required')
+      return {
+        success: false,
+        error: 'Authentication required',
+      }
     }
 
     const rawData = {
@@ -148,18 +178,32 @@ export async function deleteCollection(formData: FormData) {
     const validatedData = deleteCollectionSchema.parse(rawData)
 
     // Get collection info before deletion for redirect
-    const collection = await CollectionService.getById(
+    const collectionResult = await CollectionService.getById(
       validatedData.id,
       session.user.id
     )
-    if (!collection) {
-      throw new Error('Collection not found')
+    if (!collectionResult.success) {
+      return {
+        success: false,
+        error: collectionResult.error,
+        code: collectionResult.code,
+      }
     }
 
-    await CollectionService.delete(validatedData.id, session.user.id)
+    const deleteResult = await CollectionService.delete(
+      validatedData.id,
+      session.user.id
+    )
+    if (!deleteResult.success) {
+      return {
+        success: false,
+        error: deleteResult.error,
+        code: deleteResult.code,
+      }
+    }
 
-    revalidatePath(`/universes/${collection.universeId}`)
-    redirect(`/universes/${collection.universeId}`)
+    universeId = collectionResult.data!.universeId
+    revalidatePath(`/universes/${collectionResult.data!.universeId}`)
   } catch (error) {
     console.error('Error deleting collection:', error)
 
@@ -179,13 +223,19 @@ export async function deleteCollection(formData: FormData) {
         error instanceof Error ? error.message : 'Failed to delete collection',
     }
   }
+
+  // Redirect outside try/catch as per Next.js best practices
+  redirect(`/universes/${universeId}`)
 }
 
 export async function updateCollectionOrder(formData: FormData) {
   try {
     const session = await auth()
     if (!session?.user?.id) {
-      throw new Error('Authentication required')
+      return {
+        success: false,
+        error: 'Authentication required',
+      }
     }
 
     const rawData = {
@@ -195,11 +245,19 @@ export async function updateCollectionOrder(formData: FormData) {
 
     const validatedData = updateCollectionOrderSchema.parse(rawData)
 
-    await CollectionService.updateOrder(
+    const result = await CollectionService.updateOrder(
       validatedData.orderUpdates,
       validatedData.universeId,
       session.user.id
     )
+
+    if (!result.success) {
+      return {
+        success: false,
+        error: result.error,
+        code: result.code,
+      }
+    }
 
     revalidatePath(`/universes/${validatedData.universeId}`)
 
@@ -234,16 +292,27 @@ export async function reorderCollectionsAction(data: {
   try {
     const session = await auth()
     if (!session?.user?.id) {
-      throw new Error('Authentication required')
+      return {
+        success: false,
+        error: 'Authentication required',
+      }
     }
 
     const validatedData = reorderCollectionsSchema.parse(data)
 
-    await CollectionService.updateOrder(
+    const result = await CollectionService.updateOrder(
       validatedData.items,
       validatedData.universeId,
       session.user.id
     )
+
+    if (!result.success) {
+      return {
+        success: false,
+        error: result.error,
+        code: result.code,
+      }
+    }
 
     revalidatePath(`/universes/${validatedData.universeId}`)
 

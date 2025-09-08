@@ -10,15 +10,23 @@ export const userValidation = {
   signUp: z.object({
     name: z.string().min(1, 'Name is required').max(255, 'Name too long'),
     email: z.string().email('Invalid email address').toLowerCase(),
-    password: z.string().min(6, 'Password must be at least 6 characters').max(100, 'Password too long'),
+    password: z
+      .string()
+      .min(6, 'Password must be at least 6 characters')
+      .max(100, 'Password too long'),
   }),
   signIn: z.object({
     email: z.string().email('Invalid email address').toLowerCase(),
     password: z.string().min(1, 'Password is required'),
   }),
   updateProfile: z.object({
-    name: z.string().min(1, 'Name is required').max(255, 'Name too long').optional(),
+    name: z
+      .string()
+      .min(1, 'Name is required')
+      .max(255, 'Name too long')
+      .optional(),
     email: z.string().email('Invalid email address').toLowerCase().optional(),
+    preferredLanguage: z.enum(['en-GB', 'en-US']).optional(),
   }),
 }
 
@@ -26,11 +34,19 @@ export const userValidation = {
 export const universeValidation = {
   create: z.object({
     name: z.string().min(1, 'Name is required').max(255, 'Name too long'),
-    description: z.string().max(1000, 'Description too long').optional().default(''),
+    description: z
+      .string()
+      .max(1000, 'Description too long')
+      .optional()
+      .default(''),
     isPublic: z.boolean().default(false),
   }),
   update: z.object({
-    name: z.string().min(1, 'Name is required').max(255, 'Name too long').optional(),
+    name: z
+      .string()
+      .min(1, 'Name is required')
+      .max(255, 'Name too long')
+      .optional(),
     description: z.string().max(1000, 'Description too long').optional(),
     isPublic: z.boolean().optional(),
   }),
@@ -40,11 +56,19 @@ export const universeValidation = {
 export const collectionValidation = {
   create: z.object({
     name: z.string().min(1, 'Name is required').max(255, 'Name too long'),
-    description: z.string().max(1000, 'Description too long').optional().default(''),
+    description: z
+      .string()
+      .max(1000, 'Description too long')
+      .optional()
+      .default(''),
     universeId: z.string().min(1, 'Universe ID is required'),
   }),
   update: z.object({
-    name: z.string().min(1, 'Name is required').max(255, 'Name too long').optional(),
+    name: z
+      .string()
+      .min(1, 'Name is required')
+      .max(255, 'Name too long')
+      .optional(),
     description: z.string().max(1000, 'Description too long').optional(),
   }),
 }
@@ -53,31 +77,72 @@ export const collectionValidation = {
 export const groupValidation = {
   create: z.object({
     name: z.string().min(1, 'Name is required').max(255, 'Name too long'),
-    description: z.string().max(1000, 'Description too long').optional().default(''),
+    description: z
+      .string()
+      .max(1000, 'Description too long')
+      .optional()
+      .default(''),
     collectionId: z.string().min(1, 'Collection ID is required'),
-    itemType: z.string().min(1, 'Item type is required').max(100, 'Item type too long'),
+    itemType: z
+      .string()
+      .min(1, 'Item type is required')
+      .max(100, 'Item type too long'),
   }),
   update: z.object({
-    name: z.string().min(1, 'Name is required').max(255, 'Name too long').optional(),
+    name: z
+      .string()
+      .min(1, 'Name is required')
+      .max(255, 'Name too long')
+      .optional(),
     description: z.string().max(1000, 'Description too long').optional(),
-    itemType: z.string().min(1, 'Item type is required').max(100, 'Item type too long').optional(),
+    itemType: z
+      .string()
+      .min(1, 'Item type is required')
+      .max(100, 'Item type too long')
+      .optional(),
   }),
 }
+
+// Language validation schemas
+export const languageValidation = {
+  updatePreference: z.object({
+    preferredLanguage: z.enum(['en-GB', 'en-US']),
+  }),
+}
+
+// Supported locales and types (English variants only for now)
+export const supportedLocales = ['en-GB', 'en-US'] as const
+export type SupportedLocale = (typeof supportedLocales)[number]
 
 // Content validation schemas
 export const contentValidation = {
   create: z.object({
     name: z.string().min(1, 'Name is required').max(255, 'Name too long'),
-    description: z.string().max(1000, 'Description too long').optional().default(''),
+    description: z
+      .string()
+      .max(1000, 'Description too long')
+      .optional()
+      .default(''),
     groupId: z.string().min(1, 'Group ID is required'),
-    itemType: z.string().min(1, 'Item type is required').max(100, 'Item type too long'),
+    itemType: z
+      .string()
+      .min(1, 'Item type is required')
+      .max(100, 'Item type too long'),
     isViewable: z.boolean().default(false),
     releaseDate: z.date().optional(),
   }),
   update: z.object({
-    name: z.string().min(1, 'Name is required').max(255, 'Name too long').optional(),
+    name: z
+      .string()
+      .min(1, 'Name is required')
+      .max(255, 'Name too long')
+      .optional(),
     description: z.string().max(1000, 'Description too long').optional(),
-    itemType: z.string().min(1, 'Item type is required').max(100, 'Item type too long').optional(),
+    itemType: z
+      .string()
+      .min(1, 'Item type is required')
+      .max(100, 'Item type too long')
+      .optional(),
     isViewable: z.boolean().optional(),
     releaseDate: z.date().optional(),
   }),

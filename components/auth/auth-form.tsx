@@ -6,8 +6,14 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Alert } from '@/components/ui/alert'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Eye, EyeOff, LogIn, UserPlus, Check } from 'lucide-react'
 import { userValidation } from '@/lib/validations'
 import { z } from 'zod'
@@ -20,7 +26,7 @@ export function AuthForm() {
     name: '',
     email: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
   })
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
@@ -38,7 +44,7 @@ export function AuthForm() {
     try {
       userValidation.signIn.parse({
         email: formData.email,
-        password: formData.password
+        password: formData.password,
       })
       return true
     } catch (error) {
@@ -56,14 +62,14 @@ export function AuthForm() {
       userValidation.signUp.parse({
         name: formData.name,
         email: formData.email,
-        password: formData.password
+        password: formData.password,
       })
-      
+
       if (formData.password !== formData.confirmPassword) {
         setError('Passwords do not match')
         return false
       }
-      
+
       return true
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -115,7 +121,7 @@ export function AuthForm() {
       }
 
       setSuccess(true)
-      
+
       // Auto sign-in after successful registration
       setTimeout(async () => {
         const result = await signIn('credentials', {
@@ -129,9 +135,12 @@ export function AuthForm() {
           router.refresh()
         }
       }, 1000)
-
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'An error occurred. Please try again.')
+      setError(
+        error instanceof Error
+          ? error.message
+          : 'An error occurred. Please try again.'
+      )
     }
   }
 
@@ -162,7 +171,7 @@ export function AuthForm() {
       name: '',
       email: '',
       password: '',
-      confirmPassword: ''
+      confirmPassword: '',
     })
   }
 
@@ -175,10 +184,10 @@ export function AuthForm() {
               <Check className="h-6 w-6 text-green-600" />
             </div>
             <div>
-              <h3 className="text-lg font-medium">Account created successfully!</h3>
-              <p className="text-sm text-muted-foreground">
-                Signing you in...
-              </p>
+              <h3 className="text-lg font-medium">
+                Account created successfully!
+              </h3>
+              <p className="text-sm text-muted-foreground">Signing you in...</p>
             </div>
           </div>
         </CardContent>
@@ -193,21 +202,20 @@ export function AuthForm() {
           {mode === 'signin' ? 'Sign in to CanonCore' : 'Create your account'}
         </CardTitle>
         <CardDescription className="text-center">
-          {mode === 'signin' 
+          {mode === 'signin'
             ? 'Enter your credentials to access your universes'
-            : 'Join CanonCore to start organizing your content universes'
-          }
+            : 'Join CanonCore to start organizing your content universes'}
         </CardDescription>
       </CardHeader>
-      
+
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
             <Alert variant="destructive">
-              {error}
+              <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
-          
+
           {mode === 'signup' && (
             <div className="space-y-2">
               <Label htmlFor="name">Full Name</Label>
@@ -223,7 +231,7 @@ export function AuthForm() {
               />
             </div>
           )}
-          
+
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input
@@ -237,7 +245,7 @@ export function AuthForm() {
               disabled={isLoading}
             />
           </div>
-          
+
           <div className="space-y-2">
             <Label htmlFor="password">Password</Label>
             <div className="relative">
@@ -245,7 +253,11 @@ export function AuthForm() {
                 id="password"
                 name="password"
                 type={showPassword ? 'text' : 'password'}
-                placeholder={mode === 'signin' ? 'Enter your password' : 'Create a password (min. 6 characters)'}
+                placeholder={
+                  mode === 'signin'
+                    ? 'Enter your password'
+                    : 'Create a password (min. 6 characters)'
+                }
                 value={formData.password}
                 onChange={handleInputChange}
                 required
@@ -266,7 +278,7 @@ export function AuthForm() {
               </button>
             </div>
           </div>
-          
+
           {mode === 'signup' && (
             <div className="space-y-2">
               <Label htmlFor="confirmPassword">Confirm Password</Label>
@@ -297,12 +309,8 @@ export function AuthForm() {
               </div>
             </div>
           )}
-          
-          <Button 
-            type="submit" 
-            className="w-full"
-            disabled={isLoading}
-          >
+
+          <Button type="submit" className="w-full" disabled={isLoading}>
             {isLoading ? (
               <>
                 <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
@@ -311,15 +319,21 @@ export function AuthForm() {
             ) : (
               <>
                 {mode === 'signin' ? (
-                  <><LogIn className="mr-2 h-4 w-4" />Sign In</>
+                  <>
+                    <LogIn className="mr-2 h-4 w-4" />
+                    Sign In
+                  </>
                 ) : (
-                  <><UserPlus className="mr-2 h-4 w-4" />Create Account</>
+                  <>
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    Create Account
+                  </>
                 )}
               </>
             )}
           </Button>
         </form>
-        
+
         <div className="mt-6 text-center">
           <p className="text-sm text-muted-foreground">
             {mode === 'signin' ? (
